@@ -3,254 +3,385 @@
 import { useState } from "react";
 
 export default function SellPage() {
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const [form, setForm] = useState({
+  const initialForm = {
     name: "",
     email: "",
     phone: "",
     postal_code: "",
+
     year: "",
     make: "",
     model: "",
     trim: "",
     mileage: "",
     vin: "",
+
     condition: "",
+    selling_timeline: "",
+    accident_history: "",
+
     description: "",
     asking_price: "",
-  });
+  };
+
+
+  const [form, setForm] = useState(initialForm);
+
+
 
   function handleChange(e) {
+
     setForm({
       ...form,
       [e.target.name]: e.target.value,
     });
+
   }
 
+
+
   async function handleSubmit(e) {
+
     e.preventDefault();
 
     setLoading(true);
     setMessage("");
 
+
     try {
+
       const response = await fetch("/api/vehicles", {
+
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
         },
+
         body: JSON.stringify(form),
+
       });
+
+
 
       const data = await response.json();
 
-      if (data.success) {
-        setMessage("Your vehicle has been submitted successfully!");
 
-        setForm({
-          name: "",
-          email: "",
-          phone: "",
-          postal_code: "",
-          year: "",
-          make: "",
-          model: "",
-          trim: "",
-          mileage: "",
-          vin: "",
-          condition: "",
-          description: "",
-          asking_price: "",
-        });
+
+      if (data.success) {
+
+        setMessage(
+          "Your vehicle has been submitted. A buyer will review your listing shortly."
+        );
+
+        setForm(initialForm);
+
       } else {
-        setMessage("Something went wrong. Please try again.");
+
+        setMessage(
+          "Unable to submit vehicle. Please try again."
+        );
+
       }
 
-    } catch (error) {
-      setMessage("Server error. Please try again later.");
+
+    } catch(error) {
+
+      setMessage(
+        "Server error. Please try again later."
+      );
+
     }
 
+
     setLoading(false);
+
   }
 
 
+
+
   return (
-    <main className="min-h-screen bg-gray-50 py-16">
 
-      <div className="mx-auto max-w-4xl px-6">
+    <main className="min-h-screen bg-gray-100 py-16">
 
-        <div className="rounded-2xl bg-white p-8 shadow">
 
-          <h1 className="text-4xl font-bold">
-            Sell Your Vehicle
-          </h1>
+      <div className="mx-auto max-w-5xl px-6">
 
-          <p className="mt-3 text-gray-600">
-            Submit your vehicle details and connect with verified buyers.
-          </p>
+
+        <div className="rounded-3xl bg-white p-8 shadow-xl md:p-12">
+
+
+          {/* Header */}
+
+          <div className="text-center">
+
+            <span className="rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700">
+              Free Vehicle Evaluation
+            </span>
+
+
+            <h1 className="mt-6 text-4xl font-extrabold text-slate-900 md:text-5xl">
+              Sell Your Vehicle To Verified Buyers
+            </h1>
+
+
+            <p className="mt-4 text-lg text-gray-600">
+              Submit your vehicle details and connect with dealerships
+              looking for inventory.
+            </p>
+
+          </div>
+
+
 
 
           <form
             onSubmit={handleSubmit}
-            className="mt-8 space-y-5"
+            className="mt-10 space-y-8"
           >
 
-            <input
-              name="name"
-              placeholder="Full Name"
-              value={form.name}
-              onChange={handleChange}
-              className="w-full rounded-lg border p-3"
-              required
-            />
-
-            <input
-              name="email"
-              placeholder="Email"
-              value={form.email}
-              onChange={handleChange}
-              className="w-full rounded-lg border p-3"
-            />
-
-            <input
-              name="phone"
-              placeholder="Phone"
-              value={form.phone}
-              onChange={handleChange}
-              className="w-full rounded-lg border p-3"
-              required
-            />
-
-            <input
-              name="postal_code"
-              placeholder="Postal Code"
-              value={form.postal_code}
-              onChange={handleChange}
-              className="w-full rounded-lg border p-3"
-            />
 
 
-            <div className="grid gap-4 md:grid-cols-2">
+            {/* Seller Information */}
+
+            <section>
+
+              <h2 className="mb-4 text-2xl font-bold">
+                Your Information
+              </h2>
+
+
+              <div className="grid gap-4 md:grid-cols-2">
+
+
+                <input
+                  name="name"
+                  placeholder="Full Name"
+                  value={form.name}
+                  onChange={handleChange}
+                  className="rounded-xl border p-3"
+                  required
+                />
+
+
+                <input
+                  name="phone"
+                  placeholder="Phone Number"
+                  value={form.phone}
+                  onChange={handleChange}
+                  className="rounded-xl border p-3"
+                  required
+                />
+
+
+                <input
+                  name="email"
+                  placeholder="Email Address"
+                  value={form.email}
+                  onChange={handleChange}
+                  className="rounded-xl border p-3"
+                />
+
+
+                <input
+                  name="postal_code"
+                  placeholder="Postal Code"
+                  value={form.postal_code}
+                  onChange={handleChange}
+                  className="rounded-xl border p-3"
+                />
+
+              </div>
+
+            </section>
+
+
+
+
+
+            {/* Vehicle Information */}
+
+            <section>
+
+              <h2 className="mb-4 text-2xl font-bold">
+                Vehicle Information
+              </h2>
+
+
+              <div className="grid gap-4 md:grid-cols-2">
+
+
+                {[
+                  ["year","Year"],
+                  ["make","Make"],
+                  ["model","Model"],
+                  ["trim","Trim"],
+                  ["mileage","Mileage"],
+                  ["asking_price","Expected Price"],
+                ].map(([name,placeholder]) => (
+
+                  <input
+                    key={name}
+                    name={name}
+                    placeholder={placeholder}
+                    value={form[name]}
+                    onChange={handleChange}
+                    className="rounded-xl border p-3"
+                  />
+
+                ))}
+
+
+              </div>
+
 
               <input
-                name="year"
-                placeholder="Year"
-                value={form.year}
+                name="vin"
+                placeholder="VIN Number (Optional)"
+                value={form.vin}
                 onChange={handleChange}
-                className="rounded-lg border p-3"
+                className="mt-4 w-full rounded-xl border p-3"
               />
 
-              <input
-                name="make"
-                placeholder="Make"
-                value={form.make}
-                onChange={handleChange}
-                className="rounded-lg border p-3"
-              />
 
-              <input
-                name="model"
-                placeholder="Model"
-                value={form.model}
-                onChange={handleChange}
-                className="rounded-lg border p-3"
-              />
-
-              <input
-                name="trim"
-                placeholder="Trim"
-                value={form.trim}
-                onChange={handleChange}
-                className="rounded-lg border p-3"
-              />
-
-              <input
-                name="mileage"
-                placeholder="Mileage"
-                value={form.mileage}
-                onChange={handleChange}
-                className="rounded-lg border p-3"
-              />
-
-              <input
-                name="asking_price"
-                placeholder="Asking Price"
-                value={form.asking_price}
-                onChange={handleChange}
-                className="rounded-lg border p-3"
-              />
-
-            </div>
+            </section>
 
 
-            <input
-              name="vin"
-              placeholder="VIN (optional)"
-              value={form.vin}
-              onChange={handleChange}
-              className="w-full rounded-lg border p-3"
-            />
 
 
-            <select
-              name="condition"
-              value={form.condition}
-              onChange={handleChange}
-              className="w-full rounded-lg border p-3"
-            >
-              <option value="">
+
+            {/* Vehicle Condition */}
+
+            <section>
+
+              <h2 className="mb-4 text-2xl font-bold">
                 Vehicle Condition
-              </option>
+              </h2>
 
-              <option>
-                Excellent
-              </option>
 
-              <option>
-                Good
-              </option>
+              <div className="grid gap-4 md:grid-cols-2">
 
-              <option>
-                Fair
-              </option>
 
-            </select>
+                <select
+                  name="condition"
+                  value={form.condition}
+                  onChange={handleChange}
+                  className="rounded-xl border p-3"
+                >
+
+                  <option value="">
+                    Overall Condition
+                  </option>
+
+                  <option>
+                    Excellent
+                  </option>
+
+                  <option>
+                    Good
+                  </option>
+
+                  <option>
+                    Fair
+                  </option>
+
+                  <option>
+                    Needs Work
+                  </option>
+
+                </select>
+
+
+
+
+                <select
+                  name="selling_timeline"
+                  value={form.selling_timeline}
+                  onChange={handleChange}
+                  className="rounded-xl border p-3"
+                >
+
+                  <option value="">
+                    When Are You Selling?
+                  </option>
+
+                  <option>
+                    Immediately
+                  </option>
+
+                  <option>
+                    Within 30 Days
+                  </option>
+
+                  <option>
+                    Just Exploring
+                  </option>
+
+                </select>
+
+
+              </div>
+
+
+            </section>
+
+
+
 
 
             <textarea
               name="description"
-              placeholder="Vehicle details, upgrades, issues..."
+              placeholder="Vehicle details, upgrades, maintenance history, issues..."
               value={form.description}
               onChange={handleChange}
               rows="5"
-              className="w-full rounded-lg border p-3"
+              className="w-full rounded-xl border p-3"
             />
+
+
+
 
 
             <button
               disabled={loading}
-              className="w-full rounded-xl bg-blue-600 py-4 text-white font-semibold hover:bg-blue-700"
+              className="w-full rounded-xl bg-blue-600 py-4 text-lg font-bold text-white hover:bg-blue-700 disabled:opacity-50"
             >
+
               {loading
-                ? "Submitting..."
-                : "Submit Vehicle"}
+                ? "Submitting Vehicle..."
+                : "Get My Vehicle Reviewed"
+              }
+
             </button>
 
 
+
             {message && (
-              <p className="text-center font-medium text-blue-600">
+
+              <p className="text-center font-semibold text-blue-600">
                 {message}
               </p>
+
             )}
+
+
 
           </form>
 
+
         </div>
+
 
       </div>
 
+
     </main>
+
   );
+
 }
