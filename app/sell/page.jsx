@@ -1,197 +1,255 @@
-import Link from "next/link";
+"use client";
 
-export const metadata = {
-  title: "Sell Your Vehicle | NorthSky Auto",
-  description:
-    "Submit your vehicle and receive offers from trusted dealerships and qualified buyers across Canada.",
-};
+import { useState } from "react";
 
 export default function SellPage() {
-  return (
-    <main className="min-h-screen bg-gray-50">
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
-      {/* Hero */}
-      <section className="bg-slate-900 text-white py-16">
-        <div className="mx-auto max-w-5xl px-6 text-center">
-          <h1 className="text-5xl font-bold">
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    postal_code: "",
+    year: "",
+    make: "",
+    model: "",
+    trim: "",
+    mileage: "",
+    vin: "",
+    condition: "",
+    description: "",
+    asking_price: "",
+  });
+
+  function handleChange(e) {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/vehicles", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMessage("Your vehicle has been submitted successfully!");
+
+        setForm({
+          name: "",
+          email: "",
+          phone: "",
+          postal_code: "",
+          year: "",
+          make: "",
+          model: "",
+          trim: "",
+          mileage: "",
+          vin: "",
+          condition: "",
+          description: "",
+          asking_price: "",
+        });
+      } else {
+        setMessage("Something went wrong. Please try again.");
+      }
+
+    } catch (error) {
+      setMessage("Server error. Please try again later.");
+    }
+
+    setLoading(false);
+  }
+
+
+  return (
+    <main className="min-h-screen bg-gray-50 py-16">
+
+      <div className="mx-auto max-w-4xl px-6">
+
+        <div className="rounded-2xl bg-white p-8 shadow">
+
+          <h1 className="text-4xl font-bold">
             Sell Your Vehicle
           </h1>
 
-          <p className="mt-4 text-lg text-gray-300">
-            Complete the form below to receive offers from verified buyers.
-            It's free and takes just a few minutes.
+          <p className="mt-3 text-gray-600">
+            Submit your vehicle details and connect with verified buyers.
           </p>
-        </div>
-      </section>
 
-      {/* Form */}
-      <section className="mx-auto max-w-4xl px-6 py-16">
-        <div className="rounded-2xl bg-white p-8 shadow-lg">
 
-          <h2 className="mb-8 text-3xl font-bold">
-            Vehicle Information
-          </h2>
+          <form
+            onSubmit={handleSubmit}
+            className="mt-8 space-y-5"
+          >
 
-          <form className="space-y-8">
+            <input
+              name="name"
+              placeholder="Full Name"
+              value={form.name}
+              onChange={handleChange}
+              className="w-full rounded-lg border p-3"
+              required
+            />
 
-            {/* Contact */}
-            <div>
-              <h3 className="mb-4 text-xl font-semibold">
-                Contact Information
-              </h3>
+            <input
+              name="email"
+              placeholder="Email"
+              value={form.email}
+              onChange={handleChange}
+              className="w-full rounded-lg border p-3"
+            />
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                  className="rounded-lg border p-3"
-                />
+            <input
+              name="phone"
+              placeholder="Phone"
+              value={form.phone}
+              onChange={handleChange}
+              className="w-full rounded-lg border p-3"
+              required
+            />
 
-                <input
-                  type="email"
-                  placeholder="Email Address"
-                  className="rounded-lg border p-3"
-                />
+            <input
+              name="postal_code"
+              placeholder="Postal Code"
+              value={form.postal_code}
+              onChange={handleChange}
+              className="w-full rounded-lg border p-3"
+            />
 
-                <input
-                  type="tel"
-                  placeholder="Phone Number"
-                  className="rounded-lg border p-3"
-                />
 
-                <input
-                  type="text"
-                  placeholder="Postal Code"
-                  className="rounded-lg border p-3"
-                />
-              </div>
-            </div>
-
-            {/* Vehicle */}
-            <div>
-              <h3 className="mb-4 text-xl font-semibold">
-                Vehicle Details
-              </h3>
-
-              <div className="grid gap-4 md:grid-cols-2">
-
-                <input
-                  type="number"
-                  placeholder="Year"
-                  className="rounded-lg border p-3"
-                />
-
-                <input
-                  type="text"
-                  placeholder="Make"
-                  className="rounded-lg border p-3"
-                />
-
-                <input
-                  type="text"
-                  placeholder="Model"
-                  className="rounded-lg border p-3"
-                />
-
-                <input
-                  type="text"
-                  placeholder="Trim"
-                  className="rounded-lg border p-3"
-                />
-
-                <input
-                  type="number"
-                  placeholder="Mileage"
-                  className="rounded-lg border p-3"
-                />
-
-                <input
-                  type="text"
-                  placeholder="VIN (Optional)"
-                  className="rounded-lg border p-3"
-                />
-
-              </div>
-            </div>
-
-            {/* Condition */}
-            <div>
-              <h3 className="mb-4 text-xl font-semibold">
-                Vehicle Condition
-              </h3>
-
-              <select className="w-full rounded-lg border p-3">
-                <option>Excellent</option>
-                <option>Very Good</option>
-                <option>Good</option>
-                <option>Fair</option>
-                <option>Poor</option>
-              </select>
-
-              <textarea
-                rows={5}
-                placeholder="Tell us about your vehicle, maintenance history, upgrades, or any damage..."
-                className="mt-4 w-full rounded-lg border p-3"
-              />
-            </div>
-
-            {/* Price */}
-            <div>
-              <h3 className="mb-4 text-xl font-semibold">
-                Asking Price
-              </h3>
+            <div className="grid gap-4 md:grid-cols-2">
 
               <input
-                type="number"
-                placeholder="$25,000"
-                className="w-full rounded-lg border p-3"
+                name="year"
+                placeholder="Year"
+                value={form.year}
+                onChange={handleChange}
+                className="rounded-lg border p-3"
               />
+
+              <input
+                name="make"
+                placeholder="Make"
+                value={form.make}
+                onChange={handleChange}
+                className="rounded-lg border p-3"
+              />
+
+              <input
+                name="model"
+                placeholder="Model"
+                value={form.model}
+                onChange={handleChange}
+                className="rounded-lg border p-3"
+              />
+
+              <input
+                name="trim"
+                placeholder="Trim"
+                value={form.trim}
+                onChange={handleChange}
+                className="rounded-lg border p-3"
+              />
+
+              <input
+                name="mileage"
+                placeholder="Mileage"
+                value={form.mileage}
+                onChange={handleChange}
+                className="rounded-lg border p-3"
+              />
+
+              <input
+                name="asking_price"
+                placeholder="Asking Price"
+                value={form.asking_price}
+                onChange={handleChange}
+                className="rounded-lg border p-3"
+              />
+
             </div>
 
-            {/* Photos */}
-            <div>
-              <h3 className="mb-4 text-xl font-semibold">
-                Upload Photos
-              </h3>
 
-              <div className="rounded-xl border-2 border-dashed border-gray-300 p-10 text-center">
-                📸
-                <p className="mt-2 text-gray-600">
-                  Photo upload will be enabled soon.
-                </p>
-              </div>
-            </div>
+            <input
+              name="vin"
+              placeholder="VIN (optional)"
+              value={form.vin}
+              onChange={handleChange}
+              className="w-full rounded-lg border p-3"
+            />
 
-            {/* Terms */}
-            <label className="flex items-start gap-3">
-              <input type="checkbox" className="mt-1" />
-              <span className="text-gray-600">
-                I agree to the Terms of Service and Privacy Policy.
-              </span>
-            </label>
 
-            {/* Button */}
-            <button
-              type="submit"
-              className="w-full rounded-xl bg-blue-600 py-4 text-lg font-semibold text-white transition hover:bg-blue-700"
+            <select
+              name="condition"
+              value={form.condition}
+              onChange={handleChange}
+              className="w-full rounded-lg border p-3"
             >
-              Submit My Vehicle
+              <option value="">
+                Vehicle Condition
+              </option>
+
+              <option>
+                Excellent
+              </option>
+
+              <option>
+                Good
+              </option>
+
+              <option>
+                Fair
+              </option>
+
+            </select>
+
+
+            <textarea
+              name="description"
+              placeholder="Vehicle details, upgrades, issues..."
+              value={form.description}
+              onChange={handleChange}
+              rows="5"
+              className="w-full rounded-lg border p-3"
+            />
+
+
+            <button
+              disabled={loading}
+              className="w-full rounded-xl bg-blue-600 py-4 text-white font-semibold hover:bg-blue-700"
+            >
+              {loading
+                ? "Submitting..."
+                : "Submit Vehicle"}
             </button>
+
+
+            {message && (
+              <p className="text-center font-medium text-blue-600">
+                {message}
+              </p>
+            )}
 
           </form>
 
         </div>
 
-        {/* Back Link */}
-        <div className="mt-8 text-center">
-          <Link
-            href="/"
-            className="text-blue-600 hover:underline"
-          >
-            ← Back to Home
-          </Link>
-        </div>
-      </section>
+      </div>
 
     </main>
   );
