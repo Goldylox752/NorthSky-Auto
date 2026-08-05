@@ -3,36 +3,43 @@ import Link from "next/link";
 export const metadata = {
   title: "Dealer Network | NorthSky Auto",
   description:
-    "Join the NorthSky Auto dealer network and receive qualified vehicle seller leads across Canada.",
+    "Join NorthSky Auto and get exclusive access to qualified vehicle seller leads across Canada.",
 };
 
-export default function BuyersPage() {
+export default function DealersPage() {
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-white">
 
       {/* Hero */}
-      <section className="bg-slate-900 text-white py-20">
+      <section className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white">
 
-        <div className="mx-auto max-w-6xl px-6 text-center">
+        <div className="mx-auto max-w-7xl px-6 py-24 text-center">
 
-          <span className="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold">
-            Dealer Partner Program
+          <span className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold">
+            Dealer Acquisition Platform
           </span>
 
-          <h1 className="mt-8 text-5xl font-extrabold">
-            Get More Vehicles Into Your Inventory
+
+          <h1 className="mt-8 text-5xl font-extrabold md:text-6xl">
+            Find More Vehicles.
+            <span className="block text-blue-400">
+              Grow Your Inventory.
+            </span>
           </h1>
 
+
           <p className="mx-auto mt-6 max-w-3xl text-xl text-gray-300">
-            Access high-intent vehicle sellers and grow your dealership
-            without wasting money on traditional advertising.
+            NorthSky Auto connects dealerships with motivated vehicle sellers
+            across Canada. Stop chasing inventory and start receiving qualified
+            acquisition opportunities.
           </p>
+
 
           <Link
             href="/buyers/signup"
-            className="mt-10 inline-block rounded-xl bg-blue-600 px-8 py-4 font-semibold hover:bg-blue-500"
+            className="mt-10 inline-block rounded-xl bg-blue-600 px-10 py-4 text-lg font-bold hover:bg-blue-500"
           >
-            Become A Dealer Partner
+            Apply As A Dealer Partner
           </Link>
 
         </div>
@@ -40,63 +47,69 @@ export default function BuyersPage() {
       </section>
 
 
+
       {/* Benefits */}
       <section className="mx-auto max-w-7xl px-6 py-20">
 
         <h2 className="text-center text-4xl font-bold">
-          Why Dealers Choose NorthSky Auto
+          Built For Vehicle Acquisition Teams
         </h2>
 
 
         <div className="mt-12 grid gap-8 md:grid-cols-3">
 
 
-          <div className="rounded-2xl bg-white p-8 shadow">
+          <div className="rounded-2xl border p-8 shadow-sm">
 
-            <div className="text-4xl">
+            <div className="text-5xl">
               🚘
             </div>
 
-            <h3 className="mt-4 text-2xl font-bold">
-              Fresh Inventory
+            <h3 className="mt-5 text-2xl font-bold">
+              Fresh Inventory Opportunities
             </h3>
 
             <p className="mt-3 text-gray-600">
-              Connect with people actively looking to sell their vehicles.
+              Discover private sellers looking to sell cars, trucks, SUVs,
+              and commercial vehicles.
             </p>
 
           </div>
 
 
-          <div className="rounded-2xl bg-white p-8 shadow">
 
-            <div className="text-4xl">
+          <div className="rounded-2xl border p-8 shadow-sm">
+
+            <div className="text-5xl">
               🎯
             </div>
 
-            <h3 className="mt-4 text-2xl font-bold">
-              Qualified Leads
+            <h3 className="mt-5 text-2xl font-bold">
+              Qualified Seller Leads
             </h3>
 
             <p className="mt-3 text-gray-600">
-              Receive seller information instead of chasing cold prospects.
+              Receive detailed vehicle information including mileage,
+              condition, photos, and seller contact details.
             </p>
 
           </div>
 
 
-          <div className="rounded-2xl bg-white p-8 shadow">
 
-            <div className="text-4xl">
+          <div className="rounded-2xl border p-8 shadow-sm">
+
+            <div className="text-5xl">
               📈
             </div>
 
-            <h3 className="mt-4 text-2xl font-bold">
-              Grow Sales
+            <h3 className="mt-5 text-2xl font-bold">
+              Increase Profits
             </h3>
 
             <p className="mt-3 text-gray-600">
-              Build inventory faster and improve acquisition efficiency.
+              Improve your acquisition process and spend less time searching
+              for your next vehicle.
             </p>
 
           </div>
@@ -107,20 +120,94 @@ export default function BuyersPage() {
       </section>
 
 
-      {/* Pricing */}
-      <section className="bg-slate-100 px-6 py-20">
 
-        <div className="mx-auto max-w-5xl">
+      {/* How It Works */}
+      <section className="bg-gray-100 px-6 py-20">
+
+        <div className="mx-auto max-w-6xl">
 
           <h2 className="text-center text-4xl font-bold">
-            Dealer Plans
+            How The Dealer Program Works
+          </h2>
+
+
+          <div className="mt-12 grid gap-8 md:grid-cols-4">
+
+
+            <div className="rounded-xl bg-white p-6">
+
+              <h3 className="text-xl font-bold">
+                1. Apply
+              </h3>
+
+              <p className="mt-3 text-gray-600">
+                Submit your dealership information.
+              </p>
+
+            </div>
+
+
+            <div className="rounded-xl bg-white p-6">
+
+              <h3 className="text-xl font-bold">
+                2. Get Approved
+              </h3>
+
+              <p className="mt-3 text-gray-600">
+                Our team reviews your application.
+              </p>
+
+            </div>
+
+
+            <div className="rounded-xl bg-white p-6">
+
+              <h3 className="text-xl font-bold">
+                3. Receive Leads
+              </h3>
+
+              <p className="mt-3 text-gray-600">
+                Access matching vehicle sellers.
+              </p>
+
+            </div>
+
+
+            <div className="rounded-xl bg-white p-6">
+
+              <h3 className="text-xl font-bold">
+                4. Buy Inventory
+              </h3>
+
+              <p className="mt-3 text-gray-600">
+                Connect and acquire vehicles.
+              </p>
+
+            </div>
+
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+      {/* Pricing */}
+      <section className="px-6 py-20">
+
+        <div className="mx-auto max-w-6xl">
+
+          <h2 className="text-center text-4xl font-bold">
+            Dealer Membership
           </h2>
 
 
           <div className="mt-12 grid gap-8 md:grid-cols-3">
 
 
-            <div className="rounded-2xl bg-white p-8 shadow">
+            <div className="rounded-2xl border p-8">
 
               <h3 className="text-2xl font-bold">
                 Starter
@@ -131,18 +218,19 @@ export default function BuyersPage() {
               </p>
 
               <ul className="mt-6 space-y-3 text-gray-600">
-                <li>✓ Access to leads</li>
-                <li>✓ Basic dashboard</li>
+                <li>✓ Basic lead access</li>
                 <li>✓ Email notifications</li>
+                <li>✓ Dealer profile</li>
               </ul>
 
             </div>
 
 
-            <div className="rounded-2xl border-2 border-blue-600 bg-white p-8 shadow">
+
+            <div className="rounded-2xl border-2 border-blue-600 p-8">
 
               <h3 className="text-2xl font-bold">
-                Professional
+                Pro Dealer
               </h3>
 
               <p className="mt-4 text-4xl font-bold">
@@ -150,15 +238,16 @@ export default function BuyersPage() {
               </p>
 
               <ul className="mt-6 space-y-3 text-gray-600">
-                <li>✓ More vehicle leads</li>
-                <li>✓ Priority matching</li>
+                <li>✓ Priority leads</li>
+                <li>✓ Advanced matching</li>
                 <li>✓ Dealer dashboard</li>
               </ul>
 
             </div>
 
 
-            <div className="rounded-2xl bg-white p-8 shadow">
+
+            <div className="rounded-2xl border p-8">
 
               <h3 className="text-2xl font-bold">
                 Enterprise
@@ -170,7 +259,7 @@ export default function BuyersPage() {
 
               <ul className="mt-6 space-y-3 text-gray-600">
                 <li>✓ Multiple locations</li>
-                <li>✓ API access</li>
+                <li>✓ API integrations</li>
                 <li>✓ Dedicated support</li>
               </ul>
 
@@ -184,21 +273,30 @@ export default function BuyersPage() {
       </section>
 
 
+
       {/* CTA */}
-      <section className="bg-blue-600 py-20 text-center text-white">
+      <section className="bg-blue-600 px-6 py-20 text-center text-white">
 
         <h2 className="text-4xl font-bold">
-          Start Receiving Vehicle Leads
+          Ready To Grow Your Inventory?
         </h2>
+
+
+        <p className="mt-4 text-lg text-blue-100">
+          Join NorthSky Auto and receive vehicle acquisition opportunities.
+        </p>
+
 
         <Link
           href="/buyers/signup"
           className="mt-8 inline-block rounded-xl bg-white px-10 py-4 font-bold text-blue-600"
         >
-          Join Dealer Network
+          Become A Dealer Partner
         </Link>
 
+
       </section>
+
 
     </main>
   );
