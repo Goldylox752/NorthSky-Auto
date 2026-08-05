@@ -1,8 +1,12 @@
 import { supabase } from "@/lib/supabase";
+import DealerActions from "@/components/DealerActions";
 
 export const metadata = {
   title: "Dealer Management | NorthSky Auto Admin",
+  description:
+    "Manage dealer applications, approvals, and subscriptions.",
 };
+
 
 export default async function AdminDealersPage() {
 
@@ -15,30 +19,50 @@ export default async function AdminDealersPage() {
 
 
   if (error) {
+
     return (
       <main className="p-10">
-        Error loading dealers.
+        <div className="rounded-xl bg-red-50 p-6 text-red-600">
+          Failed to load dealer applications.
+        </div>
       </main>
     );
+
   }
 
 
+  const totalDealers = dealers?.length || 0;
+
+  const pendingDealers =
+    dealers?.filter(
+      (dealer) => dealer.status === "pending"
+    ).length || 0;
+
+
+  const activeDealers =
+    dealers?.filter(
+      (dealer) => dealer.status === "approved"
+    ).length || 0;
+
+
+
   return (
+
     <main className="min-h-screen bg-gray-100">
 
 
       {/* Header */}
 
-      <section className="bg-slate-900 text-white">
+      <section className="bg-gradient-to-r from-slate-950 to-blue-900 text-white">
 
-        <div className="mx-auto max-w-7xl px-6 py-10">
+        <div className="mx-auto max-w-7xl px-6 py-12">
 
-          <h1 className="text-4xl font-bold">
+          <h1 className="text-4xl font-extrabold">
             Dealer Management
           </h1>
 
-          <p className="mt-2 text-gray-300">
-            Review and manage NorthSky Auto dealer partners.
+          <p className="mt-3 text-gray-300">
+            Review applications and manage NorthSky Auto dealer partners.
           </p>
 
         </div>
@@ -54,50 +78,42 @@ export default async function AdminDealersPage() {
         <div className="grid gap-6 md:grid-cols-3">
 
 
-          <div className="rounded-xl bg-white p-6 shadow">
+          <div className="rounded-2xl bg-white p-6 shadow">
 
             <p className="text-gray-500">
               Total Dealers
             </p>
 
-            <h2 className="mt-2 text-4xl font-bold">
-              {dealers.length}
+            <h2 className="mt-3 text-4xl font-bold">
+              {totalDealers}
             </h2>
 
           </div>
 
 
 
-          <div className="rounded-xl bg-white p-6 shadow">
+          <div className="rounded-2xl bg-white p-6 shadow">
 
             <p className="text-gray-500">
               Pending Approval
             </p>
 
-            <h2 className="mt-2 text-4xl font-bold text-yellow-600">
-              {
-                dealers.filter(
-                  dealer => dealer.status === "pending"
-                ).length
-              }
+            <h2 className="mt-3 text-4xl font-bold text-yellow-600">
+              {pendingDealers}
             </h2>
 
           </div>
 
 
 
-          <div className="rounded-xl bg-white p-6 shadow">
+          <div className="rounded-2xl bg-white p-6 shadow">
 
             <p className="text-gray-500">
               Active Dealers
             </p>
 
-            <h2 className="mt-2 text-4xl font-bold text-green-600">
-              {
-                dealers.filter(
-                  dealer => dealer.status === "approved"
-                ).length
-              }
+            <h2 className="mt-3 text-4xl font-bold text-green-600">
+              {activeDealers}
             </h2>
 
           </div>
@@ -109,11 +125,13 @@ export default async function AdminDealersPage() {
 
 
 
+
       {/* Dealer Table */}
 
       <section className="mx-auto max-w-7xl px-6 pb-16">
 
-        <div className="overflow-hidden rounded-xl bg-white shadow">
+
+        <div className="overflow-hidden rounded-2xl bg-white shadow">
 
 
           <div className="border-b p-6">
@@ -126,8 +144,18 @@ export default async function AdminDealersPage() {
 
 
 
-          <div className="overflow-x-auto">
+          {dealers.length === 0 ? (
 
+            <div className="p-10 text-center text-gray-500">
+
+              No dealer applications yet.
+
+            </div>
+
+          ) : (
+
+
+          <div className="overflow-x-auto">
 
             <table className="w-full text-left">
 
@@ -156,6 +184,10 @@ export default async function AdminDealersPage() {
                     Plan
                   </th>
 
+                  <th className="p-4">
+                    Actions
+                  </th>
+
                 </tr>
 
               </thead>
@@ -165,72 +197,100 @@ export default async function AdminDealersPage() {
               <tbody>
 
 
-                {dealers.map((dealer) => (
+              {dealers.map((dealer) => (
 
-                  <tr
-                    key={dealer.id}
-                    className="border-t"
-                  >
+                <tr
+                  key={dealer.id}
+                  className="border-t hover:bg-gray-50"
+                >
 
 
-                    <td className="p-4">
+                  <td className="p-4">
 
-                      <div className="font-semibold">
-                        {dealer.company}
-                      </div>
+                    <div className="font-semibold">
+                      {dealer.company}
+                    </div>
+
+                    {dealer.website && (
 
                       <div className="text-sm text-gray-500">
                         {dealer.website}
                       </div>
 
-                    </td>
+                    )}
+
+                  </td>
 
 
 
-                    <td className="p-4">
+                  <td className="p-4">
 
+                    <div>
                       {dealer.contact}
+                    </div>
 
-                      <div className="text-sm text-gray-500">
-                        {dealer.email}
-                      </div>
+                    <div className="text-sm text-gray-500">
+                      {dealer.email}
+                    </div>
 
-                    </td>
+                    <div className="text-sm text-gray-500">
+                      {dealer.phone}
+                    </div>
+
+                  </td>
 
 
 
-                    <td className="p-4">
+                  <td className="p-4">
 
-                      {dealer.location}
+                    {dealer.location}
 
-                      <br />
-
+                    <div className="text-sm text-gray-500">
                       {dealer.province}
+                    </div>
 
-                    </td>
-
-
-
-                    <td className="p-4">
-
-                      <span className="rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-700">
-                        {dealer.status}
-                      </span>
-
-                    </td>
+                  </td>
 
 
 
-                    <td className="p-4">
+                  <td className="p-4">
 
-                      {dealer.subscription}
+                    <span
+                      className={
+                        dealer.status === "approved"
+                        ? "rounded-full bg-green-100 px-3 py-1 text-sm text-green-700"
+                        : dealer.status === "rejected"
+                        ? "rounded-full bg-red-100 px-3 py-1 text-sm text-red-700"
+                        : "rounded-full bg-yellow-100 px-3 py-1 text-sm text-yellow-700"
+                      }
+                    >
+                      {dealer.status}
+                    </span>
 
-                    </td>
+                  </td>
 
 
-                  </tr>
 
-                ))}
+                  <td className="p-4">
+
+                    {dealer.subscription || "None"}
+
+                  </td>
+
+
+
+                  <td className="p-4">
+
+                    <DealerActions
+                      id={dealer.id}
+                    />
+
+                  </td>
+
+
+                </tr>
+
+              ))}
 
 
               </tbody>
@@ -238,9 +298,9 @@ export default async function AdminDealersPage() {
 
             </table>
 
-
           </div>
 
+          )}
 
         </div>
 
@@ -249,5 +309,7 @@ export default async function AdminDealersPage() {
 
 
     </main>
+
   );
+
 }
