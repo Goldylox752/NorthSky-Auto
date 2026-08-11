@@ -1,33 +1,33 @@
 import Link from "next/link";
 export const metadata = {
-  title: "About NorthSky Auto | Vehicle Marketplace for Canadian Dealers",
+  title: "About NorthSky Auto | Canadian Vehicle Acquisition Marketplace",
   description:
-    "Learn about NorthSky Auto, a Canadian vehicle marketplace connecting vehicle sellers with dealerships and potential buyers.",
+    "Learn how NorthSky Auto connects Canadian vehicle sellers with dealerships through a simple vehicle acquisition marketplace.",
 };
 const values = [
   {
     icon: "🚗",
     title: "Better Vehicle Connections",
     description:
-      "NorthSky Auto is designed to make it easier for vehicle sellers to reach dealerships and potential buyers looking for inventory.",
+      "NorthSky Auto is designed to help vehicle sellers get their vehicles in front of dealerships and potential buyers looking for inventory opportunities.",
   },
   {
     icon: "🏢",
     title: "Built for Dealers",
     description:
-      "Dealers can access vehicle opportunities, manage leads, save promising vehicles, and build their acquisition pipeline.",
+      "Dealerships can discover vehicle opportunities, manage leads, save promising vehicles, and build a more organized acquisition pipeline.",
   },
   {
     icon: "🇨🇦",
     title: "Canadian Focus",
     description:
-      "NorthSky Auto is built with Canadian vehicle sellers and dealerships in mind.",
+      "NorthSky Auto is being built with Canadian vehicle sellers and dealerships in mind.",
   },
   {
     icon: "⚡",
     title: "Simple Process",
     description:
-      "Our goal is to simplify the process of submitting a vehicle, discovering opportunities, and connecting the right parties.",
+      "Our goal is to make vehicle submission, opportunity discovery, and seller-dealer connections simple and straightforward.",
   },
 ];
 const steps = [
@@ -35,25 +35,25 @@ const steps = [
     number: "01",
     title: "Submit a Vehicle",
     description:
-      "Vehicle sellers provide basic information about their car, truck, SUV, van, or commercial vehicle.",
+      "Sellers provide information about their car, truck, SUV, van, or commercial vehicle.",
   },
   {
     number: "02",
-    title: "Review Opportunities",
+    title: "Create an Opportunity",
     description:
-      "Vehicle information can become an opportunity for participating dealerships and buyers.",
+      "Submitted vehicle information can be presented as an acquisition opportunity for participating dealerships.",
   },
   {
     number: "03",
-    title: "Dealers Find Inventory",
+    title: "Dealers Discover Vehicles",
     description:
-      "Dealers use the NorthSky Auto marketplace to review vehicle opportunities that may fit their acquisition needs.",
+      "Participating dealerships can review vehicle opportunities that may match their inventory and acquisition requirements.",
   },
   {
     number: "04",
-    title: "Connect & Acquire",
+    title: "Connect & Evaluate",
     description:
-      "Interested parties can move forward with their own evaluation, communication, negotiation, and transaction process.",
+      "Interested parties can communicate directly and complete their own vehicle evaluation, negotiation, and transaction process.",
   },
 ];
 export default function AboutPage() {
@@ -69,12 +69,12 @@ export default function AboutPage() {
               ABOUT NORTHSKY AUTO
             </span>
             <h1 className="mt-6 text-4xl font-black tracking-tight sm:text-5xl md:text-6xl">
-              Connecting Vehicle Sellers With Opportunity
+              Connecting Vehicle Sellers With Dealership Opportunities
             </h1>
             <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">
-              NorthSky Auto is a Canadian-focused vehicle marketplace
-              designed to connect vehicle sellers with dealerships and
-              potential buyers looking for inventory opportunities.
+              NorthSky Auto is a Canadian-focused vehicle acquisition
+              marketplace designed to connect vehicle sellers with
+              dealerships looking for potential inventory opportunities.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
@@ -104,20 +104,19 @@ export default function AboutPage() {
               Making Vehicle Acquisition Simpler
             </h2>
             <p className="mt-5 leading-8 text-slate-600">
-              Finding the right vehicle or the right buyer can be
-              difficult. Sellers want exposure to serious opportunities,
-              while dealerships need a reliable way to discover vehicles
-              that may fit their inventory requirements.
+              Selling a vehicle and finding the right buyer can be
+              challenging. At the same time, dealerships are constantly
+              looking for vehicles that may fit their inventory needs.
             </p>
             <p className="mt-5 leading-8 text-slate-600">
-              NorthSky Auto is being built to help bridge that gap with a
-              straightforward digital marketplace for vehicle
+              NorthSky Auto is designed to help bridge that gap by creating
+              a straightforward digital marketplace for vehicle acquisition
               opportunities.
             </p>
             <p className="mt-5 leading-8 text-slate-600">
-              Our focus is on creating a simple experience where sellers
-              can submit vehicle information and dealers can discover,
-              evaluate, and manage potential acquisition opportunities.
+              Sellers can submit vehicle information, while participating
+              dealerships can discover, evaluate, save, and manage
+              opportunities through the NorthSky Auto platform.
             </p>
           </div>
           <div className="rounded-3xl bg-slate-950 p-8 text-white shadow-xl md:p-10">
@@ -129,24 +128,28 @@ export default function AboutPage() {
               Two Sides.
             </h3>
             <p className="mt-5 leading-7 text-slate-400">
-              NorthSky Auto is designed around the needs of both sides of
-              the vehicle marketplace.
+              NorthSky Auto is designed around the needs of both vehicle
+              sellers and dealerships.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl bg-white/10 p-5">
                 <div className="text-2xl">👤</div>
-                <h4 className="mt-3 font-black">Sellers</h4>
+                <h4 className="mt-3 font-black">
+                  Vehicle Sellers
+                </h4>
                 <p className="mt-2 text-sm leading-6 text-slate-400">
                   Submit vehicle information and create opportunities for
-                  potential buyers and dealerships.
+                  dealerships and potential buyers.
                 </p>
               </div>
               <div className="rounded-2xl bg-white/10 p-5">
                 <div className="text-2xl">🏢</div>
-                <h4 className="mt-3 font-black">Dealers</h4>
+                <h4 className="mt-3 font-black">
+                  Dealerships
+                </h4>
                 <p className="mt-2 text-sm leading-6 text-slate-400">
-                  Discover vehicle opportunities and build an acquisition
-                  pipeline.
+                  Discover vehicle opportunities and build a more organized
+                  acquisition pipeline.
                 </p>
               </div>
             </div>
@@ -164,9 +167,9 @@ export default function AboutPage() {
               Built Around Simplicity
             </h2>
             <p className="mt-4 leading-7 text-slate-600">
-              NorthSky Auto is focused on building a practical marketplace
-              that makes vehicle opportunities easier to discover and
-              manage.
+              NorthSky Auto focuses on creating a practical marketplace
+              that makes vehicle opportunities easier to discover,
+              organize, and manage.
             </p>
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
@@ -195,18 +198,18 @@ export default function AboutPage() {
               How It Works
             </span>
             <h2 className="mt-4 text-3xl font-black md:text-4xl">
-              From Vehicle Submission to Opportunity
+              From Vehicle Submission to Acquisition Opportunity
             </h2>
             <p className="mt-4 leading-7 text-slate-600">
               NorthSky Auto is designed around a straightforward
-              marketplace process.
+              seller-to-dealer marketplace process.
             </p>
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             {steps.map((step) => (
               <div
                 key={step.number}
-                className="relative rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200"
+                className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200"
               >
                 <span className="text-sm font-black text-blue-600">
                   {step.number}
@@ -233,9 +236,9 @@ export default function AboutPage() {
               Build Your Vehicle Acquisition Pipeline
             </h2>
             <p className="mt-5 max-w-2xl leading-8 text-slate-400">
-              NorthSky Auto gives dealerships a dedicated environment
-              for discovering vehicle opportunities, managing leads,
-              saving promising vehicles, and monitoring acquisition
+              NorthSky Auto gives participating dealerships a dedicated
+              environment for discovering vehicle opportunities, managing
+              leads, saving promising vehicles, and monitoring acquisition
               activity.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
@@ -296,7 +299,7 @@ export default function AboutPage() {
               </h2>
               <p className="mt-4 max-w-2xl leading-7 text-blue-100">
                 Submit your vehicle information and create an opportunity
-                for dealerships and potential buyers.
+                for dealerships looking for potential inventory.
               </p>
             </div>
             <div>
@@ -321,7 +324,8 @@ export default function AboutPage() {
           </h2>
           <p className="mx-auto mt-4 max-w-2xl leading-7 text-slate-600">
             Whether you are a vehicle seller, dealership, or potential
-            business partner, our team is available to help.
+            business partner, you can contact NorthSky Auto to learn more
+            about the platform.
           </p>
           <div className="mt-8">
             <Link
