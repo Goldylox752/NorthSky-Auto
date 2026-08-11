@@ -1,22 +1,19 @@
 import Stripe from "stripe";
 import { headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
-const stripe = new Stripe(
-  process.env.STRIPE_SECRET_KEY
-);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 /*
 |--------------------------------------------------------------------------
-| Plan helpers
+| Dealer Plans
 |--------------------------------------------------------------------------
 */
 const PLAN_NAMES = {
   starter: "Dealer Starter",
-  professional: "Dealer Pro",
-  enterprise: "Dealer Enterprise",
+  professional: "Dealer Professional",
 };
 function normalizePlan(plan) {
   if (!plan) return null;
@@ -32,15 +29,10 @@ function normalizePlan(plan) {
   if (
     value === "professional" ||
     value === "pro" ||
-    value === "dealer pro"
+    value === "dealer pro" ||
+    value === "dealer professional"
   ) {
     return "professional";
-  }
-  if (
-    value === "enterprise" ||
-    value === "dealer enterprise"
-  ) {
-    return "enterprise";
   }
   return null;
 }
@@ -59,13 +51,6 @@ function getPlanFromPriceId(priceId) {
   ) {
     return "professional";
   }
-  if (
-    priceId &&
-    priceId ===
-      process.env.STRIPE_ENTERPRISE_PRICE_ID
-  ) {
-    return "enterprise";
-  }
   return null;
 }
 function getCustomerId(customer) {
@@ -79,7 +64,7 @@ function getCustomerId(customer) {
 }
 /*
 |--------------------------------------------------------------------------
-| Supabase helpers
+| Supabase Helpers
 |--------------------------------------------------------------------------
 */
 async function findDealer({
@@ -156,7 +141,7 @@ async function updateDealer(
 }
 /*
 |--------------------------------------------------------------------------
-| Subscription helpers
+| Subscription Helpers
 |--------------------------------------------------------------------------
 */
 function getSubscriptionDetails(
@@ -171,28 +156,29 @@ function getSubscriptionDetails(
     );
   const pricePlan =
     getPlanFromPriceId(priceId);
+  /*
+   * Price ID is authoritative.
+   * Metadata is used as a fallback.
+   */
+  const plan =
+    pricePlan || metadataPlan || null;
   return {
-    plan:
-      metadataPlan ||
-      pricePlan ||
-      null,
+    plan,
     priceId,
   };
 }
 /*
 |--------------------------------------------------------------------------
-| Webhook
+| Stripe Webhook
 |--------------------------------------------------------------------------
 */
 export async function POST(request) {
   const body = await request.text();
   const headersList = await headers();
   const signature =
-    headersList.get(
-      "stripe-signature"
-    );
+    headersList.get("stripe-signature");
   /*
-   * Stripe signature is required.
+   * Require Stripe signature.
    */
   if (!signature) {
     return new Response(
@@ -203,7 +189,7 @@ export async function POST(request) {
     );
   }
   /*
-   * Webhook secret is required.
+   * Require webhook secret.
    */
   if (
     !process.env.STRIPE_WEBHOOK_SECRET
@@ -220,7 +206,7 @@ export async function POST(request) {
   }
   let event;
   /*
-   * Verify Stripe webhook signature.
+   * Verify webhook signature.
    */
   try {
     event =
@@ -289,14 +275,28 @@ export async function POST(request) {
               : null,
         }
       );
+      /*
+       * Do not activate unknown plans.
+       */
+      if (!plan) {
+        console.warn(
+          "Checkout completed with invalid dealer plan:",
+          session.metadata?.plan
+        );
+        return Response.json({
+          received: true,
+          warning:
+            "Invalid or unsupported dealer plan.",
+        });
+      }
       const dealer =
         await findDealer({
           customerId,
           email,
         });
       /*
-       * The payment may complete before a dealer
-       * record exists. Do not fail the webhook.
+       * Payment can complete before the dealer
+       * record exists.
        */
       if (!dealer) {
         console.warn(
@@ -317,6 +317,8 @@ export async function POST(request) {
       const updates = {
         subscription_status:
           "active",
+        subscription_plan:
+          plan,
       };
       if (customerId) {
         updates.stripe_customer_id =
@@ -326,17 +328,16 @@ export async function POST(request) {
         updates.stripe_subscription_id =
           subscriptionId;
       }
-      if (plan) {
-        updates.subscription_plan =
-          plan;
-      }
       await updateDealer(
         dealer.id,
         updates
       );
       console.log(
         "Dealer activated:",
-        dealer.id
+        {
+          dealerId: dealer.id,
+          plan,
+        }
       );
     }
     /*
@@ -361,10 +362,6 @@ export async function POST(request) {
         getSubscriptionDetails(
           subscription
         );
-      const dealer =
-        await findDealer({
-          customerId,
-        });
       console.log(
         "Subscription created:",
         {
@@ -377,6 +374,25 @@ export async function POST(request) {
             subscription.status,
         }
       );
+      if (!plan) {
+        console.warn(
+          "Subscription uses an unsupported dealer plan:",
+          {
+            subscriptionId:
+              subscription.id,
+            priceId,
+          }
+        );
+        return Response.json({
+          received: true,
+          warning:
+            "Unsupported subscription plan.",
+        });
+      }
+      const dealer =
+        await findDealer({
+          customerId,
+        });
       if (!dealer) {
         console.warn(
           "No dealer found for subscription:",
@@ -420,10 +436,6 @@ export async function POST(request) {
         getSubscriptionDetails(
           subscription
         );
-      const dealer =
-        await findDealer({
-          customerId,
-        });
       console.log(
         "Subscription updated:",
         {
@@ -436,6 +448,25 @@ export async function POST(request) {
             subscription.status,
         }
       );
+      if (!plan) {
+        console.warn(
+          "Updated subscription uses unsupported plan:",
+          {
+            subscriptionId:
+              subscription.id,
+            priceId,
+          }
+        );
+        return Response.json({
+          received: true,
+          warning:
+            "Unsupported subscription plan.",
+        });
+      }
+      const dealer =
+        await findDealer({
+          customerId,
+        });
       if (!dealer) {
         console.warn(
           "No dealer found for updated subscription:",
@@ -472,10 +503,6 @@ export async function POST(request) {
         getCustomerId(
           subscription.customer
         );
-      const dealer =
-        await findDealer({
-          customerId,
-        });
       console.log(
         "Subscription cancelled:",
         {
@@ -484,6 +511,10 @@ export async function POST(request) {
           customerId,
         }
       );
+      const dealer =
+        await findDealer({
+          customerId,
+        });
       if (!dealer) {
         console.warn(
           "No dealer found for cancelled subscription:",
@@ -514,10 +545,6 @@ export async function POST(request) {
         getCustomerId(
           invoice.customer
         );
-      const dealer =
-        await findDealer({
-          customerId,
-        });
       console.log(
         "Invoice paid:",
         {
@@ -526,6 +553,10 @@ export async function POST(request) {
           customerId,
         }
       );
+      const dealer =
+        await findDealer({
+          customerId,
+        });
       if (!dealer) {
         console.warn(
           "No dealer found for paid invoice:",
@@ -556,10 +587,6 @@ export async function POST(request) {
         getCustomerId(
           invoice.customer
         );
-      const dealer =
-        await findDealer({
-          customerId,
-        });
       console.log(
         "Invoice payment failed:",
         {
@@ -568,6 +595,10 @@ export async function POST(request) {
           customerId,
         }
       );
+      const dealer =
+        await findDealer({
+          customerId,
+        });
       if (!dealer) {
         console.warn(
           "No dealer found for failed invoice:",
@@ -585,7 +616,7 @@ export async function POST(request) {
     }
     /*
     |--------------------------------------------------------------------------
-    | OTHER STRIPE EVENTS
+    | OTHER EVENTS
     |--------------------------------------------------------------------------
     */
     else {
@@ -596,7 +627,7 @@ export async function POST(request) {
     }
     /*
     |--------------------------------------------------------------------------
-    | Successful webhook response
+    | SUCCESS
     |--------------------------------------------------------------------------
     */
     return Response.json({
