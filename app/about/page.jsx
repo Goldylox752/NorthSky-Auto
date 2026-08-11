@@ -1,268 +1,277 @@
-import Link from “next/link”;
+import Link from "next/link";
 
 export const metadata = {
-title: “About NorthSky Auto | Canadian Vehicle Marketplace”,
-description:
-“Learn about NorthSky Auto, a Canadian vehicle marketplace connecting vehicle sellers with dealerships looking for inventory and acquisition opportunities.”,
-alternates: {
-canonical: “/about”,
-},
+  title: "About NorthSky Auto | Canadian Vehicle Marketplace",
+  description:
+    "Learn about NorthSky Auto, a Canadian vehicle marketplace connecting vehicle sellers with dealerships and qualified buyers looking for inventory and acquisition opportunities.",
+  alternates: {
+    canonical: "https://northsky-auto.vercel.app/about",
+  },
+  openGraph: {
+    title: "About NorthSky Auto | Canadian Vehicle Marketplace",
+    description:
+      "NorthSky Auto connects vehicle sellers with dealerships and qualified buyers across Canada.",
+    url: "https://northsky-auto.vercel.app/about",
+    siteName: "NorthSky Auto",
+    type: "website",
+  },
 };
 
 export default function AboutPage() {
-return (
-{/* Hero */}
-← NorthSky Auto
-      <p className="mt-10 text-sm font-black uppercase tracking-[0.2em] text-blue-300">
-        🇨🇦 Canadian Vehicle Marketplace
-      </p>
-      <h1 className="mt-5 max-w-4xl text-5xl font-black tracking-tight md:text-6xl">
-        Connecting Vehicle Sellers With Canadian Dealerships.
-      </h1>
-      <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">
-        NorthSky Auto is built to make vehicle selling and dealership
-        acquisition more efficient by bringing both sides of the
-        automotive market together in one platform.
-      </p>
-    </div>
-  </section>
-  {/* What We Do */}
-  <section className="px-6 py-16">
-    <div className="mx-auto max-w-5xl">
-      <div className="max-w-3xl">
-        <p className="text-sm font-black uppercase tracking-widest text-blue-600">
-          What We Do
-        </p>
-        <h2 className="mt-3 text-3xl font-black md:text-4xl">
-          A simpler way to create vehicle opportunities.
-        </h2>
-        <p className="mt-5 text-lg leading-8 text-slate-600">
-          Selling a vehicle can mean dealing with multiple listings,
-          inquiries, messages, and uncertain buyers. Dealerships also
-          spend time searching for vehicles that fit their inventory
-          needs.
-        </p>
-        <p className="mt-5 text-lg leading-8 text-slate-600">
-          NorthSky Auto brings these two needs together. Vehicle owners
-          can submit their vehicle information, while participating
-          dealerships can discover acquisition opportunities through the
-          marketplace.
-        </p>
-      </div>
-    </div>
-  </section>
-  {/* How It Works */}
-  <section className="bg-white px-6 py-16">
-    <div className="mx-auto max-w-5xl">
-      <div className="text-center">
-        <p className="text-sm font-black uppercase tracking-widest text-blue-600">
-          How It Works
-        </p>
-        <h2 className="mt-3 text-3xl font-black md:text-4xl">
-          Built around a straightforward process.
-        </h2>
-        <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-          NorthSky Auto keeps the process focused on vehicle information,
-          acquisition opportunities, and connections between sellers and
-          dealerships.
-        </p>
-      </div>
-      <div className="mt-12 grid gap-6 md:grid-cols-3">
-        <div className="rounded-3xl bg-slate-50 p-8 ring-1 ring-slate-200">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-lg font-black text-white">
-            1
-          </div>
-          <h3 className="mt-6 text-xl font-black">
-            Submit Your Vehicle
-          </h3>
-          <p className="mt-3 leading-7 text-slate-600">
-            Provide your vehicle details, mileage, condition, asking
-            price, and other relevant information.
-          </p>
-        </div>
-        <div className="rounded-3xl bg-slate-50 p-8 ring-1 ring-slate-200">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-lg font-black text-white">
-            2
-          </div>
-          <h3 className="mt-6 text-xl font-black">
-            Create an Opportunity
-          </h3>
-          <p className="mt-3 leading-7 text-slate-600">
-            Your submitted vehicle information can become an acquisition
-            opportunity for participating dealerships.
-          </p>
-        </div>
-        <div className="rounded-3xl bg-slate-50 p-8 ring-1 ring-slate-200">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-lg font-black text-white">
-            3
-          </div>
-          <h3 className="mt-6 text-xl font-black">
-            Connect & Complete
-          </h3>
-          <p className="mt-3 leading-7 text-slate-600">
-            Interested parties can review the opportunity and determine
-            whether they want to move forward.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-  {/* For Sellers & Dealers */}
-  <section className="px-6 py-16">
-    <div className="mx-auto grid max-w-5xl gap-10 md:grid-cols-2">
-      {/* Sellers */}
-      <div className="rounded-3xl bg-slate-950 p-8 text-white md:p-10">
-        <p className="text-sm font-black uppercase tracking-widest text-blue-400">
-          For Vehicle Owners
-        </p>
-        <h2 className="mt-4 text-3xl font-black">
-          Turn your vehicle into an acquisition opportunity.
-        </h2>
-        <p className="mt-5 leading-8 text-slate-300">
-          Submit your car, truck, SUV, van, or commercial vehicle and
-          provide the information dealerships need to understand the
-          opportunity.
-        </p>
-        <ul className="mt-8 space-y-4 text-slate-200">
-          <li>✓ Simple online vehicle submission</li>
-          <li>✓ Vehicle details organized in one place</li>
-          <li>✓ Access to a dealership-focused marketplace</li>
-          <li>✓ Designed for sellers across Canada</li>
-        </ul>
-        <Link
-          href="/sell"
-          className="mt-8 inline-flex rounded-xl bg-blue-600 px-6 py-4 font-black text-white transition hover:bg-blue-700"
-        >
-          Sell Your Vehicle →
-        </Link>
-      </div>
-      {/* Dealers */}
-      <div className="rounded-3xl bg-white p-8 shadow-lg ring-1 ring-slate-200 md:p-10">
-        <p className="text-sm font-black uppercase tracking-widest text-blue-600">
-          For Dealerships
-        </p>
-        <h2 className="mt-4 text-3xl font-black">
-          Find vehicle acquisition opportunities.
-        </h2>
-        <p className="mt-5 leading-8 text-slate-600">
-          NorthSky Auto gives participating dealerships a place to
-          discover vehicles submitted by sellers who are actively looking
-          to sell.
-        </p>
-        <ul className="mt-8 space-y-4 text-slate-700">
-          <li>✓ Discover vehicle opportunities</li>
-          <li>✓ Review vehicle and seller information</li>
-          <li>✓ Build your acquisition pipeline</li>
-          <li>✓ Manage opportunities through the platform</li>
-        </ul>
-        <Link
-          href="/buyers"
-          className="mt-8 inline-flex rounded-xl bg-slate-950 px-6 py-4 font-black text-white transition hover:bg-slate-800"
-        >
-          Join the Dealer Network →
-        </Link>
-      </div>
-    </div>
-  </section>
-  {/* Mission */}
-  <section className="bg-blue-50 px-6 py-16">
-    <div className="mx-auto max-w-4xl text-center">
-      <p className="text-sm font-black uppercase tracking-widest text-blue-600">
-        Our Mission
-      </p>
-      <h2 className="mt-4 text-3xl font-black md:text-4xl">
-        Make vehicle acquisition more connected and efficient.
-      </h2>
-      <p className="mt-6 text-lg leading-8 text-slate-600">
-        Our goal is to create a practical marketplace where vehicle
-        sellers can submit opportunities and dealerships can discover
-        inventory that may fit their acquisition needs.
-      </p>
-    </div>
-  </section>
-  {/* CTA */}
-  <section className="bg-gradient-to-br from-slate-950 to-blue-950 px-6 py-20 text-white">
-    <div className="mx-auto max-w-4xl text-center">
-      <h2 className="text-4xl font-black md:text-5xl">
-        Ready to get started?
-      </h2>
-      <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-        Whether you&apos;re selling a vehicle or looking for inventory,
-        NorthSky Auto is built to connect the right people with the right
-        opportunities.
-      </p>
-      <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
-        <Link
-          href="/sell"
-          className="rounded-xl bg-blue-600 px-7 py-4 font-black text-white transition hover:bg-blue-700"
-        >
-          Sell Your Vehicle
-        </Link>
-        <Link
-          href="/buyers"
-          className="rounded-xl bg-white px-7 py-4 font-black text-slate-950 transition hover:bg-slate-100"
-        >
-          I&apos;m a Dealer
-        </Link>
-        <Link
-          href="/contact"
-          className="rounded-xl border border-white/20 px-7 py-4 font-black text-white transition hover:bg-white/10"
-        >
-          Contact Us
-        </Link>
-      </div>
-    </div>
-  </section>
-  {/* Footer */}
-  <footer className="border-t border-slate-200 bg-white px-6 py-8">
-    <div className="mx-auto max-w-5xl text-center">
-      <nav
-        aria-label="Footer navigation"
-        className="flex flex-wrap justify-center gap-5 text-sm font-semibold text-slate-500"
-      >
-        <Link
-          href="/"
-          className="transition hover:text-blue-600"
-        >
-          Home
-        </Link>
-        <Link
-          href="/sell"
-          className="transition hover:text-blue-600"
-        >
-          Sell Your Vehicle
-        </Link>
-        <Link
-          href="/buyers"
-          className="transition hover:text-blue-600"
-        >
-          Dealers
-        </Link>
-        <Link
-          href="/pricing"
-          className="transition hover:text-blue-600"
-        >
-          Pricing
-        </Link>
-        <Link
-          href="/about"
-          className="font-black text-blue-600"
-        >
-          About
-        </Link>
-        <Link
-          href="/contact"
-          className="transition hover:text-blue-600"
-        >
-          Contact
-        </Link>
-      </nav>
-      <p className="mt-6 text-sm text-slate-400">
-        © 2026 NorthSky Auto. All rights reserved.
-      </p>
-    </div>
-  </footer>
-</main>
+  return (
+    <main className="min-h-screen bg-white text-slate-900">
 
-);
+      {/* Hero */}
+      <section className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white">
+        <div className="mx-auto max-w-6xl px-6 py-20 lg:px-8 lg:py-28">
+          <div className="max-w-3xl">
+            <p className="mb-4 text-sm font-semibold uppercase tracking-wider text-blue-300">
+              About NorthSky Auto
+            </p>
+
+            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+              A smarter way to connect vehicles with buyers.
+            </h1>
+
+            <p className="mt-6 text-lg leading-8 text-slate-300">
+              NorthSky Auto is a Canadian vehicle marketplace designed to
+              connect vehicle sellers with dealerships and qualified buyers
+              looking for inventory and acquisition opportunities.
+            </p>
+
+            <div className="mt-8 flex flex-wrap gap-4">
+              <Link
+                href="/sell"
+                className="rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-500"
+              >
+                Sell Your Vehicle
+              </Link>
+
+              <Link
+                href="/buyers"
+                className="rounded-lg border border-white/20 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/15"
+              >
+                For Dealerships
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Mission */}
+      <section className="mx-auto max-w-6xl px-6 py-20 lg:px-8">
+        <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+              Our Mission
+            </p>
+
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              Making vehicle acquisition simpler.
+            </h2>
+
+            <p className="mt-6 text-lg leading-8 text-slate-600">
+              Buying and selling vehicles can be time-consuming. Sellers want
+              a straightforward way to get their vehicles in front of serious
+              buyers, while dealerships need better opportunities to find
+              inventory.
+            </p>
+
+            <p className="mt-4 leading-7 text-slate-600">
+              NorthSky Auto is built to bring those two sides together through
+              a simple digital marketplace. Sellers can submit vehicle
+              information, while participating dealerships can discover
+              acquisition opportunities that fit their inventory needs.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8">
+            <h3 className="text-xl font-bold">What we focus on</h3>
+
+            <div className="mt-6 space-y-5">
+              <div>
+                <h4 className="font-semibold">Vehicle Sellers</h4>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  A simple way to submit vehicle information and connect with
+                  potential purchasing opportunities.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold">Dealerships</h4>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Access vehicle opportunities and discover potential inventory
+                  acquisitions.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="font-semibold">Better Connections</h4>
+                <p className="mt-1 text-sm leading-6 text-slate-600">
+                  Technology that helps make communication between sellers and
+                  automotive buyers more efficient.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="bg-slate-50">
+        <div className="mx-auto max-w-6xl px-6 py-20 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+              How NorthSky Auto Works
+            </p>
+
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              Simple from submission to opportunity.
+            </h2>
+
+            <p className="mt-4 text-slate-600">
+              Our marketplace is designed to make the vehicle acquisition
+              process easier for both sides of the transaction.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700">
+                1
+              </div>
+
+              <h3 className="mt-5 text-xl font-bold">
+                Submit a Vehicle
+              </h3>
+
+              <p className="mt-3 leading-7 text-slate-600">
+                Provide the basic information about your car, truck, SUV, or
+                other vehicle through our online submission process.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700">
+                2
+              </div>
+
+              <h3 className="mt-5 text-xl font-bold">
+                Connect With Buyers
+              </h3>
+
+              <p className="mt-3 leading-7 text-slate-600">
+                Vehicle opportunities can be presented to participating
+                dealerships and qualified buyers looking for inventory.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700">
+                3
+              </div>
+
+              <h3 className="mt-5 text-xl font-bold">
+                Explore the Opportunity
+              </h3>
+
+              <p className="mt-3 leading-7 text-slate-600">
+                Buyers can review available vehicle opportunities and determine
+                whether a vehicle fits their inventory or purchasing needs.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Why NorthSky */}
+      <section className="mx-auto max-w-6xl px-6 py-20 lg:px-8">
+        <div className="max-w-3xl">
+          <p className="text-sm font-semibold uppercase tracking-wider text-blue-600">
+            Why NorthSky Auto
+          </p>
+
+          <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+            Built around better vehicle connections.
+          </h2>
+
+          <p className="mt-5 text-lg leading-8 text-slate-600">
+            NorthSky Auto focuses on creating a straightforward marketplace
+            experience without unnecessary complexity.
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-slate-200 p-6">
+            <h3 className="font-bold">Canadian Focus</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Built with Canadian vehicle sellers and automotive businesses in
+              mind.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 p-6">
+            <h3 className="font-bold">Simple Process</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Straightforward vehicle submission and marketplace workflows.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 p-6">
+            <h3 className="font-bold">Dealer Opportunities</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Help dealerships discover potential inventory acquisition
+              opportunities.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 p-6">
+            <h3 className="font-bold">Digital First</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Modern online tools designed to make automotive transactions more
+              efficient.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="bg-blue-700 text-white">
+        <div className="mx-auto max-w-6xl px-6 py-16 text-center lg:px-8">
+          <h2 className="text-3xl font-bold sm:text-4xl">
+            Ready to explore NorthSky Auto?
+          </h2>
+
+          <p className="mx-auto mt-4 max-w-2xl text-blue-100">
+            Whether you're looking to sell a vehicle or find new inventory,
+            NorthSky Auto is built to help make the connection easier.
+          </p>
+
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <Link
+              href="/sell"
+              className="rounded-lg bg-white px-6 py-3 font-semibold text-blue-700 transition hover:bg-blue-50"
+            >
+              Sell Your Vehicle
+            </Link>
+
+            <Link
+              href="/buyers"
+              className="rounded-lg border border-white/30 px-6 py-3 font-semibold text-white transition hover:bg-white/10"
+            >
+              Dealer Marketplace
+            </Link>
+
+            <Link
+              href="/contact"
+              className="rounded-lg border border-white/30 px-6 py-3 font-semibold text-white transition hover:bg-white/10"
+            >
+              Contact Us
+            </Link>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  );
 }
