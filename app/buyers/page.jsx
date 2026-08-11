@@ -1,11 +1,9 @@
 import Link from "next/link";
-
 export const metadata = {
   title: "Dealer Plans | NorthSky Auto",
   description:
     "Choose a NorthSky Auto dealer plan and get access to vehicle acquisition opportunities from sellers across Canada.",
 };
-
 const plans = [
   {
     name: "Dealer Starter",
@@ -59,7 +57,6 @@ const plans = [
     ],
   },
 ];
-
 export default function BuyersPage() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -69,20 +66,17 @@ export default function BuyersPage() {
           <span className="inline-flex rounded-full bg-blue-500/20 px-5 py-2 text-sm font-black text-blue-300">
             NORTHSKY AUTO DEALER NETWORK
           </span>
-
           <h1 className="mx-auto mt-7 max-w-4xl text-5xl font-black leading-tight md:text-6xl">
             Find More Vehicles.
             <span className="block text-blue-400">
               Grow Your Dealership.
             </span>
           </h1>
-
           <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-300 md:text-xl">
             Join NorthSky Auto and discover vehicle acquisition opportunities
             from sellers looking to sell cars, trucks, SUVs, and commercial
-            vehicles.
+            vehicles across Canada.
           </p>
-
           <div className="mt-9 flex flex-wrap justify-center gap-4">
             <a
               href="#plans"
@@ -90,7 +84,6 @@ export default function BuyersPage() {
             >
               View Dealer Plans →
             </a>
-
             <Link
               href="/dealer"
               className="rounded-xl border border-white/30 px-8 py-4 font-black text-white transition hover:bg-white/10"
@@ -100,7 +93,6 @@ export default function BuyersPage() {
           </div>
         </div>
       </section>
-
       {/* VALUE PROPOSITION */}
       <section className="px-6 py-16">
         <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-3">
@@ -114,7 +106,6 @@ export default function BuyersPage() {
               place.
             </p>
           </div>
-
           <div className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200">
             <div className="text-4xl">📈</div>
             <h2 className="mt-5 text-xl font-black">
@@ -124,7 +115,6 @@ export default function BuyersPage() {
               Build a stronger pipeline of vehicles for your dealership.
             </p>
           </div>
-
           <div className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200">
             <div className="text-4xl">⚡</div>
             <h2 className="mt-5 text-xl font-black">
@@ -137,7 +127,6 @@ export default function BuyersPage() {
           </div>
         </div>
       </section>
-
       {/* PLANS */}
       <section id="plans" className="px-6 py-20">
         <div className="mx-auto max-w-7xl">
@@ -145,17 +134,14 @@ export default function BuyersPage() {
             <span className="rounded-full bg-blue-100 px-5 py-2 text-sm font-black text-blue-700">
               DEALER MEMBERSHIPS
             </span>
-
             <h2 className="mt-6 text-4xl font-black md:text-5xl">
               Choose Your Dealer Plan
             </h2>
-
             <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-600">
               Select the plan that fits your dealership and start accessing
               NorthSky Auto vehicle opportunities.
             </p>
           </div>
-
           <div className="mt-14 grid gap-8 lg:grid-cols-3">
             {plans.map((plan) => (
               <div
@@ -171,39 +157,29 @@ export default function BuyersPage() {
                     MOST POPULAR
                   </div>
                 )}
-
                 <div className="flex items-center justify-between gap-4">
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
                     {plan.badge}
                   </span>
-
-                  {plan.popular && (
-                    <span className="text-xl">⭐</span>
-                  )}
+                  {plan.popular && <span className="text-xl">⭐</span>}
                 </div>
-
                 <h3 className="mt-7 text-3xl font-black">
                   {plan.name}
                 </h3>
-
                 <p className="mt-4 min-h-[84px] leading-7 text-slate-600">
                   {plan.description}
                 </p>
-
                 <div className="mt-7">
                   <span className="text-5xl font-black">
                     {plan.price}
                   </span>
-
                   {plan.period && (
                     <span className="ml-2 font-semibold text-slate-500">
                       {plan.period}
                     </span>
                   )}
                 </div>
-
                 <div className="my-8 h-px bg-slate-200" />
-
                 <ul className="space-y-4">
                   {plan.features.map((feature) => (
                     <li
@@ -213,28 +189,33 @@ export default function BuyersPage() {
                       <span className="font-black text-blue-600">
                         ✓
                       </span>
-
                       <span>{feature}</span>
                     </li>
                   ))}
                 </ul>
-
                 <div className="mt-auto pt-8">
                   {plan.name === "Dealer Enterprise" ? (
                     <Link
-                      href="/sell"
+                      href="/contact"
                       className="flex w-full justify-center rounded-xl bg-slate-950 px-6 py-4 font-black text-white transition hover:bg-slate-800"
                     >
                       Contact NorthSky →
                     </Link>
                   ) : (
-                    <form action="/api/payments/checkout" method="POST">
+                    <form
+                      action="/api/payments/checkout"
+                      method="POST"
+                    >
                       <input
                         type="hidden"
                         name="productId"
                         value={plan.productId}
                       />
-
+                      <input
+                        type="hidden"
+                        name="plan"
+                        value={plan.name}
+                      />
                       <button
                         type="submit"
                         className="w-full rounded-xl bg-blue-600 px-6 py-4 font-black text-white transition hover:bg-blue-700"
@@ -243,7 +224,6 @@ export default function BuyersPage() {
                       </button>
                     </form>
                   )}
-
                   <p className="mt-3 text-center text-xs text-slate-500">
                     Secure checkout powered by Stripe
                   </p>
@@ -253,7 +233,6 @@ export default function BuyersPage() {
           </div>
         </div>
       </section>
-
       {/* HOW IT WORKS */}
       <section className="bg-slate-950 px-6 py-20 text-white">
         <div className="mx-auto max-w-6xl">
@@ -261,52 +240,42 @@ export default function BuyersPage() {
             <span className="rounded-full bg-blue-500/20 px-5 py-2 text-sm font-black text-blue-300">
               HOW IT WORKS
             </span>
-
             <h2 className="mt-6 text-4xl font-black">
               Start Finding Vehicles
             </h2>
           </div>
-
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             <div className="rounded-3xl bg-white/10 p-8">
               <div className="text-4xl font-black text-blue-400">
                 01
               </div>
-
               <h3 className="mt-5 text-xl font-black">
                 Choose a Plan
               </h3>
-
               <p className="mt-3 leading-7 text-slate-300">
                 Select the NorthSky Auto membership that fits your
                 dealership.
               </p>
             </div>
-
             <div className="rounded-3xl bg-white/10 p-8">
               <div className="text-4xl font-black text-blue-400">
                 02
               </div>
-
               <h3 className="mt-5 text-xl font-black">
-                Create Your Account
+                Complete Checkout
               </h3>
-
               <p className="mt-3 leading-7 text-slate-300">
-                Complete your dealer account and configure your dealership
-                information.
+                Complete your secure Stripe checkout and begin the dealer
+                onboarding process.
               </p>
             </div>
-
             <div className="rounded-3xl bg-white/10 p-8">
               <div className="text-4xl font-black text-blue-400">
                 03
               </div>
-
               <h3 className="mt-5 text-xl font-black">
                 Find Opportunities
               </h3>
-
               <p className="mt-3 leading-7 text-slate-300">
                 Access available vehicle opportunities and connect with
                 potential sellers.
@@ -315,34 +284,30 @@ export default function BuyersPage() {
           </div>
         </div>
       </section>
-
       {/* APPLICATION CTA */}
       <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 p-10 text-center text-white md:p-14">
           <h2 className="text-4xl font-black">
-            Not Ready to Subscribe?
+            Have Questions Before Joining?
           </h2>
-
           <p className="mx-auto mt-5 max-w-2xl text-lg text-blue-100">
-            You can submit your dealership information first and learn more
-            about becoming part of the NorthSky Auto dealer network.
+            Contact NorthSky Auto if you want to discuss dealer membership,
+            enterprise options, or the vehicle acquisition network.
           </p>
-
           <Link
-            href="/sell"
+            href="/contact"
             className="mt-8 inline-flex rounded-xl bg-white px-8 py-4 font-black text-blue-600 transition hover:bg-blue-50"
           >
-            Apply as a Dealer →
+            Contact NorthSky Auto →
           </Link>
         </div>
       </section>
-
       {/* DISCLOSURE */}
       <section className="border-t bg-white px-6 py-8">
         <div className="mx-auto max-w-4xl text-center text-sm leading-6 text-slate-500">
-          NorthSky Auto dealer memberships are subject to the applicable
-          membership terms and account requirements. Subscription payments are
-          securely processed through Stripe.
+          NorthSky Auto dealer memberships are subject to applicable
+          membership terms and account requirements. Subscription payments
+          are securely processed through Stripe.
         </div>
       </section>
     </main>
