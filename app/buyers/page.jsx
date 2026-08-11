@@ -1,303 +1,348 @@
 import Link from "next/link";
+
 export const metadata = {
-  title: "Dealer Network | NorthSky Auto",
+  title: "Dealer Plans | NorthSky Auto",
   description:
-    "Join NorthSky Auto and connect with qualified vehicle sellers and acquisition opportunities across Canada.",
+    "Choose a NorthSky Auto dealer plan and get access to vehicle acquisition opportunities from sellers across Canada.",
 };
-const benefits = [
-  {
-    icon: "🚘",
-    title: "Fresh Inventory Opportunities",
-    description:
-      "Discover cars, trucks, SUVs, vans, and commercial vehicles from sellers looking to sell.",
-  },
-  {
-    icon: "🎯",
-    title: "Qualified Seller Leads",
-    description:
-      "Receive detailed vehicle information so your acquisition team can quickly evaluate opportunities.",
-  },
-  {
-    icon: "⚡",
-    title: "Faster Vehicle Acquisition",
-    description:
-      "Spend less time searching for inventory and more time connecting with potential sellers.",
-  },
-];
-const steps = [
-  {
-    number: "01",
-    title: "Apply",
-    description:
-      "Submit your dealership information and tell us about your operation.",
-  },
-  {
-    number: "02",
-    title: "Get Approved",
-    description:
-      "NorthSky Auto reviews your dealership and activates your dealer account.",
-  },
-  {
-    number: "03",
-    title: "Choose Your Plan",
-    description:
-      "Select the membership level that fits your vehicle acquisition needs.",
-  },
-  {
-    number: "04",
-    title: "Find Vehicles",
-    description:
-      "Access available acquisition opportunities through your dealer dashboard.",
-  },
-];
+
 const plans = [
   {
-    name: "Starter Dealer",
+    name: "Dealer Starter",
+    price: "$99",
+    period: "/month",
+    description:
+      "A simple way for dealerships to start finding new vehicle acquisition opportunities.",
+    productId: "prod_V3GcC4jUgJBx4D",
+    badge: "GET STARTED",
+    features: [
+      "Access vehicle opportunities",
+      "Dealer account",
+      "Seller lead information",
+      "Vehicle submission notifications",
+      "NorthSky Auto marketplace access",
+    ],
+  },
+  {
+    name: "Dealer Pro",
     price: "$299",
-    description: "For independent dealers building their acquisition pipeline.",
-    features: [
-      "Vehicle acquisition leads",
-      "Dealer dashboard",
-      "Basic vehicle filters",
-      "Lead notifications",
-    ],
-  },
-  {
-    name: "Professional",
-    price: "$599",
-    description: "For growing dealerships that need consistent opportunities.",
-    features: [
-      "Everything in Starter",
-      "Priority lead access",
-      "Advanced filters",
-      "Saved searches",
-      "Lead analytics",
-    ],
+    period: "/month",
+    description:
+      "Built for dealerships that want more opportunities and a stronger vehicle acquisition pipeline.",
+    productId: "prod_V3GdnfhA4TkBDi",
+    badge: "MOST POPULAR",
     popular: true,
+    features: [
+      "Everything in Dealer Starter",
+      "Priority vehicle opportunities",
+      "Advanced lead access",
+      "Dealer dashboard",
+      "Saved vehicle opportunities",
+      "Dealer analytics",
+    ],
   },
   {
-    name: "Enterprise",
-    price: "$999",
-    description: "For high-volume and multi-location dealership operations.",
+    name: "Dealer Enterprise",
+    price: "Custom",
+    period: "",
+    description:
+      "For high-volume dealerships and dealer groups looking for a larger vehicle acquisition solution.",
+    productId: "prod_V3Gegp9fCuEEkN",
+    badge: "ENTERPRISE",
     features: [
-      "Everything in Professional",
-      "Unlimited team members",
-      "Advanced reporting",
-      "Multi-location support",
-      "Dedicated support",
+      "High-volume dealer support",
+      "Custom dealership solutions",
+      "Expanded vehicle acquisition",
+      "Priority support",
+      "Custom account configuration",
+      "Dealer group options",
     ],
   },
 ];
+
 export default function BuyersPage() {
   return (
-    <main className="min-h-screen bg-white">
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.25),transparent_40%)]" />
-        <div className="relative mx-auto max-w-7xl px-6 py-24 lg:py-32">
-          <div className="max-w-4xl">
-            <span className="inline-flex rounded-full border border-blue-400/30 bg-blue-500/10 px-5 py-2 text-sm font-semibold text-blue-300">
-              NorthSky Auto Dealer Network
+    <main className="min-h-screen bg-slate-50 text-slate-900">
+      {/* HERO */}
+      <section className="bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-800 px-6 py-24 text-white">
+        <div className="mx-auto max-w-6xl text-center">
+          <span className="inline-flex rounded-full bg-blue-500/20 px-5 py-2 text-sm font-black text-blue-300">
+            NORTHSKY AUTO DEALER NETWORK
+          </span>
+
+          <h1 className="mx-auto mt-7 max-w-4xl text-5xl font-black leading-tight md:text-6xl">
+            Find More Vehicles.
+            <span className="block text-blue-400">
+              Grow Your Dealership.
             </span>
-            <h1 className="mt-8 text-5xl font-extrabold tracking-tight md:text-6xl lg:text-7xl">
-              Find More Vehicles.
-              <span className="block text-blue-400">
-                Build Better Inventory.
-              </span>
-            </h1>
-            <p className="mt-7 max-w-3xl text-lg leading-8 text-slate-300 md:text-xl">
-              NorthSky Auto connects dealerships with vehicle sellers across
-              Canada. Build a stronger acquisition pipeline and discover
-              vehicles before they reach traditional marketplaces.
-            </p>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-              <Link
-                href="/pricing"
-                className="rounded-xl bg-blue-600 px-8 py-4 text-center font-bold text-white shadow-lg transition hover:bg-blue-500"
-              >
-                View Dealer Plans
-              </Link>
-              <Link
-                href="/dealer-application"
-                className="rounded-xl border border-white/20 bg-white/10 px-8 py-4 text-center font-bold text-white backdrop-blur transition hover:bg-white/20"
-              >
-                Apply As A Dealer
-              </Link>
-            </div>
-            <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-400">
-              <span>✓ Dealer-focused platform</span>
-              <span>✓ Canadian vehicle opportunities</span>
-              <span>✓ Secure monthly billing</span>
-            </div>
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-300 md:text-xl">
+            Join NorthSky Auto and discover vehicle acquisition opportunities
+            from sellers looking to sell cars, trucks, SUVs, and commercial
+            vehicles.
+          </p>
+
+          <div className="mt-9 flex flex-wrap justify-center gap-4">
+            <a
+              href="#plans"
+              className="rounded-xl bg-blue-500 px-8 py-4 font-black text-white transition hover:bg-blue-600"
+            >
+              View Dealer Plans →
+            </a>
+
+            <Link
+              href="/dealer"
+              className="rounded-xl border border-white/30 px-8 py-4 font-black text-white transition hover:bg-white/10"
+            >
+              Dealer Login
+            </Link>
           </div>
         </div>
       </section>
-      {/* Benefits */}
-      <section className="px-6 py-20 lg:py-24">
-        <div className="mx-auto max-w-7xl">
-          <div className="mx-auto max-w-3xl text-center">
-            <span className="text-sm font-bold uppercase tracking-widest text-blue-600">
-              Why NorthSky Auto
-            </span>
-            <h2 className="mt-3 text-4xl font-bold tracking-tight text-slate-900 md:text-5xl">
-              Built For Vehicle Acquisition Teams
+
+      {/* VALUE PROPOSITION */}
+      <section className="px-6 py-16">
+        <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-3">
+          <div className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200">
+            <div className="text-4xl">🚗</div>
+            <h2 className="mt-5 text-xl font-black">
+              Find Vehicles
             </h2>
-            <p className="mt-5 text-lg text-slate-600">
-              Give your dealership a more efficient way to discover and
-              evaluate potential inventory.
+            <p className="mt-3 leading-7 text-slate-600">
+              Discover vehicle sellers and acquisition opportunities in one
+              place.
             </p>
           </div>
-          <div className="mt-14 grid gap-8 md:grid-cols-3">
-            {benefits.map((benefit) => (
-              <div
-                key={benefit.title}
-                className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-              >
-                <div className="text-5xl">{benefit.icon}</div>
-                <h3 className="mt-6 text-2xl font-bold text-slate-900">
-                  {benefit.title}
-                </h3>
-                <p className="mt-4 leading-7 text-slate-600">
-                  {benefit.description}
-                </p>
-              </div>
-            ))}
+
+          <div className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200">
+            <div className="text-4xl">📈</div>
+            <h2 className="mt-5 text-xl font-black">
+              Grow Inventory
+            </h2>
+            <p className="mt-3 leading-7 text-slate-600">
+              Build a stronger pipeline of vehicles for your dealership.
+            </p>
+          </div>
+
+          <div className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200">
+            <div className="text-4xl">⚡</div>
+            <h2 className="mt-5 text-xl font-black">
+              Move Faster
+            </h2>
+            <p className="mt-3 leading-7 text-slate-600">
+              Spend less time searching and more time connecting with
+              potential sellers.
+            </p>
           </div>
         </div>
       </section>
-      {/* How It Works */}
-      <section className="bg-slate-100 px-6 py-20 lg:py-24">
+
+      {/* PLANS */}
+      <section id="plans" className="px-6 py-20">
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
-            <span className="text-sm font-bold uppercase tracking-widest text-blue-600">
-              Simple Process
+            <span className="rounded-full bg-blue-100 px-5 py-2 text-sm font-black text-blue-700">
+              DEALER MEMBERSHIPS
             </span>
-            <h2 className="mt-3 text-4xl font-bold text-slate-900 md:text-5xl">
-              How The Dealer Program Works
-            </h2>
-          </div>
-          <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {steps.map((step) => (
-              <div
-                key={step.number}
-                className="rounded-3xl bg-white p-8 shadow-sm"
-              >
-                <div className="text-4xl font-extrabold text-blue-600">
-                  {step.number}
-                </div>
-                <h3 className="mt-5 text-xl font-bold text-slate-900">
-                  {step.title}
-                </h3>
-                <p className="mt-3 leading-7 text-slate-600">
-                  {step.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      {/* Pricing Preview */}
-      <section className="px-6 py-20 lg:py-24">
-        <div className="mx-auto max-w-7xl">
-          <div className="mx-auto max-w-3xl text-center">
-            <span className="text-sm font-bold uppercase tracking-widest text-blue-600">
-              Dealer Membership
-            </span>
-            <h2 className="mt-3 text-4xl font-bold text-slate-900 md:text-5xl">
+
+            <h2 className="mt-6 text-4xl font-black md:text-5xl">
               Choose Your Dealer Plan
             </h2>
-            <p className="mt-5 text-lg text-slate-600">
-              Start with the plan that fits your dealership and upgrade as
-              your acquisition needs grow.
+
+            <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-600">
+              Select the plan that fits your dealership and start accessing
+              NorthSky Auto vehicle opportunities.
             </p>
           </div>
+
           <div className="mt-14 grid gap-8 lg:grid-cols-3">
             {plans.map((plan) => (
               <div
-                key={plan.name}
-                className={`relative flex flex-col rounded-3xl border bg-white p-8 shadow-lg ${
+                key={plan.productId}
+                className={`relative flex flex-col rounded-3xl bg-white p-8 shadow-sm ring-1 transition hover:-translate-y-1 hover:shadow-xl ${
                   plan.popular
-                    ? "border-blue-600 ring-2 ring-blue-100"
-                    : "border-slate-200"
+                    ? "ring-2 ring-blue-500"
+                    : "ring-slate-200"
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-blue-600 px-5 py-2 text-sm font-bold text-white">
-                    Most Popular
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-blue-600 px-5 py-2 text-xs font-black text-white">
+                    MOST POPULAR
                   </div>
                 )}
-                <h3 className="text-2xl font-bold text-slate-900">
+
+                <div className="flex items-center justify-between gap-4">
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
+                    {plan.badge}
+                  </span>
+
+                  {plan.popular && (
+                    <span className="text-xl">⭐</span>
+                  )}
+                </div>
+
+                <h3 className="mt-7 text-3xl font-black">
                   {plan.name}
                 </h3>
-                <p className="mt-4 min-h-[72px] text-slate-600">
+
+                <p className="mt-4 min-h-[84px] leading-7 text-slate-600">
                   {plan.description}
                 </p>
+
                 <div className="mt-7">
-                  <span className="text-5xl font-extrabold text-slate-900">
+                  <span className="text-5xl font-black">
                     {plan.price}
                   </span>
-                  <span className="ml-2 text-slate-500">
-                    /month
-                  </span>
+
+                  {plan.period && (
+                    <span className="ml-2 font-semibold text-slate-500">
+                      {plan.period}
+                    </span>
+                  )}
                 </div>
-                <Link
-                  href="/pricing"
-                  className={`mt-8 rounded-xl py-4 text-center font-bold transition ${
-                    plan.popular
-                      ? "bg-blue-600 text-white hover:bg-blue-700"
-                      : "bg-slate-900 text-white hover:bg-slate-800"
-                  }`}
-                >
-                  Choose Plan
-                </Link>
-                <ul className="mt-8 space-y-4 border-t border-slate-100 pt-8">
+
+                <div className="my-8 h-px bg-slate-200" />
+
+                <ul className="space-y-4">
                   {plan.features.map((feature) => (
                     <li
                       key={feature}
-                      className="flex gap-3 text-slate-700"
+                      className="flex gap-3 text-sm font-semibold text-slate-700"
                     >
-                      <span className="font-bold text-blue-600">✓</span>
+                      <span className="font-black text-blue-600">
+                        ✓
+                      </span>
+
                       <span>{feature}</span>
                     </li>
                   ))}
                 </ul>
+
+                <div className="mt-auto pt-8">
+                  {plan.name === "Dealer Enterprise" ? (
+                    <Link
+                      href="/sell"
+                      className="flex w-full justify-center rounded-xl bg-slate-950 px-6 py-4 font-black text-white transition hover:bg-slate-800"
+                    >
+                      Contact NorthSky →
+                    </Link>
+                  ) : (
+                    <form action="/api/payments/checkout" method="POST">
+                      <input
+                        type="hidden"
+                        name="productId"
+                        value={plan.productId}
+                      />
+
+                      <button
+                        type="submit"
+                        className="w-full rounded-xl bg-blue-600 px-6 py-4 font-black text-white transition hover:bg-blue-700"
+                      >
+                        Subscribe to {plan.name} →
+                      </button>
+                    </form>
+                  )}
+
+                  <p className="mt-3 text-center text-xs text-slate-500">
+                    Secure checkout powered by Stripe
+                  </p>
+                </div>
               </div>
             ))}
           </div>
-          <div className="mt-10 text-center">
-            <Link
-              href="/pricing"
-              className="font-semibold text-blue-600 hover:text-blue-700"
-            >
-              View full dealer pricing →
-            </Link>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section className="bg-slate-950 px-6 py-20 text-white">
+        <div className="mx-auto max-w-6xl">
+          <div className="text-center">
+            <span className="rounded-full bg-blue-500/20 px-5 py-2 text-sm font-black text-blue-300">
+              HOW IT WORKS
+            </span>
+
+            <h2 className="mt-6 text-4xl font-black">
+              Start Finding Vehicles
+            </h2>
+          </div>
+
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            <div className="rounded-3xl bg-white/10 p-8">
+              <div className="text-4xl font-black text-blue-400">
+                01
+              </div>
+
+              <h3 className="mt-5 text-xl font-black">
+                Choose a Plan
+              </h3>
+
+              <p className="mt-3 leading-7 text-slate-300">
+                Select the NorthSky Auto membership that fits your
+                dealership.
+              </p>
+            </div>
+
+            <div className="rounded-3xl bg-white/10 p-8">
+              <div className="text-4xl font-black text-blue-400">
+                02
+              </div>
+
+              <h3 className="mt-5 text-xl font-black">
+                Create Your Account
+              </h3>
+
+              <p className="mt-3 leading-7 text-slate-300">
+                Complete your dealer account and configure your dealership
+                information.
+              </p>
+            </div>
+
+            <div className="rounded-3xl bg-white/10 p-8">
+              <div className="text-4xl font-black text-blue-400">
+                03
+              </div>
+
+              <h3 className="mt-5 text-xl font-black">
+                Find Opportunities
+              </h3>
+
+              <p className="mt-3 leading-7 text-slate-300">
+                Access available vehicle opportunities and connect with
+                potential sellers.
+              </p>
+            </div>
           </div>
         </div>
       </section>
-      {/* Dealer Application CTA */}
-      <section className="bg-slate-950 px-6 py-20 text-center text-white lg:py-24">
-        <div className="mx-auto max-w-4xl">
-          <h2 className="text-4xl font-bold md:text-5xl">
-            Ready To Grow Your Inventory?
+
+      {/* APPLICATION CTA */}
+      <section className="px-6 py-20">
+        <div className="mx-auto max-w-5xl rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 p-10 text-center text-white md:p-14">
+          <h2 className="text-4xl font-black">
+            Not Ready to Subscribe?
           </h2>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-            Join the NorthSky Auto dealer network and build a better vehicle
-            acquisition pipeline.
+
+          <p className="mx-auto mt-5 max-w-2xl text-lg text-blue-100">
+            You can submit your dealership information first and learn more
+            about becoming part of the NorthSky Auto dealer network.
           </p>
-          <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
-            <Link
-              href="/pricing"
-              className="rounded-xl bg-blue-600 px-8 py-4 font-bold text-white transition hover:bg-blue-500"
-            >
-              Get Started
-            </Link>
-            <Link
-              href="/dealer-application"
-              className="rounded-xl border border-slate-700 bg-slate-900 px-8 py-4 font-bold text-white transition hover:bg-slate-800"
-            >
-              Apply As A Dealer
-            </Link>
-          </div>
+
+          <Link
+            href="/sell"
+            className="mt-8 inline-flex rounded-xl bg-white px-8 py-4 font-black text-blue-600 transition hover:bg-blue-50"
+          >
+            Apply as a Dealer →
+          </Link>
+        </div>
+      </section>
+
+      {/* DISCLOSURE */}
+      <section className="border-t bg-white px-6 py-8">
+        <div className="mx-auto max-w-4xl text-center text-sm leading-6 text-slate-500">
+          NorthSky Auto dealer memberships are subject to the applicable
+          membership terms and account requirements. Subscription payments are
+          securely processed through Stripe.
         </div>
       </section>
     </main>
