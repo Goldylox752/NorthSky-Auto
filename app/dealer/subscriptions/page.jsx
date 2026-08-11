@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 export const metadata = {
   title: "Dealer Subscription | NorthSky Auto",
   description:
-    "Manage your NorthSky Auto dealer membership, subscription status, and dealer plan.",
+    "Manage your NorthSky Auto dealer membership, subscription plan, and billing status.",
 };
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -11,7 +11,7 @@ const supabase =
   supabaseUrl && supabaseServiceKey
     ? createClient(supabaseUrl, supabaseServiceKey)
     : null;
-const PLAN_DETAILS = {
+const PLANS = {
   starter: {
     name: "Dealer Starter",
     price: "$99",
@@ -57,70 +57,84 @@ const PLAN_DETAILS = {
     ],
   },
 };
-function getPlan(plan) {
-  return (
-    PLAN_DETAILS[plan] || {
-      name: "No Active Plan",
-      price: "$0",
-      period: "",
-      description:
-        "Choose a NorthSky Auto dealer membership to access dealer opportunities.",
-      features: [],
-    }
-  );
+function normalizePlan(plan) {
+  if (!plan) return null;
+  const value = String(plan).toLowerCase().trim();
+  if (
+    value === "starter" ||
+    value === "dealer starter"
+  ) {
+    return "starter";
+  }
+  if (
+    value === "professional" ||
+    value === "pro" ||
+    value === "dealer pro"
+  ) {
+    return "professional";
+  }
+  if (
+    value === "enterprise" ||
+    value === "dealer enterprise"
+  ) {
+    return "enterprise";
+  }
+  return null;
 }
 function getStatusLabel(status) {
   if (!status) return "No subscription";
-  switch (status) {
-    case "active":
-      return "Active";
-    case "trialing":
-      return "Trial";
-    case "past_due":
-      return "Past Due";
-    case "canceled":
-      return "Canceled";
-    case "incomplete":
-      return "Incomplete";
-    case "incomplete_expired":
-      return "Expired";
-    case "unpaid":
-      return "Unpaid";
-    default:
-      return status.replaceAll("_", " ");
-  }
+  const labels = {
+    active: "Active",
+    trialing: "Trial",
+    past_due: "Past Due",
+    canceled: "Canceled",
+    incomplete: "Incomplete",
+    incomplete_expired: "Expired",
+    unpaid: "Unpaid",
+  };
+  return (
+    labels[status] ||
+    String(status).replaceAll("_", " ")
+  );
 }
 function getStatusClasses(status) {
-  switch (status) {
-    case "active":
-    case "trialing":
-      return "bg-green-100 text-green-700";
-    case "past_due":
-    case "incomplete":
-      return "bg-amber-100 text-amber-700";
-    case "canceled":
-    case "incomplete_expired":
-    case "unpaid":
-      return "bg-red-100 text-red-700";
-    default:
-      return "bg-slate-100 text-slate-700";
+  if (status === "active" || status === "trialing") {
+    return "bg-green-100 text-green-700";
   }
+  if (
+    status === "past_due" ||
+    status === "incomplete"
+  ) {
+    return "bg-amber-100 text-amber-700";
+  }
+  if (
+    status === "canceled" ||
+    status === "incomplete_expired" ||
+    status === "unpaid"
+  ) {
+    return "bg-red-100 text-red-700";
+  }
+  return "bg-slate-100 text-slate-700";
 }
 async function getDealer() {
   if (!supabase) {
+    console.error(
+      "Supabase is not configured for the dealer subscription page."
+    );
     return null;
   }
-  /*
-   * Temporary dealer lookup.
-   *
-   * When Supabase Auth is connected to the dealer portal,
-   * this should be replaced with the authenticated user's
-   * dealer record lookup.
-   */
-  const { data, error } = await supabase
-    .from("dealers")
-    .select(
-      `
+  try {
+    /*
+     * Temporary lookup until Supabase Auth is connected
+     * directly to the dealer portal.
+     *
+     * IMPORTANT:
+     * Replace this lookup with the authenticated dealer ID
+     * once dealer authentication is enabled.
+     */
+    const { data, error } = await supabase
+      .from("dealers")
+      .select(`
         id,
         business_name,
         dealership_name,
@@ -129,36 +143,54 @@ async function getDealer() {
         subscription_status,
         stripe_customer_id,
         stripe_subscription_id
-      `
-    )
-    .limit(1)
-    .maybeSingle();
-  if (error) {
-    console.error("Dealer subscription lookup failed:", error);
+      `)
+      .order("created_at", {
+        ascending: true,
+      })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      console.error(
+        "Dealer subscription lookup failed:",
+        error
+      );
+      return null;
+    }
+    return data;
+  } catch (error) {
+    console.error(
+      "Dealer subscription page error:",
+      error
+    );
     return null;
   }
-  return data;
 }
 export default async function DealerSubscriptionsPage() {
   const dealer = await getDealer();
-  const planKey =
-    dealer?.subscription_plan?.toLowerCase() || null;
-  const plan = getPlan(planKey);
-  const subscriptionStatus =
+  const planKey = normalizePlan(
+    dealer?.subscription_plan
+  );
+  const plan =
+    PLANS[planKey] || {
+      name: "No Active Plan",
+      price: "$0",
+      period: "",
+      description:
+        "Choose a NorthSky Auto dealer membership to access vehicle acquisition opportunities.",
+      features: [],
+    };
+  const status =
     dealer?.subscription_status || null;
   const statusLabel =
-    getStatusLabel(subscriptionStatus);
+    getStatusLabel(status);
   const statusClasses =
-    getStatusClasses(subscriptionStatus);
-  const dealerName =
+    getStatusClasses(status);
+  const dealershipName =
     dealer?.dealership_name ||
     dealer?.business_name ||
     "Your Dealership";
   const hasSubscription =
-    Boolean(
-      dealer?.stripe_subscription_id ||
-        dealer?.subscription_status
-    );
+    Boolean(dealer?.stripe_subscription_id);
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       {/* HEADER */}
@@ -173,42 +205,60 @@ export default async function DealerSubscriptionsPage() {
                 Subscription
               </h1>
               <p className="mt-4 max-w-2xl text-slate-300">
-                Manage your NorthSky Auto dealer membership and
-                subscription status.
+                Manage your NorthSky Auto dealer membership,
+                subscription status, and plan.
               </p>
             </div>
             <Link
               href="/dealer/dashboard"
-              className="inline-flex rounded-xl border border-white/20 px-6 py-3 font-black text-white transition hover:bg-white/10"
+              className="inline-flex w-fit rounded-xl border border-white/20 px-6 py-3 font-black text-white transition hover:bg-white/10"
             >
               ← Dealer Dashboard
             </Link>
           </div>
         </div>
       </section>
+      {/* CONTENT */}
       <section className="px-6 py-12">
         <div className="mx-auto max-w-7xl">
-          {/* ACCOUNT NOTICE */}
+          {/* ACCOUNT NOT FOUND */}
           {!dealer && (
-            <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+            <div className="mb-8 rounded-3xl border border-amber-200 bg-amber-50 p-6">
               <div className="flex gap-4">
-                <div className="text-2xl">!</div>
+                <div className="text-2xl">
+                  ⚠️
+                </div>
                 <div>
                   <h2 className="font-black text-amber-900">
                     Dealer account not connected
                   </h2>
-                  <p className="mt-1 text-sm leading-6 text-amber-800">
-                    We could not find a dealer subscription record yet.
-                    Complete dealer signup or contact NorthSky Auto if
-                    you have already subscribed.
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-amber-800">
+                    We could not find a dealer account associated
+                    with this portal yet. Complete your dealer
+                    registration or contact NorthSky Auto if you
+                    have already subscribed.
                   </p>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <Link
+                      href="/buyers"
+                      className="rounded-xl bg-amber-600 px-5 py-3 text-sm font-black text-white transition hover:bg-amber-700"
+                    >
+                      View Dealer Plans
+                    </Link>
+                    <Link
+                      href="/contact"
+                      className="rounded-xl border border-amber-300 px-5 py-3 text-sm font-black text-amber-800 transition hover:bg-amber-100"
+                    >
+                      Contact Support
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
           )}
           {/* CURRENT PLAN */}
           <div className="grid gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+            <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
               <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className="text-sm font-bold uppercase tracking-wide text-slate-500">
@@ -222,11 +272,12 @@ export default async function DealerSubscriptionsPage() {
                   </p>
                 </div>
                 <span
-                  className={`inline-flex w-fit rounded-full px-4 py-2 text-sm font-black capitalize ${statusClasses}`}
+                  className={`inline-flex w-fit rounded-full px-4 py-2 text-sm font-black ${statusClasses}`}
                 >
                   {statusLabel}
                 </span>
               </div>
+              {/* PRICE */}
               <div className="mt-8 flex items-end gap-2">
                 <span className="text-5xl font-black">
                   {plan.price}
@@ -238,8 +289,9 @@ export default async function DealerSubscriptionsPage() {
                 )}
               </div>
               <div className="my-8 h-px bg-slate-200" />
+              {/* FEATURES */}
               <h3 className="text-lg font-black">
-                Plan Features
+                Included Features
               </h3>
               {plan.features.length > 0 ? (
                 <ul className="mt-5 grid gap-4 md:grid-cols-2">
@@ -251,49 +303,53 @@ export default async function DealerSubscriptionsPage() {
                       <span className="font-black text-blue-600">
                         ✓
                       </span>
-                      <span>{feature}</span>
+                      <span>
+                        {feature}
+                      </span>
                     </li>
                   ))}
                 </ul>
               ) : (
                 <p className="mt-5 text-sm text-slate-500">
-                  No active plan features are currently assigned.
+                  No active membership features are currently
+                  assigned to this dealer account.
                 </p>
               )}
             </div>
             {/* STATUS CARD */}
             <div className="rounded-3xl bg-slate-950 p-8 text-white">
-              <div className="text-3xl">💳</div>
+              <div className="text-3xl">
+                💳
+              </div>
               <h2 className="mt-5 text-2xl font-black">
-                Subscription Status
+                Billing Status
               </h2>
-              <div className="mt-6 rounded-2xl bg-white/10 p-5">
-                <p className="text-sm text-slate-400">
-                  Status
-                </p>
-                <p className="mt-2 text-xl font-black capitalize">
-                  {statusLabel}
-                </p>
-              </div>
-              <div className="mt-4 rounded-2xl bg-white/10 p-5">
-                <p className="text-sm text-slate-400">
-                  Dealer
-                </p>
-                <p className="mt-2 font-black">
-                  {dealerName}
-                </p>
-              </div>
-              {hasSubscription && (
-                <div className="mt-4 rounded-2xl bg-white/10 p-5">
+              <div className="mt-6 space-y-4">
+                <div className="rounded-2xl bg-white/10 p-5">
                   <p className="text-sm text-slate-400">
-                    Stripe Subscription
+                    Status
                   </p>
-                  <p className="mt-2 break-all text-xs font-mono text-slate-300">
-                    {dealer?.stripe_subscription_id ||
-                      "Connected"}
+                  <p className="mt-2 text-xl font-black capitalize">
+                    {statusLabel}
                   </p>
                 </div>
-              )}
+                <div className="rounded-2xl bg-white/10 p-5">
+                  <p className="text-sm text-slate-400">
+                    Dealership
+                  </p>
+                  <p className="mt-2 font-black">
+                    {dealershipName}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white/10 p-5">
+                  <p className="text-sm text-slate-400">
+                    Payment Provider
+                  </p>
+                  <p className="mt-2 font-black">
+                    Stripe
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
           {/* SUBSCRIPTION DETAILS */}
@@ -330,7 +386,7 @@ export default async function DealerSubscriptionsPage() {
               </div>
               <div className="rounded-2xl bg-slate-50 p-5">
                 <p className="text-xs font-bold uppercase text-slate-500">
-                  Payment Provider
+                  Billing Provider
                 </p>
                 <p className="mt-2 font-black">
                   Stripe
@@ -342,33 +398,39 @@ export default async function DealerSubscriptionsPage() {
           <div className="mt-8 grid gap-6 md:grid-cols-3">
             <Link
               href="/buyers"
-              className="rounded-3xl bg-blue-600 p-7 text-white transition hover:bg-blue-700"
+              className="rounded-3xl bg-blue-600 p-7 text-white transition hover:-translate-y-1 hover:bg-blue-700"
             >
-              <div className="text-3xl">⬆️</div>
+              <div className="text-3xl">
+                💳
+              </div>
               <h3 className="mt-5 text-xl font-black">
                 Change Plan
               </h3>
               <p className="mt-2 text-sm leading-6 text-blue-100">
-                Review available dealer membership plans.
+                Review NorthSky Auto dealer membership options.
               </p>
             </Link>
             <Link
               href="/dealer/profile"
               className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-lg"
             >
-              <div className="text-3xl">🏢</div>
+              <div className="text-3xl">
+                🏢
+              </div>
               <h3 className="mt-5 text-xl font-black">
                 Dealer Profile
               </h3>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Update your dealership information.
+                Manage your dealership information.
               </p>
             </Link>
             <Link
               href="/contact"
               className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-lg"
             >
-              <div className="text-3xl">💬</div>
+              <div className="text-3xl">
+                💬
+              </div>
               <h3 className="mt-5 text-xl font-black">
                 Need Help?
               </h3>
@@ -377,13 +439,18 @@ export default async function DealerSubscriptionsPage() {
               </p>
             </Link>
           </div>
-          {/* BILLING NOTICE */}
+          {/* STRIPE NOTICE */}
           <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 text-center">
             <p className="text-sm leading-6 text-slate-500">
-              NorthSky Auto memberships are billed through Stripe.
-              Subscription status may take a short time to update after
-              checkout while Stripe processes the subscription webhook.
+              NorthSky Auto dealer memberships are securely
+              processed through Stripe. Subscription status is
+              synchronized automatically through Stripe webhooks.
             </p>
+            {hasSubscription && (
+              <p className="mt-2 text-xs font-semibold text-green-600">
+                Stripe subscription connected
+              </p>
+            )}
           </div>
         </div>
       </section>
