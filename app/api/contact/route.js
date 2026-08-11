@@ -1,16 +1,6 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 export const dynamic = "force-dynamic";
-const resend = new Resend(process.env.RESEND_API_KEY);
-function clean(value) {
-  if (value === null || value === undefined) {
-    return "";
-  }
-  return String(value).trim();
-}
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
 const allowedTopics = new Set([
   "dealer-account",
   "dealer-membership",
@@ -31,46 +21,70 @@ const topicLabels = {
   general: "General Question",
   other: "Other",
 };
+function clean(value) {
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
+}
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+    .replace(/\r?\n/g, "<br />");
+}
+function escapeAttribute(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
 export async function POST(request) {
   try {
     /*
      * ------------------------------------------------------------
-     * CHECK RESEND CONFIGURATION
+     * ENVIRONMENT VARIABLES
      * ------------------------------------------------------------
      */
-    if (!process.env.RESEND_API_KEY) {
-      console.error("Missing RESEND_API_KEY environment variable.");
+    const apiKey = process.env.RESEND_API_KEY;
+    const toEmail = process.env.CONTACT_TO_EMAIL;
+    const fromEmail = process.env.RESEND_FROM_EMAIL;
+    if (!apiKey) {
+      console.error("Missing RESEND_API_KEY.");
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Email service is not configured. Please try again later.",
+          error: "Email service is not configured.",
         },
         { status: 500 }
       );
     }
-    if (!process.env.CONTACT_TO_EMAIL) {
-      console.error("Missing CONTACT_TO_EMAIL environment variable.");
+    if (!toEmail) {
+      console.error("Missing CONTACT_TO_EMAIL.");
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Contact email is not configured. Please try again later.",
+          error: "Contact destination email is not configured.",
         },
         { status: 500 }
       );
     }
-    if (!process.env.RESEND_FROM_EMAIL) {
-      console.error("Missing RESEND_FROM_EMAIL environment variable.");
+    if (!fromEmail) {
+      console.error("Missing RESEND_FROM_EMAIL.");
       return NextResponse.json(
         {
           success: false,
-          error:
-            "Email sender is not configured. Please try again later.",
+          error: "Email sender is not configured.",
         },
         { status: 500 }
       );
     }
+    const resend = new Resend(apiKey);
     /*
      * ------------------------------------------------------------
      * READ REQUEST
@@ -78,14 +92,14 @@ export async function POST(request) {
      */
     const contentType =
       request.headers.get("content-type") || "";
-    let body = null;
+    let body;
     if (contentType.includes("application/json")) {
       body = await request.json().catch(() => null);
     } else {
       const formData = await request.formData().catch(() => null);
-      if (formData) {
-        body = Object.fromEntries(formData.entries());
-      }
+      body = formData
+        ? Object.fromEntries(formData.entries())
+        : null;
     }
     if (!body || typeof body !== "object") {
       return NextResponse.json(
@@ -98,12 +112,11 @@ export async function POST(request) {
     }
     /*
      * ------------------------------------------------------------
-     * HONEYPOT SPAM PROTECTION
+     * HONEYPOT
      * ------------------------------------------------------------
      */
     const website = clean(body.website);
     if (website) {
-      // Silently accept spam submissions.
       return NextResponse.json(
         {
           success: true,
@@ -149,7 +162,7 @@ export async function POST(request) {
     }
     /*
      * ------------------------------------------------------------
-     * VALIDATE EMAIL
+     * VALIDATION
      * ------------------------------------------------------------
      */
     if (!isValidEmail(email)) {
@@ -161,11 +174,6 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-    /*
-     * ------------------------------------------------------------
-     * VALIDATE TOPIC
-     * ------------------------------------------------------------
-     */
     if (!allowedTopics.has(topic)) {
       return NextResponse.json(
         {
@@ -175,11 +183,6 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-    /*
-     * ------------------------------------------------------------
-     * LENGTH LIMITS
-     * ------------------------------------------------------------
-     */
     if (name.length > 150) {
       return NextResponse.json(
         {
@@ -218,7 +221,7 @@ export async function POST(request) {
     }
     /*
      * ------------------------------------------------------------
-     * BASIC SPAM CHECK
+     * BASIC SPAM FILTER
      * ------------------------------------------------------------
      */
     const suspiciousPatterns = [
@@ -232,10 +235,11 @@ export async function POST(request) {
       /casino bonus/i,
     ];
     const combinedText =
-      `${name} ${email} ${message}`.toLowerCase();
-    const looksLikeSpam = suspiciousPatterns.some((pattern) =>
-      pattern.test(combinedText)
-    );
+      `${name} ${email} ${message}`;
+    const looksLikeSpam =
+      suspiciousPatterns.some((pattern) =>
+        pattern.test(combinedText)
+      );
     if (looksLikeSpam) {
       return NextResponse.json(
         {
@@ -250,12 +254,13 @@ export async function POST(request) {
         }
       );
     }
+    const topicLabel =
+      topicLabels[topic] || topic;
     /*
      * ------------------------------------------------------------
-     * CONTACT DATA
+     * OPTIONAL SUPABASE STORAGE
      * ------------------------------------------------------------
      */
-    const topicLabel = topicLabels[topic] || topic;
     const contactSubmission = {
       name,
       email,
@@ -264,15 +269,6 @@ export async function POST(request) {
       message,
       created_at: new Date().toISOString(),
     };
-    console.log(
-      "NorthSky Auto contact submission:",
-      contactSubmission
-    );
-    /*
-     * ------------------------------------------------------------
-     * OPTIONAL SUPABASE STORAGE
-     * ------------------------------------------------------------
-     */
     if (
       process.env.NEXT_PUBLIC_SUPABASE_URL &&
       process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -285,206 +281,206 @@ export async function POST(request) {
           process.env.NEXT_PUBLIC_SUPABASE_URL,
           process.env.SUPABASE_SERVICE_ROLE_KEY
         );
-        const { error: supabaseError } = await supabase
+        const { error } = await supabase
           .from("contact_submissions")
           .insert(contactSubmission);
-        if (supabaseError) {
+        if (error) {
           console.error(
             "Contact submission database error:",
-            supabaseError
+            error
           );
         }
-      } catch (databaseError) {
+      } catch (error) {
         console.error(
-          "Contact submission database failure:",
-          databaseError
+          "Contact database failure:",
+          error
         );
       }
     }
     /*
      * ------------------------------------------------------------
-     * SEND EMAIL THROUGH RESEND
+     * SEND EMAIL WITH RESEND
      * ------------------------------------------------------------
      */
-    const { data, error } = await resend.emails.send({
-      from: `NorthSky Auto <${process.env.RESEND_FROM_EMAIL}>`,
-      to: [process.env.CONTACT_TO_EMAIL],
-      replyTo: email,
-      subject: `NorthSky Auto Contact: ${topicLabel}`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="UTF-8" />
-            <title>NorthSky Auto Contact</title>
-          </head>
-          <body
+    const { data, error } =
+      await resend.emails.send({
+        from: `NorthSky Auto <${fromEmail}>`,
+        to: [toEmail],
+        replyTo: email,
+        subject: `NorthSky Auto Contact: ${topicLabel}`,
+        html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>NorthSky Auto Contact Inquiry</title>
+</head>
+<body
+  style="
+    margin:0;
+    padding:0;
+    background:#f8fafc;
+    font-family:Arial,Helvetica,sans-serif;
+    color:#0f172a;
+  "
+>
+  <div
+    style="
+      max-width:680px;
+      margin:0 auto;
+      padding:32px 20px;
+    "
+  >
+    <div
+      style="
+        background:#020617;
+        color:white;
+        padding:28px;
+        border-radius:16px 16px 0 0;
+      "
+    >
+      <div
+        style="
+          font-size:12px;
+          font-weight:800;
+          letter-spacing:2px;
+          color:#60a5fa;
+          text-transform:uppercase;
+        "
+      >
+        NorthSky Auto
+      </div>
+      <h1
+        style="
+          margin:10px 0 0;
+          font-size:28px;
+        "
+      >
+        New Contact Inquiry
+      </h1>
+    </div>
+    <div
+      style="
+        background:white;
+        padding:28px;
+        border:1px solid #e2e8f0;
+        border-top:0;
+      "
+    >
+      <div
+        style="
+          margin-bottom:24px;
+          padding:16px;
+          background:#eff6ff;
+          border-radius:12px;
+        "
+      >
+        <strong>Inquiry Type</strong>
+        <div
+          style="
+            margin-top:6px;
+            color:#2563eb;
+            font-weight:700;
+          "
+        >
+          ${escapeHtml(topicLabel)}
+        </div>
+      </div>
+      <table
+        style="
+          width:100%;
+          border-collapse:collapse;
+          margin-bottom:24px;
+        "
+      >
+        <tr>
+          <td
             style="
-              margin: 0;
-              padding: 0;
-              background: #f8fafc;
-              font-family: Arial, Helvetica, sans-serif;
-              color: #0f172a;
+              padding:10px 0;
+              font-weight:700;
+              width:120px;
             "
           >
-            <div
-              style="
-                max-width: 680px;
-                margin: 0 auto;
-                padding: 32px 20px;
-              "
+            Name
+          </td>
+          <td style="padding:10px 0;">
+            ${escapeHtml(name)}
+          </td>
+        </tr>
+        <tr>
+          <td
+            style="
+              padding:10px 0;
+              font-weight:700;
+            "
+          >
+            Email
+          </td>
+          <td style="padding:10px 0;">
+            <a
+              href="mailto:${escapeAttribute(email)}"
+              style="color:#2563eb;"
             >
-              <div
-                style="
-                  background: #020617;
-                  color: white;
-                  padding: 28px;
-                  border-radius: 16px 16px 0 0;
-                "
-              >
-                <div
-                  style="
-                    font-size: 12px;
-                    font-weight: 800;
-                    letter-spacing: 2px;
-                    color: #60a5fa;
-                    text-transform: uppercase;
-                  "
-                >
-                  NorthSky Auto
-                </div>
-                <h1
-                  style="
-                    margin: 10px 0 0;
-                    font-size: 28px;
-                  "
-                >
-                  New Contact Inquiry
-                </h1>
-              </div>
-              <div
-                style="
-                  background: white;
-                  padding: 28px;
-                  border: 1px solid #e2e8f0;
-                  border-top: 0;
-                "
-              >
-                <div
-                  style="
-                    margin-bottom: 24px;
-                    padding: 16px;
-                    background: #eff6ff;
-                    border-radius: 12px;
-                  "
-                >
-                  <strong>Inquiry Type</strong>
-                  <div
-                    style="
-                      margin-top: 6px;
-                      color: #2563eb;
-                      font-weight: 700;
-                    "
-                  >
-                    ${escapeHtml(topicLabel)}
-                  </div>
-                </div>
-                <table
-                  style="
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-bottom: 24px;
-                  "
-                >
-                  <tr>
-                    <td
-                      style="
-                        padding: 10px 0;
-                        font-weight: 700;
-                        width: 120px;
-                      "
-                    >
-                      Name
-                    </td>
-                    <td style="padding: 10px 0;">
-                      ${escapeHtml(name)}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td
-                      style="
-                        padding: 10px 0;
-                        font-weight: 700;
-                      "
-                    >
-                      Email
-                    </td>
-                    <td style="padding: 10px 0;">
-                      <a
-                        href="mailto:${escapeAttribute(email)}"
-                        style="color: #2563eb;"
-                      >
-                        ${escapeHtml(email)}
-                      </a>
-                    </td>
-                  </tr>
-                  ${
-                    phone
-                      ? `
-                        <tr>
-                          <td
-                            style="
-                              padding: 10px 0;
-                              font-weight: 700;
-                            "
-                          >
-                            Phone
-                          </td>
-                          <td style="padding: 10px 0;">
-                            ${escapeHtml(phone)}
-                          </td>
-                        </tr>
-                      `
-                      : ""
-                  }
-                </table>
-                <h2
-                  style="
-                    font-size: 18px;
-                    margin: 0 0 10px;
-                  "
-                >
-                  Message
-                </h2>
-                <div
-                  style="
-                    padding: 18px;
-                    background: #f8fafc;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 12px;
-                    line-height: 1.7;
-                    white-space: pre-wrap;
-                  "
-                >
-                  ${escapeHtml(message)}
-                </div>
-              </div>
-              <div
-                style="
-                  padding: 20px;
-                  text-align: center;
-                  font-size: 12px;
-                  color: #64748b;
-                "
-              >
-                NorthSky Auto contact form
-              </div>
-            </div>
-          </body>
-        </html>
-      `,
-      text: `
-NorthSky Auto - New Contact Inquiry
+              ${escapeHtml(email)}
+            </a>
+          </td>
+        </tr>
+        ${
+          phone
+            ? `
+        <tr>
+          <td
+            style="
+              padding:10px 0;
+              font-weight:700;
+            "
+          >
+            Phone
+          </td>
+          <td style="padding:10px 0;">
+            ${escapeHtml(phone)}
+          </td>
+        </tr>
+        `
+            : ""
+        }
+      </table>
+      <h2
+        style="
+          font-size:18px;
+          margin:0 0 10px;
+        "
+      >
+        Message
+      </h2>
+      <div
+        style="
+          padding:18px;
+          background:#f8fafc;
+          border:1px solid #e2e8f0;
+          border-radius:12px;
+          line-height:1.7;
+        "
+      >
+        ${escapeHtml(message)}
+      </div>
+    </div>
+    <div
+      style="
+        padding:20px;
+        text-align:center;
+        font-size:12px;
+        color:#64748b;
+      "
+    >
+      NorthSky Auto Contact Form
+    </div>
+  </div>
+</body>
+</html>
+        `,
+        text: `
+NorthSky Auto — New Contact Inquiry
 Inquiry Type: ${topicLabel}
 Name: ${name}
 Email: ${email}
@@ -493,34 +489,46 @@ Message:
 ${message}
 ---
 NorthSky Auto Contact Form
-      `.trim(),
-    });
+        `.trim(),
+      });
+    /*
+     * ------------------------------------------------------------
+     * RESEND ERROR
+     * ------------------------------------------------------------
+     */
     if (error) {
-      console.error("Resend email error:", error);
+      console.error(
+        "Resend email error:",
+        error
+      );
       return NextResponse.json(
         {
           success: false,
           error:
             "Your message could not be delivered. Please try again later.",
         },
-        { status: 502 }
+        {
+          status: 502,
+          headers: {
+            "Cache-Control": "no-store",
+          },
+        }
       );
     }
-    console.log(
-      "NorthSky Auto contact email sent successfully:",
-      data?.id
-    );
     /*
      * ------------------------------------------------------------
      * SUCCESS
      * ------------------------------------------------------------
      */
+    console.log(
+      "NorthSky Auto contact email sent:",
+      data?.id
+    );
     return NextResponse.json(
       {
         success: true,
         message:
           "Thanks for contacting NorthSky Auto. Your message has been received.",
-        id: data?.id || null,
       },
       {
         status: 200,
@@ -548,28 +556,4 @@ NorthSky Auto Contact Form
       }
     );
   }
-}
-/*
- * ------------------------------------------------------------
- * HTML ESCAPING
- * ------------------------------------------------------------
- *
- * Prevents user-submitted contact information from being
- * interpreted as HTML inside the email.
- */
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;")
-    .replace(/\n/g, "<br />");
-}
-function escapeAttribute(value) {
-  return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
