@@ -1,23 +1,93 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-
 export const dynamic = "force-dynamic";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY;
+function getSupabase() {
+  if (!supabaseUrl || !supabaseServiceKey) {
+    return null;
+  }
+  return createClient(
+    supabaseUrl,
+    supabaseServiceKey
+  );
+}
+function clean(value) {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  return String(value).trim();
+}
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    email
+  );
+}
+function isValidYear(year) {
+  const currentYear =
+    new Date().getFullYear() + 1;
+  const numericYear = Number(year);
+  return (
+    Number.isInteger(numericYear) &&
+    numericYear >= 1900 &&
+    numericYear <= currentYear
+  );
+}
+function formatPublicLead(vehicle) {
+  return {
+    id: vehicle.id ?? null,
+    year: vehicle.year ?? null,
+    make: vehicle.make ?? null,
+    model: vehicle.model ?? null,
+    trim: vehicle.trim ?? null,
+    mileage: vehicle.mileage ?? null,
+    condition: vehicle.condition ?? null,
+    asking_price:
+      vehicle.asking_price ?? null,
+    postal_code:
+      vehicle.postal_code ?? null,
+    description:
+      vehicle.description ?? null,
+    selling_timeline:
+      vehicle.selling_timeline ?? null,
+    accident_history:
+      vehicle.accident_history ?? null,
+    status:
+      vehicle.status || "new",
+    created_at:
+      vehicle.created_at ?? null,
+    location:
+      vehicle.postal_code ||
+      "Canada",
+    vehicle_type:
+      vehicle.vehicle_type || null,
+  };
+}
+/*
+|--------------------------------------------------------------------------
+| GET
+|--------------------------------------------------------------------------
+|
+| GET /api/leads
+| Returns vehicle opportunities for the marketplace.
+|
+| GET /api/leads?id=123
+| Returns one vehicle opportunity.
+|
+| Seller contact information and VIN are never
+| returned from this public dealer marketplace API.
+|
+|--------------------------------------------------------------------------
+*/
 export async function GET(request) {
   try {
-    if (
-      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      !process.env.SUPABASE_SERVICE_ROLE_KEY
-    ) {
+    const supabase = getSupabase();
+    if (!supabase) {
       console.error(
         "Missing Supabase environment variables."
       );
-
       return NextResponse.json(
         {
           error:
@@ -28,15 +98,91 @@ export async function GET(request) {
         }
       );
     }
-
-    const { searchParams } = new URL(
-      request.url
+    const { searchParams } =
+      new URL(request.url);
+    const id = clean(
+      searchParams.get("id")
     );
-
+    /*
+    |--------------------------------------------------------------------------
+    | INDIVIDUAL LEAD
+    |--------------------------------------------------------------------------
+    */
+    if (id) {
+      const { data, error } =
+        await supabase
+          .from("vehicle_leads")
+          .select(`
+            id,
+            year,
+            make,
+            model,
+            trim,
+            mileage,
+            condition,
+            asking_price,
+            postal_code,
+            description,
+            selling_timeline,
+            accident_history,
+            status,
+            created_at
+          `)
+          .eq("id", id)
+          .in("status", [
+            "new",
+            "available",
+            "active",
+          ])
+          .maybeSingle();
+      if (error) {
+        console.error(
+          "Supabase vehicle lead lookup failed:",
+          error
+        );
+        return NextResponse.json(
+          {
+            error:
+              "Unable to load this vehicle opportunity.",
+          },
+          {
+            status: 500,
+          }
+        );
+      }
+      if (!data) {
+        return NextResponse.json(
+          {
+            error:
+              "Vehicle opportunity not found.",
+          },
+          {
+            status: 404,
+          }
+        );
+      }
+      return NextResponse.json(
+        {
+          success: true,
+          lead: formatPublicLead(data),
+        },
+        {
+          status: 200,
+          headers: {
+            "Cache-Control":
+              "no-store, max-age=0",
+          },
+        }
+      );
+    }
+    /*
+    |--------------------------------------------------------------------------
+    | MARKETPLACE LIST
+    |--------------------------------------------------------------------------
+    */
     const limitValue = Number(
       searchParams.get("limit") || 100
     );
-
     const limit = Math.min(
       Math.max(
         Number.isFinite(limitValue)
@@ -46,49 +192,39 @@ export async function GET(request) {
       ),
       100
     );
-
-    /*
-     * Only show vehicle opportunities that are
-     * available to dealers.
-     *
-     * New seller submissions are considered
-     * available unless your database later
-     * changes their status.
-     */
-    const { data, error } = await supabase
-      .from("vehicle_leads")
-      .select(`
-        id,
-        year,
-        make,
-        model,
-        trim,
-        mileage,
-        condition,
-        asking_price,
-        postal_code,
-        description,
-        selling_timeline,
-        accident_history,
-        status,
-        created_at
-      `)
-      .in("status", [
-        "new",
-        "available",
-        "active",
-      ])
-      .order("created_at", {
-        ascending: false,
-      })
-      .limit(limit);
-
+    const { data, error } =
+      await supabase
+        .from("vehicle_leads")
+        .select(`
+          id,
+          year,
+          make,
+          model,
+          trim,
+          mileage,
+          condition,
+          asking_price,
+          postal_code,
+          description,
+          selling_timeline,
+          accident_history,
+          status,
+          created_at
+        `)
+        .in("status", [
+          "new",
+          "available",
+          "active",
+        ])
+        .order("created_at", {
+          ascending: false,
+        })
+        .limit(limit);
     if (error) {
       console.error(
         "Supabase vehicle leads query failed:",
         error
       );
-
       return NextResponse.json(
         {
           error:
@@ -99,69 +235,9 @@ export async function GET(request) {
         }
       );
     }
-
-    /*
-     * Do NOT expose seller contact information
-     * through the marketplace listing endpoint.
-     *
-     * VIN is also intentionally excluded.
-     */
     const leads = (data || []).map(
-      (vehicle) => ({
-        id: vehicle.id,
-
-        year: vehicle.year ?? null,
-
-        make: vehicle.make ?? null,
-
-        model: vehicle.model ?? null,
-
-        trim: vehicle.trim ?? null,
-
-        mileage:
-          vehicle.mileage ?? null,
-
-        condition:
-          vehicle.condition ?? null,
-
-        asking_price:
-          vehicle.asking_price ?? null,
-
-        postal_code:
-          vehicle.postal_code ?? null,
-
-        description:
-          vehicle.description ?? null,
-
-        selling_timeline:
-          vehicle.selling_timeline ?? null,
-
-        accident_history:
-          vehicle.accident_history ?? null,
-
-        status:
-          vehicle.status || "new",
-
-        created_at:
-          vehicle.created_at ?? null,
-
-        /*
-         * Your seller form currently collects
-         * postal code rather than city/province.
-         *
-         * The frontend can still display the
-         * postal code until location lookup is
-         * added later.
-         */
-        location:
-          vehicle.postal_code ||
-          "Canada",
-
-        vehicle_type:
-          null,
-      })
+      formatPublicLead
     );
-
     return NextResponse.json(
       {
         success: true,
@@ -178,14 +254,334 @@ export async function GET(request) {
     );
   } catch (error) {
     console.error(
-      "Dealer leads API error:",
+      "Dealer leads GET error:",
       error
     );
-
     return NextResponse.json(
       {
         error:
           "An unexpected error occurred while loading vehicle opportunities.",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+}
+/*
+|--------------------------------------------------------------------------
+| POST
+|--------------------------------------------------------------------------
+|
+| Creates a seller vehicle submission.
+|
+| This matches the form on:
+| /sell
+|
+|--------------------------------------------------------------------------
+*/
+export async function POST(request) {
+  try {
+    const supabase = getSupabase();
+    if (!supabase) {
+      console.error(
+        "Missing Supabase environment variables."
+      );
+      return NextResponse.json(
+        {
+          error:
+            "Server database configuration is incomplete.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+    const body =
+      await request.json();
+    if (
+      !body ||
+      typeof body !== "object"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Invalid vehicle submission.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+    const lead = {
+      name: clean(body.name),
+      email: clean(body.email)
+        .toLowerCase(),
+      phone: clean(body.phone),
+      postal_code: clean(
+        body.postal_code
+      ).toUpperCase(),
+      year: clean(body.year),
+      make: clean(body.make),
+      model: clean(body.model),
+      trim: clean(body.trim),
+      mileage: clean(body.mileage),
+      vin: clean(body.vin).toUpperCase(),
+      condition: clean(
+        body.condition
+      ),
+      selling_timeline: clean(
+        body.selling_timeline
+      ),
+      accident_history: clean(
+        body.accident_history
+      ),
+      description: clean(
+        body.description
+      ),
+      asking_price: clean(
+        body.asking_price
+      ),
+    };
+    /*
+    |--------------------------------------------------------------------------
+    | Required fields
+    |--------------------------------------------------------------------------
+    */
+    const requiredFields = [
+      "name",
+      "email",
+      "phone",
+      "postal_code",
+      "year",
+      "make",
+      "model",
+      "mileage",
+      "asking_price",
+    ];
+    const missingFields =
+      requiredFields.filter(
+        (field) => !lead[field]
+      );
+    if (missingFields.length) {
+      return NextResponse.json(
+        {
+          error:
+            "Please complete all required fields.",
+          fields: missingFields,
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+    /*
+    |--------------------------------------------------------------------------
+    | Validate email
+    |--------------------------------------------------------------------------
+    */
+    if (!isValidEmail(lead.email)) {
+      return NextResponse.json(
+        {
+          error:
+            "Please provide a valid email address.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+    /*
+    |--------------------------------------------------------------------------
+    | Validate year
+    |--------------------------------------------------------------------------
+    */
+    if (!isValidYear(lead.year)) {
+      return NextResponse.json(
+        {
+          error:
+            "Please provide a valid vehicle year.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+    /*
+    |--------------------------------------------------------------------------
+    | Validate text lengths
+    |--------------------------------------------------------------------------
+    */
+    if (lead.name.length > 150) {
+      return NextResponse.json(
+        {
+          error:
+            "Name is too long.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+    if (lead.email.length > 254) {
+      return NextResponse.json(
+        {
+          error:
+            "Email address is too long.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+    if (lead.phone.length > 50) {
+      return NextResponse.json(
+        {
+          error:
+            "Phone number is too long.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+    if (
+      lead.description.length >
+      5000
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Vehicle description is too long.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+    /*
+    |--------------------------------------------------------------------------
+    | Convert numeric values
+    |--------------------------------------------------------------------------
+    */
+    const mileage = Number(
+      lead.mileage.replace(
+        /[^0-9]/g,
+        ""
+      )
+    );
+    const askingPrice = Number(
+      lead.asking_price.replace(
+        /[^0-9.]/g,
+        ""
+      )
+    );
+    if (
+      !Number.isFinite(mileage) ||
+      mileage < 0
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Please provide a valid mileage.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+    if (
+      !Number.isFinite(askingPrice) ||
+      askingPrice < 0
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Please provide a valid asking price.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+    /*
+    |--------------------------------------------------------------------------
+    | Create database record
+    |--------------------------------------------------------------------------
+    */
+    const vehicleRecord = {
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      postal_code:
+        lead.postal_code,
+      year: Number(lead.year),
+      make: lead.make,
+      model: lead.model,
+      trim:
+        lead.trim || null,
+      mileage,
+      vin:
+        lead.vin || null,
+      condition:
+        lead.condition || null,
+      selling_timeline:
+        lead.selling_timeline ||
+        null,
+      accident_history:
+        lead.accident_history ||
+        null,
+      description:
+        lead.description ||
+        null,
+      asking_price:
+        askingPrice,
+      status: "new",
+    };
+    const { data, error } =
+      await supabase
+        .from("vehicle_leads")
+        .insert(
+          vehicleRecord
+        )
+        .select("id")
+        .single();
+    if (error) {
+      console.error(
+        "Supabase vehicle lead insert failed:",
+        error
+      );
+      return NextResponse.json(
+        {
+          error:
+            "We could not submit your vehicle right now. Please try again.",
+        },
+        {
+          status: 500,
+        }
+      );
+    }
+    return NextResponse.json(
+      {
+        success: true,
+        message:
+          "Your vehicle has been submitted successfully.",
+        leadId:
+          data?.id || null,
+      },
+      {
+        status: 201,
+      }
+    );
+  } catch (error) {
+    console.error(
+      "Vehicle lead POST error:",
+      error
+    );
+    return NextResponse.json(
+      {
+        error:
+          "Unable to process your vehicle submission.",
       },
       {
         status: 500,
