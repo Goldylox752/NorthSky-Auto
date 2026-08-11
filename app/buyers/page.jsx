@@ -3,7 +3,17 @@ import DealerCheckoutButton from "@/components/DealerCheckoutButton";
 export const metadata = {
   title: "Dealer Memberships | NorthSky Auto",
   description:
-    "Choose a NorthSky Auto dealer membership and access vehicle acquisition opportunities from sellers across Canada.",
+    "Join NorthSky Auto as a dealer and discover vehicle acquisition opportunities submitted by sellers across Canada.",
+  alternates: {
+    canonical: "/buyers",
+  },
+  openGraph: {
+    title: "Dealer Memberships | NorthSky Auto",
+    description:
+      "Choose a NorthSky Auto dealer membership and build a more organized vehicle acquisition pipeline.",
+    url: "/buyers",
+    type: "website",
+  },
 };
 const plans = [
   {
@@ -15,9 +25,9 @@ const plans = [
       "For independent dealers starting a more organized vehicle sourcing pipeline.",
     badge: "GET STARTED",
     features: [
-      "Access vehicle acquisition opportunities",
+      "Access available vehicle opportunities",
       "Dealer account",
-      "Vehicle and seller information",
+      "Available vehicle and seller information",
       "Vehicle opportunity notifications",
       "Dealer marketplace access",
     ],
@@ -28,7 +38,7 @@ const plans = [
     price: "$599",
     period: "/month",
     description:
-      "For growing dealerships that want more tools and a stronger acquisition pipeline.",
+      "For growing dealerships that want more tools and a stronger acquisition workflow.",
     badge: "MOST POPULAR",
     popular: true,
     features: [
@@ -66,37 +76,46 @@ const benefits = [
   },
   {
     icon: "📊",
-    title: "Manage Leads",
-    text: "Organize vehicle opportunities and build your acquisition pipeline.",
+    title: "Manage Your Pipeline",
+    text: "Organize potential acquisitions and manage your sourcing activity.",
   },
   {
     icon: "⭐",
     title: "Save Opportunities",
-    text: "Keep promising vehicles available for future review.",
+    text: "Save promising vehicles for additional review and follow-up.",
   },
 ];
 const steps = [
   {
     number: "01",
     title: "Choose Your Plan",
-    text: "Select the dealer membership that fits your dealership.",
+    text: "Select the membership that fits your dealership and sourcing needs.",
   },
   {
     number: "02",
     title: "Complete Checkout",
-    text: "Subscribe securely through Stripe and begin the dealer onboarding process.",
+    text: "Subscribe securely through Stripe and complete the dealer onboarding process.",
   },
   {
     number: "03",
-    title: "Dealer Access",
-    text: "Access your dealer environment and available vehicle opportunities.",
+    title: "Access Your Account",
+    text: "Use your NorthSky Auto dealer environment to access available platform features.",
   },
   {
     number: "04",
     title: "Build Your Pipeline",
-    text: "Review opportunities and identify vehicles that may fit your inventory needs.",
+    text: "Review available vehicle opportunities and identify potential inventory.",
   },
 ];
+function BenefitCard({ icon, title, text }) {
+  return (
+    <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-lg">
+      <div className="text-4xl">{icon}</div>
+      <h3 className="mt-5 text-xl font-black">{title}</h3>
+      <p className="mt-3 leading-7 text-slate-600">{text}</p>
+    </div>
+  );
+}
 export default function BuyersPage() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -111,7 +130,7 @@ export default function BuyersPage() {
           <h1 className="mx-auto mt-7 max-w-4xl text-5xl font-black leading-tight tracking-tight md:text-6xl">
             Find Vehicles.
             <span className="block text-blue-400">
-              Build Your Inventory Pipeline.
+              Build Your Acquisition Pipeline.
             </span>
           </h1>
           <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-300 md:text-xl">
@@ -140,7 +159,7 @@ export default function BuyersPage() {
         </div>
       </section>
       {/* VALUE PROPOSITION */}
-      <section className="px-6 py-16">
+      <section className="px-6 py-16 md:py-20">
         <div className="mx-auto max-w-6xl">
           <div className="mx-auto max-w-3xl text-center">
             <p className="text-sm font-black uppercase tracking-widest text-blue-600">
@@ -157,24 +176,19 @@ export default function BuyersPage() {
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {benefits.map((benefit) => (
-              <div
+              <BenefitCard
                 key={benefit.title}
-                className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-lg"
-              >
-                <div className="text-4xl">{benefit.icon}</div>
-                <h3 className="mt-5 text-xl font-black">
-                  {benefit.title}
-                </h3>
-                <p className="mt-3 leading-7 text-slate-600">
-                  {benefit.text}
-                </p>
-              </div>
+                {...benefit}
+              />
             ))}
           </div>
         </div>
       </section>
       {/* PLANS */}
-      <section id="plans" className="scroll-mt-20 px-6 py-20">
+      <section
+        id="plans"
+        className="scroll-mt-20 px-6 py-20 md:py-24"
+      >
         <div className="mx-auto max-w-7xl">
           <div className="text-center">
             <span className="inline-flex rounded-full bg-blue-100 px-5 py-2 text-sm font-black text-blue-700">
@@ -244,23 +258,23 @@ export default function BuyersPage() {
                     plan={plan.plan}
                     label={`Subscribe to ${plan.name}`}
                   />
-                  <p className="mt-3 text-center text-xs text-slate-500">
+                  <p className="mt-3 text-center text-xs leading-5 text-slate-500">
                     Secure recurring checkout powered by Stripe.
                   </p>
                 </div>
               </div>
             ))}
           </div>
-          <p className="mx-auto mt-8 max-w-3xl text-center text-sm leading-6 text-slate-500">
+          <div className="mx-auto mt-8 max-w-3xl rounded-2xl bg-slate-100 p-5 text-center text-sm leading-6 text-slate-500">
             Membership provides access to the NorthSky Auto dealer
             platform and available vehicle acquisition opportunities.
             Opportunity availability may vary by market, vehicle type,
             seller activity, and dealer eligibility.
-          </p>
+          </div>
         </div>
       </section>
       {/* HOW IT WORKS */}
-      <section className="bg-slate-950 px-6 py-20 text-white">
+      <section className="bg-slate-950 px-6 py-20 text-white md:py-24">
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto max-w-3xl text-center">
             <span className="inline-flex rounded-full bg-blue-500/20 px-5 py-2 text-sm font-black tracking-wide text-blue-300">
@@ -270,7 +284,7 @@ export default function BuyersPage() {
               Start Building Your Acquisition Pipeline
             </h2>
             <p className="mt-5 leading-8 text-slate-400">
-              Getting started is designed to be simple.
+              Getting started with NorthSky Auto is designed to be simple.
             </p>
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -294,7 +308,7 @@ export default function BuyersPage() {
         </div>
       </section>
       {/* PLATFORM FEATURES */}
-      <section className="px-6 py-20">
+      <section className="px-6 py-20 md:py-24">
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-6 md:grid-cols-2">
             <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
@@ -304,8 +318,8 @@ export default function BuyersPage() {
               </h2>
               <p className="mt-4 leading-7 text-slate-600">
                 Review vehicle opportunities submitted through the
-                NorthSky Auto marketplace and identify vehicles that may
-                fit your dealership.
+                NorthSky Auto marketplace and identify vehicles that
+                may fit your dealership.
               </p>
             </div>
             <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
@@ -315,8 +329,7 @@ export default function BuyersPage() {
               </h2>
               <p className="mt-4 leading-7 text-slate-600">
                 Organize potential acquisitions and use your dealer
-                tools to manage opportunities as your sourcing activity
-                grows.
+                tools to manage opportunities as your sourcing activity grows.
               </p>
             </div>
             <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
@@ -332,12 +345,11 @@ export default function BuyersPage() {
             <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
               <div className="text-4xl">⚡</div>
               <h2 className="mt-5 text-2xl font-black">
-                Move With Better Information
+                Make Better Acquisition Decisions
               </h2>
               <p className="mt-4 leading-7 text-slate-600">
-                Review available seller and vehicle information before
-                deciding which acquisition opportunities deserve your
-                attention.
+                Review available vehicle and seller information before
+                deciding which opportunities deserve your attention.
               </p>
             </div>
           </div>
@@ -350,8 +362,8 @@ export default function BuyersPage() {
             Ready to Start Sourcing?
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-blue-100">
-            Choose your NorthSky Auto dealer membership and start building
-            a more organized vehicle acquisition pipeline.
+            Choose your NorthSky Auto dealer membership and start
+            building a more organized vehicle acquisition pipeline.
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-4">
             <a
@@ -376,7 +388,7 @@ export default function BuyersPage() {
           membership terms and account requirements. Subscription payments
           are processed securely through Stripe. Vehicle opportunities
           and seller availability are not guaranteed and may vary by
-          market and inventory.
+          market, seller activity, and inventory.
         </div>
       </section>
     </main>
