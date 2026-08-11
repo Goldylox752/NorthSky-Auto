@@ -1,15 +1,22 @@
 import "./globals.css";
-
+import Navbar from "@/components/Navbar";
 export const metadata = {
-  title: "NorthSky Auto",
+  title: {
+    default: "NorthSky Auto | Canadian Vehicle Marketplace",
+    template: "%s | NorthSky Auto",
+  },
   description:
-    "Canada's vehicle marketplace connecting sellers with dealerships.",
+    "NorthSky Auto connects Canadian vehicle sellers with dealerships looking for cars, trucks, SUVs, vans, and commercial vehicles.",
 };
-
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="min-h-screen bg-gray-50 text-slate-900 antialiased">
+        <Navbar />
+        <main>
+          {children}
+        </main>
+      </body>
     </html>
   );
 }
