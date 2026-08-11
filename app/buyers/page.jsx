@@ -50,23 +50,6 @@ const plans = [
       "Priority dealer support",
     ],
   },
-  {
-    name: "Enterprise",
-    plan: "enterprise",
-    price: "$999",
-    period: "/month",
-    description:
-      "For high-volume dealerships and multi-location operations.",
-    badge: "HIGH VOLUME",
-    features: [
-      "Everything in Professional",
-      "Unlimited team members",
-      "Advanced reporting",
-      "Multi-location support",
-      "Premium acquisition opportunities",
-      "Dedicated account support",
-    ],
-  },
 ];
 const benefits = [
   {
@@ -198,11 +181,11 @@ export default function BuyersPage() {
               Choose Your Dealer Plan
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-              Choose the membership level that matches your dealership's
-              vehicle acquisition needs.
+              Start building a more organized vehicle acquisition
+              pipeline with a NorthSky Auto dealer membership.
             </p>
           </div>
-          <div className="mt-14 grid gap-8 lg:grid-cols-3">
+          <div className="mx-auto mt-14 grid max-w-5xl gap-8 md:grid-cols-2">
             {plans.map((plan) => (
               <div
                 key={plan.plan}
@@ -258,9 +241,6 @@ export default function BuyersPage() {
                     plan={plan.plan}
                     label={`Subscribe to ${plan.name}`}
                   />
-                  <p className="mt-3 text-center text-xs leading-5 text-slate-500">
-                    Secure recurring checkout powered by Stripe.
-                  </p>
                 </div>
               </div>
             ))}
