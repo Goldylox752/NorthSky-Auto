@@ -86,17 +86,17 @@ NorthSky Auto
           Send a Message
         </h2>
         <p className="mt-3 text-slate-600">
-          Complete the form and we'll receive your inquiry by email.
+          Complete the form and we'll receive your inquiry by
+          email.
         </p>
         <form
           onSubmit={handleSubmit}
           className="mt-8 space-y-5"
         >
-          {/* Honeypot */}
           <input
             name="website"
             type="text"
-            tabIndex="-1"
+            tabIndex={-1}
             autoComplete="off"
             className="hidden"
           />
@@ -237,7 +237,7 @@ NorthSky Auto
   </section>
   <footer className="border-t border-slate-200 bg-white px-6 py-8">
     <div className="mx-auto max-w-5xl text-center">
-      <div className="flex flex-wrap justify-center gap-5 text-sm font-semibold text-slate-500">
+      <nav className="flex flex-wrap justify-center gap-5 text-sm font-semibold text-slate-500">
         <Link href="/" className="hover:text-blue-600">
           Home
         </Link>
@@ -259,7 +259,7 @@ NorthSky Auto
         >
           Contact
         </Link>
-      </div>
+      </nav>
       <p className="mt-6 text-sm text-slate-400">
         © 2026 NorthSky Auto. All rights reserved.
       </p>
