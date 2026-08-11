@@ -7,12 +7,33 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 const PLAN_NAMES = {
-  starter: "Starter Dealer",
-  professional: "Professional",
-  enterprise: "Enterprise",
+  starter: "Dealer Starter",
+  professional: "Dealer Pro",
+  enterprise: "Dealer Enterprise",
 };
-function getPlanName(plan) {
-  return PLAN_NAMES[plan] || plan || "Unknown";
+function normalizePlan(plan) {
+  if (!plan) return null;
+  const value = String(plan).toLowerCase().trim();
+  if (
+    value === "starter" ||
+    value === "dealer starter"
+  ) {
+    return "starter";
+  }
+  if (
+    value === "professional" ||
+    value === "pro" ||
+    value === "dealer pro"
+  ) {
+    return "professional";
+  }
+  if (
+    value === "enterprise" ||
+    value === "dealer enterprise"
+  ) {
+    return "enterprise";
+  }
+  return null;
 }
 function getPlanFromPriceId(priceId) {
   if (
@@ -35,10 +56,7 @@ function getPlanFromPriceId(priceId) {
   }
   return null;
 }
-async function findDealer({
-  customerId,
-  email,
-}) {
+async function findDealer({ customerId, email }) {
   if (!customerId && !email) {
     return null;
   }
@@ -73,18 +91,49 @@ async function updateDealer(dealerId, updates) {
     .update(updates)
     .eq("id", dealerId);
   if (error) {
-    console.error("Supabase dealer update failed:", error);
+    console.error(
+      "Supabase dealer update failed:",
+      error
+    );
     throw error;
   }
+}
+async function getSubscriptionPlan(subscription) {
+  const priceId =
+    subscription?.items?.data?.[0]?.price?.id || null;
+  const metadataPlan = normalizePlan(
+    subscription?.metadata?.plan
+  );
+  const pricePlan = getPlanFromPriceId(priceId);
+  return {
+    plan: metadataPlan || pricePlan,
+    priceId,
+  };
 }
 export async function POST(request) {
   const body = await request.text();
   const headersList = await headers();
-  const signature = headersList.get("stripe-signature");
+  const signature = headersList.get(
+    "stripe-signature"
+  );
   if (!signature) {
-    return new Response("Missing stripe-signature", {
-      status: 400,
-    });
+    return new Response(
+      "Missing stripe-signature",
+      {
+        status: 400,
+      }
+    );
+  }
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error(
+      "STRIPE_WEBHOOK_SECRET is not configured."
+    );
+    return new Response(
+      "Webhook configuration error",
+      {
+        status: 500,
+      }
+    );
   }
   let event;
   try {
@@ -111,20 +160,27 @@ export async function POST(request) {
     );
     switch (event.type) {
       /*
-       * --------------------------------------------------
+       * -----------------------------------------------
        * CHECKOUT COMPLETED
-       * --------------------------------------------------
+       * -----------------------------------------------
        */
       case "checkout.session.completed": {
         const session = event.data.object;
-        const customerId = session.customer;
-        const subscriptionId = session.subscription;
+        const customerId =
+          typeof session.customer === "string"
+            ? session.customer
+            : session.customer?.id || null;
+        const subscriptionId =
+          typeof session.subscription === "string"
+            ? session.subscription
+            : session.subscription?.id || null;
         const email =
           session.customer_details?.email ||
           session.customer_email ||
           null;
-        const plan =
-          session.metadata?.plan || null;
+        const plan = normalizePlan(
+          session.metadata?.plan
+        );
         console.log("Checkout completed:", {
           sessionId: session.id,
           customerId,
@@ -138,17 +194,21 @@ export async function POST(request) {
         });
         if (!dealer) {
           console.warn(
-            "No matching dealer found for checkout:",
+            "No matching dealer found for checkout.",
             {
               customerId,
               email,
+              sessionId: session.id,
             }
           );
           break;
         }
-        const updates = {};
+        const updates = {
+          subscription_status: "active",
+        };
         if (customerId) {
-          updates.stripe_customer_id = customerId;
+          updates.stripe_customer_id =
+            customerId;
         }
         if (subscriptionId) {
           updates.stripe_subscription_id =
@@ -157,37 +217,46 @@ export async function POST(request) {
         if (plan) {
           updates.subscription_plan = plan;
         }
-        updates.subscription_status = "active";
-        await updateDealer(dealer.id, updates);
+        await updateDealer(
+          dealer.id,
+          updates
+        );
         console.log(
-          "Dealer updated after checkout:",
+          "Dealer activated after checkout:",
           dealer.id
         );
         break;
       }
       /*
-       * --------------------------------------------------
+       * -----------------------------------------------
        * SUBSCRIPTION CREATED
-       * --------------------------------------------------
+       * -----------------------------------------------
        */
       case "customer.subscription.created": {
         const subscription = event.data.object;
-        const customerId = subscription.customer;
-        const priceId =
-          subscription.items?.data?.[0]?.price?.id;
-        const plan =
-          subscription.metadata?.plan ||
-          getPlanFromPriceId(priceId);
+        const customerId =
+          typeof subscription.customer === "string"
+            ? subscription.customer
+            : subscription.customer?.id || null;
+        const { plan, priceId } =
+          await getSubscriptionPlan(
+            subscription
+          );
         const dealer = await findDealer({
           customerId,
         });
-        console.log("Subscription created:", {
-          subscriptionId: subscription.id,
-          customerId,
-          priceId,
-          plan,
-          status: subscription.status,
-        });
+        console.log(
+          "Subscription created:",
+          {
+            subscriptionId:
+              subscription.id,
+            customerId,
+            priceId,
+            plan,
+            status:
+              subscription.status,
+          }
+        );
         if (!dealer) {
           console.warn(
             "No dealer found for subscription:",
@@ -195,37 +264,51 @@ export async function POST(request) {
           );
           break;
         }
-        await updateDealer(dealer.id, {
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscription.id,
-          subscription_plan: plan,
-          subscription_status: subscription.status,
-        });
+        await updateDealer(
+          dealer.id,
+          {
+            stripe_customer_id:
+              customerId,
+            stripe_subscription_id:
+              subscription.id,
+            subscription_plan:
+              plan,
+            subscription_status:
+              subscription.status,
+          }
+        );
         break;
       }
       /*
-       * --------------------------------------------------
+       * -----------------------------------------------
        * SUBSCRIPTION UPDATED
-       * --------------------------------------------------
+       * -----------------------------------------------
        */
       case "customer.subscription.updated": {
         const subscription = event.data.object;
-        const customerId = subscription.customer;
-        const priceId =
-          subscription.items?.data?.[0]?.price?.id;
-        const plan =
-          subscription.metadata?.plan ||
-          getPlanFromPriceId(priceId);
+        const customerId =
+          typeof subscription.customer === "string"
+            ? subscription.customer
+            : subscription.customer?.id || null;
+        const { plan, priceId } =
+          await getSubscriptionPlan(
+            subscription
+          );
         const dealer = await findDealer({
           customerId,
         });
-        console.log("Subscription updated:", {
-          subscriptionId: subscription.id,
-          customerId,
-          priceId,
-          plan,
-          status: subscription.status,
-        });
+        console.log(
+          "Subscription updated:",
+          {
+            subscriptionId:
+              subscription.id,
+            customerId,
+            priceId,
+            plan,
+            status:
+              subscription.status,
+          }
+        );
         if (!dealer) {
           console.warn(
             "No dealer found for updated subscription:",
@@ -233,22 +316,32 @@ export async function POST(request) {
           );
           break;
         }
-        await updateDealer(dealer.id, {
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscription.id,
-          subscription_plan: plan,
-          subscription_status: subscription.status,
-        });
+        await updateDealer(
+          dealer.id,
+          {
+            stripe_customer_id:
+              customerId,
+            stripe_subscription_id:
+              subscription.id,
+            subscription_plan:
+              plan,
+            subscription_status:
+              subscription.status,
+          }
+        );
         break;
       }
       /*
-       * --------------------------------------------------
+       * -----------------------------------------------
        * SUBSCRIPTION CANCELLED
-       * --------------------------------------------------
+       * -----------------------------------------------
        */
       case "customer.subscription.deleted": {
         const subscription = event.data.object;
-        const customerId = subscription.customer;
+        const customerId =
+          typeof subscription.customer === "string"
+            ? subscription.customer
+            : subscription.customer?.id || null;
         const dealer = await findDealer({
           customerId,
         });
@@ -263,26 +356,36 @@ export async function POST(request) {
           );
           break;
         }
-        await updateDealer(dealer.id, {
-          subscription_status: "canceled",
-        });
+        await updateDealer(
+          dealer.id,
+          {
+            subscription_status:
+              "canceled",
+          }
+        );
         break;
       }
       /*
-       * --------------------------------------------------
+       * -----------------------------------------------
        * INVOICE PAID
-       * --------------------------------------------------
+       * -----------------------------------------------
        */
       case "invoice.paid": {
         const invoice = event.data.object;
-        const customerId = invoice.customer;
+        const customerId =
+          typeof invoice.customer === "string"
+            ? invoice.customer
+            : invoice.customer?.id || null;
         const dealer = await findDealer({
           customerId,
         });
-        console.log("Invoice paid:", {
-          invoiceId: invoice.id,
-          customerId,
-        });
+        console.log(
+          "Invoice paid:",
+          {
+            invoiceId: invoice.id,
+            customerId,
+          }
+        );
         if (!dealer) {
           console.warn(
             "No dealer found for paid invoice:",
@@ -290,26 +393,36 @@ export async function POST(request) {
           );
           break;
         }
-        await updateDealer(dealer.id, {
-          subscription_status: "active",
-        });
+        await updateDealer(
+          dealer.id,
+          {
+            subscription_status:
+              "active",
+          }
+        );
         break;
       }
       /*
-       * --------------------------------------------------
+       * -----------------------------------------------
        * PAYMENT FAILED
-       * --------------------------------------------------
+       * -----------------------------------------------
        */
       case "invoice.payment_failed": {
         const invoice = event.data.object;
-        const customerId = invoice.customer;
+        const customerId =
+          typeof invoice.customer === "string"
+            ? invoice.customer
+            : invoice.customer?.id || null;
         const dealer = await findDealer({
           customerId,
         });
-        console.log("Invoice payment failed:", {
-          invoiceId: invoice.id,
-          customerId,
-        });
+        console.log(
+          "Invoice payment failed:",
+          {
+            invoiceId: invoice.id,
+            customerId,
+          }
+        );
         if (!dealer) {
           console.warn(
             "No dealer found for failed invoice:",
@@ -317,16 +430,15 @@ export async function POST(request) {
           );
           break;
         }
-        await updateDealer(dealer.id, {
-          subscription_status: "past_due",
-        });
+        await updateDealer(
+          dealer.id,
+          {
+            subscription_status:
+              "past_due",
+          }
+        );
         break;
       }
-      /*
-       * --------------------------------------------------
-       * DEFAULT
-       * --------------------------------------------------
-       */
       default:
         console.log(
           `Unhandled Stripe event: ${event.type}`
