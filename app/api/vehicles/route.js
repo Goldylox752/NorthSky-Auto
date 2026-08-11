@@ -15,13 +15,28 @@ export async function POST(request) {
       mileage,
       vin,
       condition,
+      selling_timeline,
+      accident_history,
       description,
       asking_price,
     } = body;
+    // Required seller information
     if (!name || !email || !phone) {
       return NextResponse.json(
         {
           error: "Name, email, and phone are required.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+    // Required vehicle information
+    if (!year || !make || !model || !mileage || !asking_price) {
+      return NextResponse.json(
+        {
+          error:
+            "Year, make, model, mileage, and asking price are required.",
         },
         {
           status: 400,
@@ -43,13 +58,20 @@ export async function POST(request) {
           mileage: mileage || null,
           vin: vin || null,
           condition: condition || null,
+          selling_timeline: selling_timeline || null,
+          accident_history: accident_history || null,
           description: description || null,
           asking_price: asking_price || null,
+          // New submissions start as pending
+          status: "pending",
         },
       ])
       .select();
     if (error) {
-      console.error("Vehicle submission error:", error);
+      console.error(
+        "Vehicle submission error:",
+        error
+      );
       return NextResponse.json(
         {
           error: error.message,
@@ -69,10 +91,14 @@ export async function POST(request) {
       }
     );
   } catch (error) {
-    console.error("Vehicle API error:", error);
+    console.error(
+      "Vehicle API error:",
+      error
+    );
     return NextResponse.json(
       {
-        error: "Server error. Unable to submit vehicle.",
+        error:
+          "Server error. Unable to submit vehicle.",
       },
       {
         status: 500,
