@@ -1,4 +1,5 @@
 import Link from "next/link";
+import DealerCheckoutButton from "@/components/DealerCheckoutButton";
 export const metadata = {
   title: "Dealer Plans | NorthSky Auto",
   description:
@@ -7,11 +8,11 @@ export const metadata = {
 const plans = [
   {
     name: "Dealer Starter",
+    plan: "starter",
     price: "$99",
     period: "/month",
     description:
       "A simple way for dealerships to start finding new vehicle acquisition opportunities.",
-    productId: "prod_V3GcC4jUgJBx4D",
     badge: "GET STARTED",
     features: [
       "Access vehicle opportunities",
@@ -23,11 +24,11 @@ const plans = [
   },
   {
     name: "Dealer Pro",
+    plan: "professional",
     price: "$299",
     period: "/month",
     description:
       "Built for dealerships that want more opportunities and a stronger vehicle acquisition pipeline.",
-    productId: "prod_V3GdnfhA4TkBDi",
     badge: "MOST POPULAR",
     popular: true,
     features: [
@@ -41,11 +42,11 @@ const plans = [
   },
   {
     name: "Dealer Enterprise",
+    plan: "enterprise",
     price: "Custom",
     period: "",
     description:
       "For high-volume dealerships and dealer groups looking for a larger vehicle acquisition solution.",
-    productId: "prod_V3Gegp9fCuEEkN",
     badge: "ENTERPRISE",
     features: [
       "High-volume dealer support",
@@ -73,9 +74,9 @@ export default function BuyersPage() {
             </span>
           </h1>
           <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-300 md:text-xl">
-            Join NorthSky Auto and discover vehicle acquisition opportunities
-            from sellers looking to sell cars, trucks, SUVs, and commercial
-            vehicles across Canada.
+            Join NorthSky Auto and discover vehicle acquisition
+            opportunities from sellers looking to sell cars, trucks,
+            SUVs, and commercial vehicles across Canada.
           </p>
           <div className="mt-9 flex flex-wrap justify-center gap-4">
             <a
@@ -102,8 +103,8 @@ export default function BuyersPage() {
               Find Vehicles
             </h2>
             <p className="mt-3 leading-7 text-slate-600">
-              Discover vehicle sellers and acquisition opportunities in one
-              place.
+              Discover vehicle sellers and acquisition opportunities
+              in one place.
             </p>
           </div>
           <div className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200">
@@ -138,14 +139,14 @@ export default function BuyersPage() {
               Choose Your Dealer Plan
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-600">
-              Select the plan that fits your dealership and start accessing
-              NorthSky Auto vehicle opportunities.
+              Select the plan that fits your dealership and start
+              accessing NorthSky Auto vehicle opportunities.
             </p>
           </div>
           <div className="mt-14 grid gap-8 lg:grid-cols-3">
             {plans.map((plan) => (
               <div
-                key={plan.productId}
+                key={plan.plan}
                 className={`relative flex flex-col rounded-3xl bg-white p-8 shadow-sm ring-1 transition hover:-translate-y-1 hover:shadow-xl ${
                   plan.popular
                     ? "ring-2 ring-blue-500"
@@ -161,7 +162,11 @@ export default function BuyersPage() {
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
                     {plan.badge}
                   </span>
-                  {plan.popular && <span className="text-xl">⭐</span>}
+                  {plan.popular && (
+                    <span className="text-xl">
+                      ⭐
+                    </span>
+                  )}
                 </div>
                 <h3 className="mt-7 text-3xl font-black">
                   {plan.name}
@@ -194,7 +199,7 @@ export default function BuyersPage() {
                   ))}
                 </ul>
                 <div className="mt-auto pt-8">
-                  {plan.name === "Dealer Enterprise" ? (
+                  {plan.plan === "enterprise" ? (
                     <Link
                       href="/contact"
                       className="flex w-full justify-center rounded-xl bg-slate-950 px-6 py-4 font-black text-white transition hover:bg-slate-800"
@@ -202,31 +207,11 @@ export default function BuyersPage() {
                       Contact NorthSky →
                     </Link>
                   ) : (
-                    <form
-                      action="/api/payments/checkout"
-                      method="POST"
-                    >
-                      <input
-                        type="hidden"
-                        name="productId"
-                        value={plan.productId}
-                      />
-                      <input
-                        type="hidden"
-                        name="plan"
-                        value={plan.name}
-                      />
-                      <button
-                        type="submit"
-                        className="w-full rounded-xl bg-blue-600 px-6 py-4 font-black text-white transition hover:bg-blue-700"
-                      >
-                        Subscribe to {plan.name} →
-                      </button>
-                    </form>
+                    <DealerCheckoutButton
+                      plan={plan.plan}
+                      label={`Subscribe to ${plan.name}`}
+                    />
                   )}
-                  <p className="mt-3 text-center text-xs text-slate-500">
-                    Secure checkout powered by Stripe
-                  </p>
                 </div>
               </div>
             ))}
@@ -265,8 +250,8 @@ export default function BuyersPage() {
                 Complete Checkout
               </h3>
               <p className="mt-3 leading-7 text-slate-300">
-                Complete your secure Stripe checkout and begin the dealer
-                onboarding process.
+                Complete your secure Stripe checkout and begin the
+                dealer onboarding process.
               </p>
             </div>
             <div className="rounded-3xl bg-white/10 p-8">
@@ -277,22 +262,23 @@ export default function BuyersPage() {
                 Find Opportunities
               </h3>
               <p className="mt-3 leading-7 text-slate-300">
-                Access available vehicle opportunities and connect with
-                potential sellers.
+                Access available vehicle opportunities and connect
+                with potential sellers.
               </p>
             </div>
           </div>
         </div>
       </section>
-      {/* APPLICATION CTA */}
+      {/* CTA */}
       <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 p-10 text-center text-white md:p-14">
           <h2 className="text-4xl font-black">
             Have Questions Before Joining?
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg text-blue-100">
-            Contact NorthSky Auto if you want to discuss dealer membership,
-            enterprise options, or the vehicle acquisition network.
+            Contact NorthSky Auto if you want to discuss dealer
+            membership, enterprise options, or the vehicle acquisition
+            network.
           </p>
           <Link
             href="/contact"
@@ -306,8 +292,8 @@ export default function BuyersPage() {
       <section className="border-t bg-white px-6 py-8">
         <div className="mx-auto max-w-4xl text-center text-sm leading-6 text-slate-500">
           NorthSky Auto dealer memberships are subject to applicable
-          membership terms and account requirements. Subscription payments
-          are securely processed through Stripe.
+          membership terms and account requirements. Subscription
+          payments are securely processed through Stripe.
         </div>
       </section>
     </main>
