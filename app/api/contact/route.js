@@ -1,33 +1,40 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
+
 export const dynamic = "force-dynamic";
+
 const allowedTopics = new Set([
+  "selling-vehicle",
   "dealer-account",
   "dealer-membership",
   "vehicle-opportunity",
-  "sell-vehicle",
   "partnership",
   "technical-support",
   "general",
-  "other",
 ]);
+
 const topicLabels = {
+  "selling-vehicle": "Selling a Vehicle",
   "dealer-account": "Dealer Account",
   "dealer-membership": "Dealer Membership",
   "vehicle-opportunity": "Vehicle Opportunity",
-  "sell-vehicle": "Selling a Vehicle",
   partnership: "Partnership",
   "technical-support": "Technical Support",
   general: "General Question",
-  other: "Other",
 };
+
 function clean(value) {
-  if (value === null || value === undefined) return "";
+  if (value === null || value === undefined) {
+    return "";
+  }
+
   return String(value).trim();
 }
+
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
+
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -37,6 +44,7 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;")
     .replace(/\r?\n/g, "<br />");
 }
+
 function escapeAttribute(value) {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -44,18 +52,20 @@ function escapeAttribute(value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
+
 export async function POST(request) {
   try {
-    /*
-     * ------------------------------------------------------------
-     * ENVIRONMENT VARIABLES
-     * ------------------------------------------------------------
-     */
+    // ------------------------------------------------------------
+    // Environment variables
+    // ------------------------------------------------------------
+
     const apiKey = process.env.RESEND_API_KEY;
     const toEmail = process.env.CONTACT_TO_EMAIL;
     const fromEmail = process.env.RESEND_FROM_EMAIL;
+
     if (!apiKey) {
       console.error("Missing RESEND_API_KEY.");
+
       return NextResponse.json(
         {
           success: false,
@@ -64,8 +74,10 @@ export async function POST(request) {
         { status: 500 }
       );
     }
+
     if (!toEmail) {
       console.error("Missing CONTACT_TO_EMAIL.");
+
       return NextResponse.json(
         {
           success: false,
@@ -74,8 +86,10 @@ export async function POST(request) {
         { status: 500 }
       );
     }
+
     if (!fromEmail) {
       console.error("Missing RESEND_FROM_EMAIL.");
+
       return NextResponse.json(
         {
           success: false,
@@ -84,23 +98,28 @@ export async function POST(request) {
         { status: 500 }
       );
     }
+
     const resend = new Resend(apiKey);
-    /*
-     * ------------------------------------------------------------
-     * READ REQUEST
-     * ------------------------------------------------------------
-     */
+
+    // ------------------------------------------------------------
+    // Read request
+    // ------------------------------------------------------------
+
     const contentType =
       request.headers.get("content-type") || "";
-    let body;
+
+    let body = null;
+
     if (contentType.includes("application/json")) {
       body = await request.json().catch(() => null);
     } else {
       const formData = await request.formData().catch(() => null);
-      body = formData
-        ? Object.fromEntries(formData.entries())
-        : null;
+
+      if (formData) {
+        body = Object.fromEntries(formData.entries());
+      }
     }
+
     if (!body || typeof body !== "object") {
       return NextResponse.json(
         {
@@ -110,12 +129,13 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-    /*
-     * ------------------------------------------------------------
-     * HONEYPOT
-     * ------------------------------------------------------------
-     */
+
+    // ------------------------------------------------------------
+    // Honeypot spam protection
+    // ------------------------------------------------------------
+
     const website = clean(body.website);
+
     if (website) {
       return NextResponse.json(
         {
@@ -130,26 +150,28 @@ export async function POST(request) {
         }
       );
     }
-    /*
-     * ------------------------------------------------------------
-     * CLEAN INPUT
-     * ------------------------------------------------------------
-     */
+
+    // ------------------------------------------------------------
+    // Clean input
+    // ------------------------------------------------------------
+
     const name = clean(body.name);
     const email = clean(body.email).toLowerCase();
     const phone = clean(body.phone);
     const topic = clean(body.topic);
     const message = clean(body.message);
-    /*
-     * ------------------------------------------------------------
-     * REQUIRED FIELDS
-     * ------------------------------------------------------------
-     */
+
+    // ------------------------------------------------------------
+    // Required fields
+    // ------------------------------------------------------------
+
     const missingFields = [];
+
     if (!name) missingFields.push("name");
     if (!email) missingFields.push("email");
     if (!topic) missingFields.push("topic");
     if (!message) missingFields.push("message");
+
     if (missingFields.length > 0) {
       return NextResponse.json(
         {
@@ -160,11 +182,11 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-    /*
-     * ------------------------------------------------------------
-     * VALIDATION
-     * ------------------------------------------------------------
-     */
+
+    // ------------------------------------------------------------
+    // Validation
+    // ------------------------------------------------------------
+
     if (!isValidEmail(email)) {
       return NextResponse.json(
         {
@@ -174,6 +196,7 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+
     if (!allowedTopics.has(topic)) {
       return NextResponse.json(
         {
@@ -183,6 +206,7 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+
     if (name.length > 150) {
       return NextResponse.json(
         {
@@ -192,6 +216,7 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+
     if (email.length > 254) {
       return NextResponse.json(
         {
@@ -201,6 +226,7 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+
     if (phone.length > 50) {
       return NextResponse.json(
         {
@@ -210,6 +236,7 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+
     if (message.length > 5000) {
       return NextResponse.json(
         {
@@ -219,11 +246,11 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-    /*
-     * ------------------------------------------------------------
-     * BASIC SPAM FILTER
-     * ------------------------------------------------------------
-     */
+
+    // ------------------------------------------------------------
+    // Basic spam protection
+    // ------------------------------------------------------------
+
     const suspiciousPatterns = [
       /viagra/i,
       /casino/i,
@@ -234,12 +261,13 @@ export async function POST(request) {
       /seo services/i,
       /casino bonus/i,
     ];
-    const combinedText =
-      `${name} ${email} ${message}`;
-    const looksLikeSpam =
-      suspiciousPatterns.some((pattern) =>
-        pattern.test(combinedText)
-      );
+
+    const combinedText = `${name} ${email} ${message}`;
+
+    const looksLikeSpam = suspiciousPatterns.some((pattern) =>
+      pattern.test(combinedText)
+    );
+
     if (looksLikeSpam) {
       return NextResponse.json(
         {
@@ -254,21 +282,13 @@ export async function POST(request) {
         }
       );
     }
-    const topicLabel =
-      topicLabels[topic] || topic;
-    /*
-     * ------------------------------------------------------------
-     * OPTIONAL SUPABASE STORAGE
-     * ------------------------------------------------------------
-     */
-    const contactSubmission = {
-      name,
-      email,
-      phone: phone || null,
-      topic,
-      message,
-      created_at: new Date().toISOString(),
-    };
+
+    const topicLabel = topicLabels[topic];
+
+    // ------------------------------------------------------------
+    // Optional Supabase storage
+    // ------------------------------------------------------------
+
     if (
       process.env.NEXT_PUBLIC_SUPABASE_URL &&
       process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -277,13 +297,23 @@ export async function POST(request) {
         const { createClient } = await import(
           "@supabase/supabase-js"
         );
+
         const supabase = createClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL,
           process.env.SUPABASE_SERVICE_ROLE_KEY
         );
+
         const { error } = await supabase
           .from("contact_submissions")
-          .insert(contactSubmission);
+          .insert({
+            name,
+            email,
+            phone: phone || null,
+            topic,
+            message,
+            created_at: new Date().toISOString(),
+          });
+
         if (error) {
           console.error(
             "Contact submission database error:",
@@ -297,24 +327,25 @@ export async function POST(request) {
         );
       }
     }
-    /*
-     * ------------------------------------------------------------
-     * SEND EMAIL WITH RESEND
-     * ------------------------------------------------------------
-     */
-    const { data, error } =
-      await resend.emails.send({
-        from: `NorthSky Auto <${fromEmail}>`,
-        to: [toEmail],
-        replyTo: email,
-        subject: `NorthSky Auto Contact: ${topicLabel}`,
-        html: `
+
+    // ------------------------------------------------------------
+    // Send email
+    // ------------------------------------------------------------
+
+    const { data, error } = await resend.emails.send({
+      from: `NorthSky Auto <${fromEmail}>`,
+      to: [toEmail],
+      replyTo: email,
+      subject: `NorthSky Auto Contact: ${topicLabel}`,
+
+      html: `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8" />
   <title>NorthSky Auto Contact Inquiry</title>
 </head>
+
 <body
   style="
     margin:0;
@@ -331,6 +362,7 @@ export async function POST(request) {
       padding:32px 20px;
     "
   >
+
     <div
       style="
         background:#020617;
@@ -350,6 +382,7 @@ export async function POST(request) {
       >
         NorthSky Auto
       </div>
+
       <h1
         style="
           margin:10px 0 0;
@@ -359,6 +392,7 @@ export async function POST(request) {
         New Contact Inquiry
       </h1>
     </div>
+
     <div
       style="
         background:white;
@@ -367,6 +401,7 @@ export async function POST(request) {
         border-top:0;
       "
     >
+
       <div
         style="
           margin-bottom:24px;
@@ -376,6 +411,7 @@ export async function POST(request) {
         "
       >
         <strong>Inquiry Type</strong>
+
         <div
           style="
             margin-top:6px;
@@ -386,6 +422,7 @@ export async function POST(request) {
           ${escapeHtml(topicLabel)}
         </div>
       </div>
+
       <table
         style="
           width:100%;
@@ -393,6 +430,7 @@ export async function POST(request) {
           margin-bottom:24px;
         "
       >
+
         <tr>
           <td
             style="
@@ -403,10 +441,12 @@ export async function POST(request) {
           >
             Name
           </td>
+
           <td style="padding:10px 0;">
             ${escapeHtml(name)}
           </td>
         </tr>
+
         <tr>
           <td
             style="
@@ -416,6 +456,7 @@ export async function POST(request) {
           >
             Email
           </td>
+
           <td style="padding:10px 0;">
             <a
               href="mailto:${escapeAttribute(email)}"
@@ -425,6 +466,7 @@ export async function POST(request) {
             </a>
           </td>
         </tr>
+
         ${
           phone
             ? `
@@ -437,6 +479,7 @@ export async function POST(request) {
           >
             Phone
           </td>
+
           <td style="padding:10px 0;">
             ${escapeHtml(phone)}
           </td>
@@ -444,7 +487,9 @@ export async function POST(request) {
         `
             : ""
         }
+
       </table>
+
       <h2
         style="
           font-size:18px;
@@ -453,6 +498,7 @@ export async function POST(request) {
       >
         Message
       </h2>
+
       <div
         style="
           padding:18px;
@@ -464,7 +510,9 @@ export async function POST(request) {
       >
         ${escapeHtml(message)}
       </div>
+
     </div>
+
     <div
       style="
         padding:20px;
@@ -475,32 +523,36 @@ export async function POST(request) {
     >
       NorthSky Auto Contact Form
     </div>
+
   </div>
 </body>
 </html>
-        `,
-        text: `
+      `,
+
+      text: `
 NorthSky Auto — New Contact Inquiry
+
 Inquiry Type: ${topicLabel}
+
 Name: ${name}
 Email: ${email}
 Phone: ${phone || "Not provided"}
+
 Message:
 ${message}
+
 ---
 NorthSky Auto Contact Form
-        `.trim(),
-      });
-    /*
-     * ------------------------------------------------------------
-     * RESEND ERROR
-     * ------------------------------------------------------------
-     */
+      `.trim(),
+    });
+
+    // ------------------------------------------------------------
+    // Resend error
+    // ------------------------------------------------------------
+
     if (error) {
-      console.error(
-        "Resend email error:",
-        error
-      );
+      console.error("Resend email error:", error);
+
       return NextResponse.json(
         {
           success: false,
@@ -515,15 +567,16 @@ NorthSky Auto Contact Form
         }
       );
     }
-    /*
-     * ------------------------------------------------------------
-     * SUCCESS
-     * ------------------------------------------------------------
-     */
+
+    // ------------------------------------------------------------
+    // Success
+    // ------------------------------------------------------------
+
     console.log(
       "NorthSky Auto contact email sent:",
       data?.id
     );
+
     return NextResponse.json(
       {
         success: true,
@@ -542,6 +595,7 @@ NorthSky Auto Contact Form
       "NorthSky Auto contact API error:",
       error
     );
+
     return NextResponse.json(
       {
         success: false,
