@@ -69,9 +69,7 @@ function getPlanFromPriceId(priceId) {
 }
 
 function getCustomerId(customer) {
-  if (!customer) {
-    return null;
-  }
+  if (!customer) return null;
 
   if (typeof customer === "string") {
     return customer;
@@ -158,7 +156,7 @@ async function findDealer({
   }
 
   /*
-   * Fall back to email.
+   * Then try email.
    */
 
   if (email) {
@@ -184,13 +182,100 @@ async function findDealer({
   return null;
 }
 
+/*
+|--------------------------------------------------------------------------
+| Create Dealer
+|--------------------------------------------------------------------------
+*/
+
+async function createDealer({
+  email,
+  customerId,
+  subscriptionId,
+  plan,
+  status,
+  source,
+  campaign,
+  sessionId,
+  name,
+}) {
+  if (!email && !customerId) {
+    console.warn(
+      "Unable to create dealer: no email or Stripe customer ID."
+    );
+
+    return null;
+  }
+
+  const dealerData = {
+    email: email || null,
+
+    stripe_customer_id:
+      customerId || null,
+
+    stripe_subscription_id:
+      subscriptionId || null,
+
+    subscription_plan:
+      plan || null,
+
+    subscription_status:
+      status || "active",
+
+    marketing_source:
+      source || null,
+
+    marketing_campaign:
+      campaign || null,
+
+    marketing_session_id:
+      sessionId || null,
+
+    name: name || null,
+  };
+
+  const { data, error } =
+    await supabase
+      .from("dealers")
+      .insert(dealerData)
+      .select("*")
+      .single();
+
+  if (error) {
+    console.error(
+      "Failed to create dealer:",
+      error
+    );
+
+    throw error;
+  }
+
+  console.log(
+    "Dealer created:",
+    {
+      dealerId: data.id,
+      email: data.email,
+      plan: data.subscription_plan,
+      source: data.marketing_source,
+      campaign:
+        data.marketing_campaign,
+    }
+  );
+
+  return data;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Update Dealer
+|--------------------------------------------------------------------------
+*/
+
 async function updateDealer(
   dealerId,
   updates
 ) {
-  if (!dealerId) {
-    return;
-  }
+  if (!dealerId) return;
 
   const { error } =
     await supabase
@@ -210,7 +295,101 @@ async function updateDealer(
 
 /*
 |--------------------------------------------------------------------------
-| Subscription Helpers
+| Find Or Create Dealer
+|--------------------------------------------------------------------------
+*/
+
+async function findOrCreateDealer({
+  customerId,
+  email,
+  subscriptionId,
+  plan,
+  status,
+  source,
+  campaign,
+  sessionId,
+  name,
+}) {
+  let dealer =
+    await findDealer({
+      customerId,
+      email,
+    });
+
+  /*
+   * Existing dealer.
+   */
+
+  if (dealer) {
+    const updates = {
+      subscription_status:
+        status || "active",
+
+      subscription_plan:
+        plan || dealer.subscription_plan,
+    };
+
+    if (customerId) {
+      updates.stripe_customer_id =
+        customerId;
+    }
+
+    if (subscriptionId) {
+      updates.stripe_subscription_id =
+        subscriptionId;
+    }
+
+    if (source) {
+      updates.marketing_source =
+        source;
+    }
+
+    if (campaign) {
+      updates.marketing_campaign =
+        campaign;
+    }
+
+    if (sessionId) {
+      updates.marketing_session_id =
+        sessionId;
+    }
+
+    if (name && !dealer.name) {
+      updates.name = name;
+    }
+
+    await updateDealer(
+      dealer.id,
+      updates
+    );
+
+    return {
+      ...dealer,
+      ...updates,
+    };
+  }
+
+  /*
+   * No dealer exists.
+   * Create one automatically.
+   */
+
+  return createDealer({
+    email,
+    customerId,
+    subscriptionId,
+    plan,
+    status,
+    source,
+    campaign,
+    sessionId,
+    name,
+  });
+}
+
+/*
+|--------------------------------------------------------------------------
+| Subscription Details
 |--------------------------------------------------------------------------
 */
 
@@ -231,7 +410,6 @@ function getSubscriptionDetails(
 
   /*
    * Stripe price ID is authoritative.
-   * Metadata is fallback.
    */
 
   const plan =
@@ -296,7 +474,7 @@ export async function POST(request) {
   let event;
 
   /*
-   * Verify webhook signature.
+   * Verify Stripe signature.
    */
 
   try {
@@ -370,6 +548,10 @@ export async function POST(request) {
           session.metadata
         );
 
+      const name =
+        session.customer_details
+          ?.name || null;
+
       console.log(
         "Checkout completed:",
         {
@@ -378,24 +560,18 @@ export async function POST(request) {
           subscriptionId,
           email,
           plan,
-          planName:
-            plan
-              ? PLAN_NAMES[plan]
-              : null,
           source,
           campaign,
-          marketingSessionId:
-            sessionId,
         }
       );
 
       /*
-       * Never activate an unsupported plan.
+       * Never activate unsupported plans.
        */
 
       if (!plan) {
         console.warn(
-          "Checkout completed with invalid dealer plan:",
+          "Invalid dealer plan:",
           session.metadata?.plan
         );
 
@@ -406,83 +582,31 @@ export async function POST(request) {
         });
       }
 
+      /*
+       * Create or update dealer.
+       */
+
       const dealer =
-        await findDealer({
+        await findOrCreateDealer({
           customerId,
           email,
-        });
-
-      /*
-       * Payment can complete before the
-       * dealer record exists.
-       */
-
-      if (!dealer) {
-        console.warn(
-          "No matching dealer found for checkout:",
-          {
-            customerId,
-            email,
-            sessionId:
-              session.id,
-          }
-        );
-
-        return Response.json({
-          received: true,
-          warning:
-            "Dealer record not found.",
-        });
-      }
-
-      const updates = {
-        subscription_status:
-          "active",
-
-        subscription_plan:
+          subscriptionId,
           plan,
-      };
-
-      if (customerId) {
-        updates.stripe_customer_id =
-          customerId;
-      }
-
-      if (subscriptionId) {
-        updates.stripe_subscription_id =
-          subscriptionId;
-      }
-
-      /*
-       * Save attribution if your
-       * dealers table has these columns.
-       */
-
-      if (source) {
-        updates.marketing_source =
-          source;
-      }
-
-      if (campaign) {
-        updates.marketing_campaign =
-          campaign;
-      }
-
-      if (sessionId) {
-        updates.marketing_session_id =
-          sessionId;
-      }
-
-      await updateDealer(
-        dealer.id,
-        updates
-      );
+          status: "active",
+          source,
+          campaign,
+          sessionId,
+          name,
+        });
 
       console.log(
         "Dealer activated:",
         {
-          dealerId: dealer.id,
+          dealerId:
+            dealer?.id,
           plan,
+          planName:
+            PLAN_NAMES[plan],
           source,
           campaign,
         }
@@ -541,12 +665,8 @@ export async function POST(request) {
 
       if (!plan) {
         console.warn(
-          "Subscription uses an unsupported dealer plan:",
-          {
-            subscriptionId:
-              subscription.id,
-            priceId,
-          }
+          "Unsupported subscription plan:",
+          priceId
         );
 
         return Response.json({
@@ -557,50 +677,24 @@ export async function POST(request) {
       }
 
       const dealer =
-        await findDealer({
+        await findOrCreateDealer({
           customerId,
+          email: null,
+          subscriptionId:
+            subscription.id,
+          plan,
+          status:
+            subscription.status,
+          source,
+          campaign,
+          sessionId,
+          name: null,
         });
 
-      if (!dealer) {
-        console.warn(
-          "No dealer found for subscription:",
-          subscription.id
-        );
-      } else {
-        const updates = {
-          stripe_customer_id:
-            customerId,
-
-          stripe_subscription_id:
-            subscription.id,
-
-          subscription_plan:
-            plan,
-
-          subscription_status:
-            subscription.status,
-        };
-
-        if (source) {
-          updates.marketing_source =
-            source;
-        }
-
-        if (campaign) {
-          updates.marketing_campaign =
-            campaign;
-        }
-
-        if (sessionId) {
-          updates.marketing_session_id =
-            sessionId;
-        }
-
-        await updateDealer(
-          dealer.id,
-          updates
-        );
-      }
+      console.log(
+        "Subscription connected to dealer:",
+        dealer?.id
+      );
     }
 
     /*
@@ -648,21 +742,10 @@ export async function POST(request) {
           plan,
           status:
             subscription.status,
-          source,
-          campaign,
         }
       );
 
       if (!plan) {
-        console.warn(
-          "Updated subscription uses unsupported plan:",
-          {
-            subscriptionId:
-              subscription.id,
-            priceId,
-          }
-        );
-
         return Response.json({
           received: true,
           warning:
@@ -677,8 +760,7 @@ export async function POST(request) {
 
       if (!dealer) {
         console.warn(
-          "No dealer found for updated subscription:",
-          subscription.id
+          "No dealer found for updated subscription."
         );
       } else {
         const updates = {
@@ -749,12 +831,7 @@ export async function POST(request) {
           customerId,
         });
 
-      if (!dealer) {
-        console.warn(
-          "No dealer found for cancelled subscription:",
-          subscription.id
-        );
-      } else {
+      if (dealer) {
         await updateDealer(
           dealer.id,
           {
@@ -797,12 +874,7 @@ export async function POST(request) {
           customerId,
         });
 
-      if (!dealer) {
-        console.warn(
-          "No dealer found for paid invoice:",
-          invoice.id
-        );
-      } else {
+      if (dealer) {
         await updateDealer(
           dealer.id,
           {
@@ -845,12 +917,7 @@ export async function POST(request) {
           customerId,
         });
 
-      if (!dealer) {
-        console.warn(
-          "No dealer found for failed invoice:",
-          invoice.id
-        );
-      } else {
+      if (dealer) {
         await updateDealer(
           dealer.id,
           {
@@ -873,12 +940,6 @@ export async function POST(request) {
         event.type
       );
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | SUCCESS
-    |--------------------------------------------------------------------------
-    */
 
     return Response.json({
       received: true,
