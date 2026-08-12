@@ -1,30 +1,125 @@
 "use client";
+
 import { useState } from "react";
+
+function getSessionId() {
+  try {
+    const key = "northsky_marketing_session";
+
+    let sessionId = sessionStorage.getItem(key);
+
+    if (!sessionId) {
+      sessionId = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 12)}`;
+
+      sessionStorage.setItem(key, sessionId);
+    }
+
+    return sessionId;
+  } catch {
+    return null;
+  }
+}
+
+function getAttribution() {
+  try {
+    const source =
+      sessionStorage.getItem("northsky_source") ||
+      "direct";
+
+    const campaign =
+      sessionStorage.getItem("northsky_campaign") ||
+      "organic";
+
+    return {
+      source,
+      campaign,
+    };
+  } catch {
+    return {
+      source: "direct",
+      campaign: "organic",
+    };
+  }
+}
+
+async function trackCheckoutStarted(plan) {
+  try {
+    const { source, campaign } = getAttribution();
+
+    await fetch("/api/marketing/track", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        source,
+        campaign,
+        event: "checkout_started",
+        page: window.location.pathname,
+        session_id: getSessionId(),
+        metadata: {
+          plan,
+          destination: "stripe_checkout",
+        },
+      }),
+      keepalive: true,
+    });
+  } catch (error) {
+    console.error(
+      "Dealer marketing tracking failed:",
+      error
+    );
+  }
+}
+
 export default function DealerCheckoutButton({
   plan,
   label = "Subscribe",
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
   async function handleCheckout() {
     if (loading) return;
+
     if (!plan) {
       setError("Please select a dealer plan.");
       return;
     }
+
     try {
       setLoading(true);
       setError("");
-      const response = await fetch("/api/payments/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          plan,
-        }),
-      });
+
+      /*
+       * Track the marketing conversion attempt.
+       *
+       * We do this before redirecting to Stripe because
+       * the browser will leave the NorthSky Auto website
+       * once Stripe Checkout opens.
+       */
+      await trackCheckoutStarted(plan);
+
+      /*
+       * Start Stripe Checkout.
+       */
+      const response = await fetch(
+        "/api/payments/checkout",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            plan,
+          }),
+        }
+      );
+
       let data = null;
+
       try {
         data = await response.json();
       } catch {
@@ -32,26 +127,39 @@ export default function DealerCheckoutButton({
           "The checkout service returned an invalid response."
         );
       }
+
       if (!response.ok) {
         throw new Error(
-          data?.error || "Unable to start secure checkout."
+          data?.error ||
+            "Unable to start secure checkout."
         );
       }
+
       if (!data?.url) {
         throw new Error(
           "Stripe checkout URL was not returned."
         );
       }
+
+      /*
+       * Send the dealer to Stripe.
+       */
       window.location.assign(data.url);
     } catch (checkoutError) {
-      console.error("Dealer checkout error:", checkoutError);
+      console.error(
+        "Dealer checkout error:",
+        checkoutError
+      );
+
       setError(
         checkoutError?.message ||
           "Unable to start checkout. Please try again."
       );
+
       setLoading(false);
     }
   }
+
   return (
     <div className="w-full">
       <button
@@ -67,12 +175,14 @@ export default function DealerCheckoutButton({
               className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
               aria-hidden="true"
             />
+
             Opening Secure Checkout...
           </span>
         ) : (
           `${label} →`
         )}
       </button>
+
       {error && (
         <div
           role="alert"
@@ -81,6 +191,7 @@ export default function DealerCheckoutButton({
           {error}
         </div>
       )}
+
       <p className="mt-3 text-center text-xs text-slate-500">
         Secure recurring checkout powered by Stripe.
       </p>
