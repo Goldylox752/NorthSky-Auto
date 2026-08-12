@@ -1,5 +1,7 @@
 "use client";
+
 import { useState } from "react";
+
 const plans = [
   {
     id: "starter",
@@ -49,6 +51,7 @@ const plans = [
     popular: false,
   },
 ];
+
 const steps = [
   {
     number: "01",
@@ -75,11 +78,12 @@ const steps = [
       "Use your dealer dashboard to discover and manage available vehicle acquisition opportunities.",
   },
 ];
+
 const faqs = [
   {
     question: "Can I cancel my membership?",
     answer:
-      "Yes. Dealer memberships are recurring subscriptions and can be managed through your Stripe billing account.",
+      "Yes. Dealer memberships are recurring subscriptions. Cancellation and billing management are handled through your Stripe billing account.",
   },
   {
     question: "What happens after I pay?",
@@ -107,14 +111,18 @@ const faqs = [
       "NorthSky Auto uses Stripe for recurring subscription billing and secure payment processing.",
   },
 ];
+
 export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = useState(null);
   const [error, setError] = useState("");
+
   async function handleCheckout(planId) {
     if (loadingPlan) return;
+
     try {
       setLoadingPlan(planId);
       setError("");
+
       const response = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: {
@@ -124,64 +132,79 @@ export default function PricingPage() {
           plan: planId,
         }),
       });
+
       let data = {};
+
       try {
         data = await response.json();
       } catch {
         data = {};
       }
+
       if (!response.ok) {
         throw new Error(
           data?.error || "Unable to start Stripe checkout."
         );
       }
+
       if (!data?.url) {
         throw new Error(
-          "Stripe checkout URL was not returned."
+          "Stripe checkout URL was not returned. Please try again."
         );
       }
+
       window.location.href = data.url;
     } catch (err) {
       console.error("NorthSky Auto checkout error:", err);
+
       setError(
         err?.message ||
           "Something went wrong while starting checkout. Please try again."
       );
+
       setLoadingPlan(null);
     }
   }
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       {/* HERO */}
       <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-900 px-6 py-20 text-white md:py-28">
         <div className="absolute -right-40 -top-40 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl" />
         <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-indigo-500/20 blur-3xl" />
+
         <div className="relative mx-auto max-w-7xl text-center">
           <span className="inline-flex rounded-full bg-blue-500/20 px-5 py-2 text-sm font-black tracking-wide text-blue-300 ring-1 ring-blue-400/20">
             NORTHSKY AUTO DEALER MEMBERSHIP
           </span>
+
           <h1 className="mx-auto mt-6 max-w-5xl text-4xl font-black tracking-tight sm:text-5xl md:text-6xl">
             Build a Better Vehicle Acquisition Pipeline
           </h1>
+
           <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-300 md:text-xl">
             Choose a NorthSky Auto dealer membership and access vehicle
             acquisition opportunities from sellers across Canada.
           </p>
+
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <span className="rounded-full bg-white/10 px-4 py-2 text-sm text-slate-200">
               ✓ Monthly billing
             </span>
+
             <span className="rounded-full bg-white/10 px-4 py-2 text-sm text-slate-200">
               ✓ Cancel anytime
             </span>
+
             <span className="rounded-full bg-white/10 px-4 py-2 text-sm text-slate-200">
               ✓ Secure Stripe checkout
             </span>
           </div>
         </div>
       </section>
+
       {/* PRICING */}
-      <section className="px-6 py-20">
+      <section id="plans" className="px-6 py-20">
         <div className="mx-auto max-w-7xl">
           {error && (
             <div
@@ -191,10 +214,27 @@ export default function PricingPage() {
               {error}
             </div>
           )}
+
+          <div className="mb-12 text-center">
+            <span className="text-sm font-black uppercase tracking-widest text-blue-600">
+              DEALER MEMBERSHIPS
+            </span>
+
+            <h2 className="mt-4 text-3xl font-black text-slate-950 md:text-4xl">
+              Choose the Right Plan for Your Dealership
+            </h2>
+
+            <p className="mx-auto mt-4 max-w-2xl leading-7 text-slate-600">
+              Start with the tools you need today and upgrade as your
+              vehicle acquisition operation grows.
+            </p>
+          </div>
+
           <div className="grid gap-8 lg:grid-cols-3">
             {plans.map((plan) => {
               const isLoading = loadingPlan === plan.id;
               const disabled = loadingPlan !== null;
+
               return (
                 <article
                   key={plan.id}
@@ -209,27 +249,30 @@ export default function PricingPage() {
                       MOST POPULAR
                     </div>
                   )}
+
                   <div>
                     <h2 className="text-2xl font-black text-slate-950">
                       {plan.name}
                     </h2>
+
                     <p className="mt-4 min-h-[84px] text-sm leading-7 text-slate-600">
                       {plan.description}
                     </p>
                   </div>
+
                   <div className="mt-8">
                     <span className="text-5xl font-black tracking-tight text-slate-950">
                       {plan.price}
                     </span>
+
                     <span className="ml-2 text-slate-500">
                       / month
                     </span>
                   </div>
+
                   <button
                     type="button"
-                    onClick={() =>
-                      handleCheckout(plan.id)
-                    }
+                    onClick={() => handleCheckout(plan.id)}
                     disabled={disabled}
                     aria-disabled={disabled}
                     className={`mt-8 w-full rounded-xl px-6 py-4 font-black transition ${
@@ -246,13 +289,17 @@ export default function PricingPage() {
                       ? "Connecting to Stripe..."
                       : `Choose ${plan.name}`}
                   </button>
+
                   <p className="mt-3 text-center text-xs text-slate-500">
                     Secure recurring billing through Stripe
                   </p>
+
                   <div className="my-8 border-t border-slate-100" />
+
                   <h3 className="text-sm font-black uppercase tracking-wider text-slate-500">
                     What's Included
                   </h3>
+
                   <ul className="mt-5 space-y-4">
                     {plan.features.map((feature) => (
                       <li
@@ -265,6 +312,7 @@ export default function PricingPage() {
                         >
                           ✓
                         </span>
+
                         <span>{feature}</span>
                       </li>
                     ))}
@@ -275,48 +323,60 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
-      {/* VALUE SECTION */}
+
+      {/* VALUE */}
       <section className="bg-white px-6 py-20">
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto max-w-3xl text-center">
             <span className="text-sm font-black uppercase tracking-widest text-blue-600">
-              Dealer Platform
+              DEALER PLATFORM
             </span>
+
             <h2 className="mt-4 text-3xl font-black md:text-4xl">
               More Than a Membership
             </h2>
+
             <p className="mt-5 leading-8 text-slate-600">
-              NorthSky Auto is designed to give dealerships a more
-              organized way to discover, evaluate, and manage potential
-              vehicle acquisition opportunities.
+              NorthSky Auto gives dealerships a more organized way to
+              discover, evaluate, save, and manage potential vehicle
+              acquisition opportunities.
             </p>
           </div>
+
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             <div className="rounded-3xl bg-slate-50 p-8 ring-1 ring-slate-200">
               <div className="text-4xl">🚗</div>
+
               <h3 className="mt-5 text-xl font-black">
                 Vehicle Opportunities
               </h3>
+
               <p className="mt-3 leading-7 text-slate-600">
                 Discover vehicle submissions that may fit your
                 dealership's inventory requirements.
               </p>
             </div>
+
             <div className="rounded-3xl bg-slate-50 p-8 ring-1 ring-slate-200">
               <div className="text-4xl">📊</div>
+
               <h3 className="mt-5 text-xl font-black">
                 Acquisition Management
               </h3>
+
               <p className="mt-3 leading-7 text-slate-600">
                 Organize opportunities, track leads, save vehicles,
                 and monitor your acquisition activity.
               </p>
             </div>
+
             <div className="rounded-3xl bg-slate-50 p-8 ring-1 ring-slate-200">
               <div className="text-4xl">🇨🇦</div>
+
               <h3 className="mt-5 text-xl font-black">
                 Canadian Focus
               </h3>
+
               <p className="mt-3 leading-7 text-slate-600">
                 Built around vehicle sellers and dealerships operating
                 across the Canadian market.
@@ -325,6 +385,7 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
+
       {/* HOW IT WORKS */}
       <section className="bg-slate-100 px-6 py-20">
         <div className="mx-auto max-w-7xl">
@@ -332,14 +393,17 @@ export default function PricingPage() {
             <span className="text-sm font-black uppercase tracking-widest text-blue-600">
               HOW IT WORKS
             </span>
+
             <h2 className="mt-4 text-3xl font-black md:text-4xl">
               Start in Four Simple Steps
             </h2>
+
             <p className="mt-5 leading-7 text-slate-600">
               Choose a plan, complete checkout, and move into your
               dealer onboarding process.
             </p>
           </div>
+
           <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {steps.map((step) => (
               <div
@@ -349,9 +413,11 @@ export default function PricingPage() {
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-lg font-black text-blue-600">
                   {step.number}
                 </div>
+
                 <h3 className="mt-5 text-xl font-black text-slate-950">
                   {step.title}
                 </h3>
+
                 <p className="mt-3 text-sm leading-7 text-slate-600">
                   {step.description}
                 </p>
@@ -360,6 +426,7 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
+
       {/* FAQ */}
       <section className="bg-white px-6 py-20">
         <div className="mx-auto max-w-5xl">
@@ -367,10 +434,12 @@ export default function PricingPage() {
             <span className="text-sm font-black uppercase tracking-widest text-blue-600">
               FAQ
             </span>
+
             <h2 className="mt-4 text-3xl font-black md:text-4xl">
               Dealer Pricing Questions
             </h2>
           </div>
+
           <div className="mt-12 grid gap-5 md:grid-cols-2">
             {faqs.map((faq) => (
               <div
@@ -380,6 +449,7 @@ export default function PricingPage() {
                 <h3 className="text-lg font-black text-slate-950">
                   {faq.question}
                 </h3>
+
                 <p className="mt-3 text-sm leading-7 text-slate-600">
                   {faq.answer}
                 </p>
@@ -388,24 +458,26 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
+
       {/* FINAL CTA */}
       <section className="bg-gradient-to-br from-blue-600 to-indigo-700 px-6 py-20 text-center text-white">
         <div className="mx-auto max-w-4xl">
           <span className="text-sm font-black uppercase tracking-widest text-blue-100">
             GET STARTED
           </span>
+
           <h2 className="mt-4 text-4xl font-black sm:text-5xl">
             Ready to Build Your Acquisition Pipeline?
           </h2>
+
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-blue-100">
-            Start with the Professional plan and begin building a
-            more organized vehicle sourcing workflow.
+            Start with the Professional plan and build a more organized
+            vehicle sourcing workflow.
           </p>
+
           <button
             type="button"
-            onClick={() =>
-              handleCheckout("professional")
-            }
+            onClick={() => handleCheckout("professional")}
             disabled={loadingPlan !== null}
             className="mt-10 rounded-xl bg-white px-10 py-5 font-black text-blue-700 shadow-xl transition hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -413,6 +485,7 @@ export default function PricingPage() {
               ? "Connecting to Stripe..."
               : "Start With Professional — $599/month"}
           </button>
+
           <p className="mt-4 text-sm text-blue-100">
             Secure checkout powered by Stripe
           </p>
