@@ -7,29 +7,34 @@ export const metadata = {
   metadataBase: new URL(siteUrl),
 
   title: {
-    default: "NorthSky Auto | Canadian Vehicle Marketplace",
+    default: "NorthSky Auto | Canadian Vehicle Acquisition Marketplace",
     template: "%s | NorthSky Auto",
   },
 
   description:
-    "NorthSky Auto connects Canadian vehicle sellers with participating dealerships looking for cars, trucks, SUVs, vans, and commercial vehicles.",
+    "NorthSky Auto connects Canadian vehicle sellers with participating dealerships looking for cars, trucks, SUVs, vans, and commercial vehicle acquisition opportunities.",
 
   applicationName: "NorthSky Auto",
 
+  category: "automotive",
+
   keywords: [
     "NorthSky Auto",
-    "sell vehicle Canada",
-    "sell car to dealer",
     "Canadian vehicle marketplace",
-    "sell car Canada",
-    "vehicle acquisition",
-    "dealer inventory",
+    "sell vehicle Canada",
+    "sell car to dealer Canada",
+    "sell truck Canada",
+    "vehicle acquisition Canada",
+    "dealer inventory Canada",
+    "vehicle leads Canada",
     "car dealers Canada",
+    "dealer vehicle sourcing",
   ],
 
   authors: [
     {
       name: "NorthSky Auto",
+      url: siteUrl,
     },
   ],
 
@@ -43,6 +48,7 @@ export const metadata = {
   robots: {
     index: true,
     follow: true,
+
     googleBot: {
       index: true,
       follow: true,
@@ -56,9 +62,9 @@ export const metadata = {
     type: "website",
     url: siteUrl,
     siteName: "NorthSky Auto",
-    title: "NorthSky Auto | Canadian Vehicle Marketplace",
+    title: "NorthSky Auto | Canadian Vehicle Acquisition Marketplace",
     description:
-      "Connect Canadian vehicle sellers with participating dealerships looking for potential vehicle inventory across Canada.",
+      "Connect Canadian vehicle sellers with participating dealerships looking for potential vehicle inventory and acquisition opportunities.",
     locale: "en_CA",
   },
 
@@ -70,12 +76,19 @@ export const metadata = {
   },
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#020617",
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en-CA">
-      <body className="min-h-screen bg-gray-50 text-slate-900 antialiased">
+      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
         <Navbar />
-        {children}
+
+        <main>{children}</main>
       </body>
     </html>
   );
