@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -14,6 +15,8 @@ const initialForm = {
 };
 
 export default function DealerRegisterPage() {
+  const router = useRouter();
+
   const [form, setForm] = useState(initialForm);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -31,6 +34,8 @@ export default function DealerRegisterPage() {
   async function handleSubmit(event) {
     event.preventDefault();
 
+    if (loading) return;
+
     setLoading(true);
     setMessage("");
     setSuccess(false);
@@ -41,68 +46,97 @@ export default function DealerRegisterPage() {
       const email = form.email.trim().toLowerCase();
       const phone = form.phone.trim();
 
-      if (!dealershipName || !contactName || !email || !form.password) {
+      if (
+        !dealershipName ||
+        !contactName ||
+        !email ||
+        !form.password ||
+        !form.confirm_password
+      ) {
         throw new Error("Please complete all required fields.");
       }
 
       if (dealershipName.length > 150) {
-        throw new Error("Dealership name is too long.");
+        throw new Error("Dealership name must be 150 characters or less.");
       }
 
       if (contactName.length > 150) {
-        throw new Error("Contact name is too long.");
+        throw new Error("Contact name must be 150 characters or less.");
       }
 
       if (email.length > 254) {
         throw new Error("Email address is too long.");
       }
 
+      const emailValid =
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+      if (!emailValid) {
+        throw new Error("Please enter a valid email address.");
+      }
+
       if (form.password.length < 8) {
-        throw new Error("Password must be at least 8 characters.");
+        throw new Error(
+          "Password must be at least 8 characters."
+        );
       }
 
       if (form.password !== form.confirm_password) {
         throw new Error("Passwords do not match.");
       }
 
-      const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-      if (!emailIsValid) {
-        throw new Error("Please provide a valid business email address.");
-      }
-
       const supabase = createClient();
 
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password: form.password,
+      const { data, error } =
+        await supabase.auth.signUp({
+          email,
+          password: form.password,
 
-        options: {
-          data: {
-            role: "dealer",
-            dealership_name: dealershipName,
-            contact_name: contactName,
-            phone: phone || null,
+          options: {
+            data: {
+              role: "dealer",
+              dealership_name: dealershipName,
+              contact_name: contactName,
+              phone: phone || null,
+            },
+
+            emailRedirectTo:
+              `${window.location.origin}/dealer/dashboard`,
           },
-
-          emailRedirectTo:
-            `${window.location.origin}/dealer/dashboard`,
-        },
-      });
+        });
 
       if (error) {
-        console.error("Supabase dealer signup error:", error);
-        throw error;
+        console.error(
+          "Supabase dealer registration error:",
+          error
+        );
+
+        const errorText =
+          error.message?.toLowerCase() || "";
+
+        if (
+          errorText.includes("already registered") ||
+          errorText.includes("user already registered")
+        ) {
+          throw new Error(
+            "An account with this email already exists. Please sign in instead."
+          );
+        }
+
+        throw new Error(
+          error.message ||
+            "Unable to create your dealer account."
+        );
       }
 
       /*
-       * Supabase may require email confirmation.
+       * Email confirmation enabled.
        */
       if (!data?.session) {
         setSuccess(true);
 
         setMessage(
-          "Your dealer account has been created. Please check your email to confirm your account before signing in."
+          "Your dealer account has been created. Check your email to confirm your account before signing in."
         );
 
         setForm(initialForm);
@@ -111,39 +145,29 @@ export default function DealerRegisterPage() {
       }
 
       /*
-       * Email confirmation is disabled and
-       * Supabase created an active session.
+       * Email confirmation disabled.
+       * User already has an authenticated session.
        */
       setSuccess(true);
-
       setMessage(
-        "Your dealer account has been created successfully. Redirecting..."
+        "Dealer account created successfully. Redirecting..."
       );
 
-      window.location.assign("/dealer/dashboard");
+      router.push("/dealer/dashboard");
+      router.refresh();
+
     } catch (error) {
-      console.error("Dealer registration error:", error);
+      console.error(
+        "Dealer registration error:",
+        error
+      );
 
       setSuccess(false);
 
-      let errorMessage =
-        "Unable to create your dealer account. Please try again.";
-
-      if (
-        error?.message?.toLowerCase().includes("already registered")
-      ) {
-        errorMessage =
-          "An account with this email already exists. Please sign in instead.";
-      } else if (
-        error?.message?.toLowerCase().includes("user already registered")
-      ) {
-        errorMessage =
-          "An account with this email already exists. Please sign in instead.";
-      } else if (error?.message) {
-        errorMessage = error.message;
-      }
-
-      setMessage(errorMessage);
+      setMessage(
+        error?.message ||
+          "Unable to create your dealer account. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -154,28 +178,28 @@ export default function DealerRegisterPage() {
 
       {/* HERO */}
 
-      <section className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white">
+      <section className="bg-slate-950 text-white">
 
-        <div className="mx-auto max-w-5xl px-6 py-16 text-center md:py-20">
+        <div className="mx-auto max-w-5xl px-6 py-14 text-center md:py-20">
 
           <Link
             href="/"
-            className="text-sm font-bold text-blue-300 transition hover:text-white"
+            className="inline-flex text-sm font-bold text-blue-300 transition hover:text-white"
           >
             ← NorthSky Auto
           </Link>
 
-          <p className="mt-8 text-sm font-black uppercase tracking-widest text-blue-300">
-            Dealer Registration
+          <p className="mt-8 text-sm font-black uppercase tracking-[0.2em] text-blue-400">
+            Dealer Portal
           </p>
 
-          <h1 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">
+          <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">
             Create Your Dealer Account
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-            Create your NorthSky Auto dealer account and begin
-            the onboarding process for vehicle acquisition opportunities.
+            Join NorthSky Auto and create an account for
+            dealership vehicle acquisition opportunities.
           </p>
 
         </div>
@@ -183,38 +207,61 @@ export default function DealerRegisterPage() {
       </section>
 
 
-      {/* REGISTRATION */}
+      {/* FORM */}
 
       <section className="px-6 py-12 md:py-16">
 
         <div className="mx-auto max-w-2xl">
 
-          <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
+          <div className="rounded-3xl bg-white p-7 shadow-xl ring-1 ring-slate-200 sm:p-9">
 
-            <div className="mb-8">
+            {/* HEADER */}
 
-              <p className="text-sm font-black uppercase tracking-widest text-blue-600">
-                Dealer Portal
+            <div>
+
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-xl font-black text-white shadow-lg shadow-blue-200">
+                N
+              </div>
+
+              <p className="mt-6 text-sm font-black uppercase tracking-widest text-blue-600">
+                Dealer Registration
               </p>
 
               <h2 className="mt-2 text-2xl font-black">
-                Dealer Information
+                Dealership Information
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Enter your dealership information to create your
-                NorthSky Auto account.
+                Create your account using your dealership
+                and primary contact information.
               </p>
 
             </div>
 
 
+            {/* MESSAGE */}
+
+            {message && (
+              <div
+                role={success ? "status" : "alert"}
+                aria-live="polite"
+                className={`mt-6 rounded-xl p-4 text-sm font-semibold ${
+                  success
+                    ? "bg-green-50 text-green-700 ring-1 ring-green-200"
+                    : "bg-red-50 text-red-700 ring-1 ring-red-200"
+                }`}
+              >
+                {message}
+              </div>
+            )}
+
+
+            {/* FORM */}
+
             <form
               onSubmit={handleSubmit}
-              className="space-y-5"
+              className="mt-7 space-y-5"
             >
-
-              {/* DEALERSHIP NAME */}
 
               <Field
                 label="Dealership Name"
@@ -225,13 +272,11 @@ export default function DealerRegisterPage() {
                 autoComplete="organization"
                 maxLength={150}
                 required
+                disabled={loading}
               />
 
-
-              {/* CONTACT NAME */}
-
               <Field
-                label="Contact Name"
+                label="Primary Contact Name"
                 name="contact_name"
                 value={form.contact_name}
                 onChange={handleChange}
@@ -239,10 +284,8 @@ export default function DealerRegisterPage() {
                 autoComplete="name"
                 maxLength={150}
                 required
+                disabled={loading}
               />
-
-
-              {/* EMAIL */}
 
               <Field
                 label="Business Email"
@@ -254,10 +297,8 @@ export default function DealerRegisterPage() {
                 autoComplete="email"
                 maxLength={254}
                 required
+                disabled={loading}
               />
-
-
-              {/* PHONE */}
 
               <Field
                 label="Phone Number"
@@ -268,10 +309,8 @@ export default function DealerRegisterPage() {
                 placeholder="780-555-1234"
                 autoComplete="tel"
                 maxLength={50}
+                disabled={loading}
               />
-
-
-              {/* PASSWORD */}
 
               <Field
                 label="Password"
@@ -283,10 +322,8 @@ export default function DealerRegisterPage() {
                 autoComplete="new-password"
                 minLength={8}
                 required
+                disabled={loading}
               />
-
-
-              {/* CONFIRM PASSWORD */}
 
               <Field
                 label="Confirm Password"
@@ -298,45 +335,35 @@ export default function DealerRegisterPage() {
                 autoComplete="new-password"
                 minLength={8}
                 required
+                disabled={loading}
               />
-
-
-              {/* MESSAGE */}
-
-              {message && (
-                <div
-                  role="alert"
-                  aria-live="polite"
-                  className={`rounded-xl p-4 text-sm font-semibold ${
-                    success
-                      ? "bg-green-50 text-green-700 ring-1 ring-green-200"
-                      : "bg-red-50 text-red-700 ring-1 ring-red-200"
-                  }`}
-                >
-                  {message}
-                </div>
-              )}
 
 
               {/* TERMS */}
 
-              <p className="text-xs leading-5 text-slate-500">
-                By creating an account, you agree to the NorthSky Auto{" "}
+              <div className="rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-500 ring-1 ring-slate-200">
+
+                By creating a dealer account, you agree to
+                the NorthSky Auto{" "}
+
                 <Link
                   href="/terms"
-                  className="font-semibold text-blue-600 hover:underline"
+                  className="font-bold text-blue-600 hover:underline"
                 >
                   Terms of Service
                 </Link>{" "}
-                and acknowledge our{" "}
+
+                and acknowledge the{" "}
+
                 <Link
                   href="/privacy"
-                  className="font-semibold text-blue-600 hover:underline"
+                  className="font-bold text-blue-600 hover:underline"
                 >
                   Privacy Policy
                 </Link>
                 .
-              </p>
+
+              </div>
 
 
               {/* SUBMIT */}
@@ -344,10 +371,10 @@ export default function DealerRegisterPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-xl bg-blue-600 px-6 py-4 font-black text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-xl bg-blue-600 px-6 py-4 font-black text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading
-                  ? "Creating Dealer Account..."
+                  ? "Creating Account..."
                   : "Create Dealer Account →"}
               </button>
 
@@ -356,7 +383,7 @@ export default function DealerRegisterPage() {
 
             {/* LOGIN */}
 
-            <div className="mt-7 border-t border-slate-200 pt-6 text-center">
+            <div className="mt-8 border-t border-slate-200 pt-7 text-center">
 
               <p className="text-sm text-slate-500">
                 Already have a dealer account?
@@ -364,9 +391,9 @@ export default function DealerRegisterPage() {
 
               <Link
                 href="/dealer/login"
-                className="mt-2 inline-block font-bold text-blue-600 hover:text-blue-700 hover:underline"
+                className="mt-2 inline-flex font-bold text-blue-600 transition hover:text-blue-700 hover:underline"
               >
-                Sign in to Dealer Portal →
+                Sign In to Dealer Portal →
               </Link>
 
             </div>
@@ -374,52 +401,43 @@ export default function DealerRegisterPage() {
           </div>
 
 
-          {/* ACCOUNT INFORMATION */}
+          {/* NEXT STEPS */}
 
-          <div className="mt-6 rounded-2xl bg-blue-50 p-5 text-center ring-1 ring-blue-100">
+          <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-6">
 
-            <h3 className="font-black text-slate-900">
+            <h3 className="text-center font-black text-slate-900">
               What happens next?
             </h3>
 
-            <div className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
+            <div className="mt-5 grid gap-5 sm:grid-cols-3">
 
-              <div>
-                <div className="font-black text-blue-600">
-                  01
-                </div>
-                <p className="mt-1">
-                  Create your account
-                </p>
-              </div>
+              <Step
+                number="01"
+                title="Create Account"
+                text="Register your dealership."
+              />
 
-              <div>
-                <div className="font-black text-blue-600">
-                  02
-                </div>
-                <p className="mt-1">
-                  Choose a dealer plan
-                </p>
-              </div>
+              <Step
+                number="02"
+                title="Choose a Plan"
+                text="Select your dealer access plan."
+              />
 
-              <div>
-                <div className="font-black text-blue-600">
-                  03
-                </div>
-                <p className="mt-1">
-                  Access opportunities
-                </p>
-              </div>
+              <Step
+                number="03"
+                title="Source Vehicles"
+                text="Review acquisition opportunities."
+              />
 
             </div>
 
-            <div className="mt-5 flex justify-center gap-4 text-xs font-semibold">
+            <div className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs font-semibold">
 
               <Link
                 href="/pricing"
                 className="text-blue-600 hover:underline"
               >
-                View Dealer Plans
+                Dealer Plans
               </Link>
 
               <Link
@@ -436,7 +454,28 @@ export default function DealerRegisterPage() {
                 Terms
               </Link>
 
+              <Link
+                href="/contact"
+                className="text-blue-600 hover:underline"
+              >
+                Contact
+              </Link>
+
             </div>
+
+          </div>
+
+
+          {/* BACK */}
+
+          <div className="mt-6 text-center">
+
+            <Link
+              href="/"
+              className="text-sm font-semibold text-slate-500 transition hover:text-slate-900"
+            >
+              ← Back to NorthSky Auto
+            </Link>
 
           </div>
 
@@ -451,7 +490,7 @@ export default function DealerRegisterPage() {
 
 /*
 |--------------------------------------------------------------------------
-| Field Component
+| Field
 |--------------------------------------------------------------------------
 */
 
@@ -466,6 +505,7 @@ function Field({
   maxLength,
   minLength,
   required = false,
+  disabled = false,
 }) {
   return (
     <div>
@@ -494,8 +534,40 @@ function Field({
         maxLength={maxLength}
         minLength={minLength}
         required={required}
-        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+        disabled={disabled}
+        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
       />
+
+    </div>
+  );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Step
+|--------------------------------------------------------------------------
+*/
+
+function Step({
+  number,
+  title,
+  text,
+}) {
+  return (
+    <div className="text-center">
+
+      <div className="text-sm font-black text-blue-600">
+        {number}
+      </div>
+
+      <h4 className="mt-1 font-black text-slate-900">
+        {title}
+      </h4>
+
+      <p className="mt-1 text-xs leading-5 text-slate-500">
+        {text}
+      </p>
 
     </div>
   );
