@@ -29,38 +29,38 @@ export default function DealerAnalyticsPage() {
         headers["x-dealer-id"] = dealerId;
       }
 
-      const [leadsResponse, savedResponse] =
-        await Promise.all([
-          fetch("/api/leads", {
-            method: "GET",
-            headers,
-            cache: "no-store",
-          }),
+      const [leadsResponse, savedResponse] = await Promise.all([
+        fetch("/api/leads", {
+          method: "GET",
+          headers,
+          cache: "no-store",
+        }),
+        fetch("/api/dealer/saved", {
+          method: "GET",
+          headers,
+          cache: "no-store",
+        }),
+      ]);
 
-          fetch("/api/dealer/saved", {
-            method: "GET",
-            headers,
-            cache: "no-store",
-          }),
-        ]);
+      const leadsData = await leadsResponse
+        .json()
+        .catch(() => ({}));
 
-      const leadsData =
-        await leadsResponse.json().catch(() => ({}));
-
-      const savedData =
-        await savedResponse.json().catch(() => ({}));
+      const savedData = await savedResponse
+        .json()
+        .catch(() => ({}));
 
       if (!leadsResponse.ok) {
         throw new Error(
           leadsData?.error ||
-            "Unable to load vehicle marketplace data."
+            "Unable to load vehicle opportunities."
         );
       }
 
       if (!savedResponse.ok) {
         throw new Error(
           savedData?.error ||
-            "Unable to load saved vehicle data."
+            "Unable to load saved vehicles."
         );
       }
 
@@ -75,11 +75,11 @@ export default function DealerAnalyticsPage() {
           ? savedData.saved
           : []
       );
-    } catch (err) {
-      console.error("Dealer analytics error:", err);
+    } catch (error) {
+      console.error("Dealer analytics error:", error);
 
       setError(
-        err?.message ||
+        error?.message ||
           "Unable to load dealer analytics."
       );
 
@@ -95,7 +95,7 @@ export default function DealerAnalyticsPage() {
   }, [loadAnalytics]);
 
   const analytics = useMemo(() => {
-    const totalOpportunities = leads.length;
+    const total = leads.length;
 
     const savedCount = saved.length;
 
@@ -104,145 +104,91 @@ export default function DealerAnalyticsPage() {
         lead?.status || ""
       ).toLowerCase();
 
-      return (
-        status === "active" ||
-        status === "available" ||
-        status === "new"
-      );
+      return [
+        "active",
+        "available",
+        "new",
+        "published",
+      ].includes(status);
     }).length;
 
-    const pricedVehicles = leads.filter(
-      (lead) => {
-        const price = Number(
-          lead?.asking_price
-        );
+    const pricedLeads = leads.filter((lead) => {
+      const price = Number(lead?.asking_price);
 
-        return (
-          lead?.asking_price !== null &&
-          lead?.asking_price !== undefined &&
-          lead?.asking_price !== "" &&
-          Number.isFinite(price) &&
-          price > 0
-        );
-      }
-    );
+      return Number.isFinite(price) && price > 0;
+    });
 
-    const averageAskingPrice =
-      pricedVehicles.length > 0
-        ? pricedVehicles.reduce(
-            (total, lead) =>
-              total +
-              Number(lead.asking_price),
+    const averagePrice =
+      pricedLeads.length > 0
+        ? pricedLeads.reduce(
+            (sum, lead) =>
+              sum + Number(lead.asking_price),
             0
-          ) / pricedVehicles.length
+          ) / pricedLeads.length
         : 0;
 
-    const averageMileageVehicles =
-      leads.filter((lead) => {
-        const mileage = Number(
-          lead?.mileage
-        );
+    const mileageLeads = leads.filter((lead) => {
+      const mileage = Number(lead?.mileage);
 
-        return (
-          Number.isFinite(mileage) &&
-          mileage >= 0
-        );
-      });
+      return Number.isFinite(mileage) && mileage >= 0;
+    });
 
     const averageMileage =
-      averageMileageVehicles.length > 0
-        ? averageMileageVehicles.reduce(
-            (total, lead) =>
-              total + Number(lead.mileage),
+      mileageLeads.length > 0
+        ? mileageLeads.reduce(
+            (sum, lead) =>
+              sum + Number(lead.mileage),
             0
-          ) /
-          averageMileageVehicles.length
+          ) / mileageLeads.length
         : 0;
 
-    const provinceCounts = {};
-
-    leads.forEach((lead) => {
-      const province =
+    const provinceCounts = countValues(
+      leads,
+      (lead) =>
         lead?.province ||
         lead?.province_code ||
-        extractProvince(
-          lead?.location
-        ) ||
-        "Other";
+        extractProvince(lead?.location) ||
+        "Other"
+    );
 
-      const key =
-        String(province).trim() ||
-        "Other";
+    const makeCounts = countValues(
+      leads,
+      (lead) => lead?.make || "Other"
+    );
 
-      provinceCounts[key] =
-        (provinceCounts[key] || 0) + 1;
-    });
-
-    const topProvinces = Object.entries(
-      provinceCounts
-    )
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-
-    const typeCounts = {};
-
-    leads.forEach((lead) => {
-      const type =
+    const typeCounts = countValues(
+      leads,
+      (lead) =>
         lead?.vehicle_type ||
         lead?.type ||
-        "Other";
-
-      const key =
-        String(type).trim() ||
-        "Other";
-
-      typeCounts[key] =
-        (typeCounts[key] || 0) + 1;
-    });
-
-    const vehicleTypes = Object.entries(
-      typeCounts
-    )
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6);
-
-    const makeCounts = {};
-
-    leads.forEach((lead) => {
-      const make =
-        lead?.make || "Other";
-
-      const key =
-        String(make).trim() ||
-        "Other";
-
-      makeCounts[key] =
-        (makeCounts[key] || 0) + 1;
-    });
-
-    const topMakes = Object.entries(
-      makeCounts
-    )
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8);
+        "Other"
+    );
 
     const savedRate =
-      totalOpportunities > 0
-        ? (savedCount /
-            totalOpportunities) *
-          100
+      total > 0
+        ? (savedCount / total) * 100
         : 0;
 
     return {
-      totalOpportunities,
+      total,
       savedCount,
       activeCount,
-      averageAskingPrice,
+      pricedCount: pricedLeads.length,
+      averagePrice,
       averageMileage,
-      topProvinces,
-      vehicleTypes,
-      topMakes,
       savedRate,
+      topProvinces: getTopValues(
+        provinceCounts,
+        5
+      ),
+      topMakes: getTopValues(
+        makeCounts,
+        8
+      ),
+      vehicleTypes: getTopValues(
+        typeCounts,
+        6
+      ),
     };
   }, [leads, saved]);
 
@@ -253,7 +199,7 @@ export default function DealerAnalyticsPage() {
         <div className="mx-auto max-w-7xl px-6 py-14 md:py-18">
           <Link
             href="/dealer/dashboard"
-            className="text-sm font-bold text-blue-300 transition hover:text-white"
+            className="inline-flex text-sm font-bold text-blue-300 transition hover:text-white"
           >
             ← Dealer Dashboard
           </Link>
@@ -271,43 +217,51 @@ export default function DealerAnalyticsPage() {
             </h1>
 
             <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300 md:text-xl">
-              Understand the vehicle marketplace,
-              monitor your saved opportunities, and
-              identify inventory trends across
-              NorthSky Auto.
+              Analyze vehicle opportunities, monitor
+              your saved pipeline, and understand
+              inventory trends across the NorthSky Auto
+              marketplace.
             </p>
           </div>
         </div>
       </section>
 
-      {/* MAIN */}
+      {/* CONTENT */}
       <section className="mx-auto max-w-7xl px-6 py-10 md:py-14">
         {/* ERROR */}
         {error && (
-          <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm font-semibold text-red-700">
-            <p>{error}</p>
+          <div className="mb-8 rounded-3xl border border-red-200 bg-red-50 p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-black text-red-900">
+                  Analytics unavailable
+                </p>
 
-            <button
-              type="button"
-              onClick={loadAnalytics}
-              className="mt-3 font-black underline"
-            >
-              Try Again
-            </button>
+                <p className="mt-1 text-sm text-red-700">
+                  {error}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={loadAnalytics}
+                className="rounded-xl bg-red-600 px-5 py-3 text-sm font-black text-white transition hover:bg-red-700"
+              >
+                Try Again
+              </button>
+            </div>
           </div>
         )}
 
-        {/* TOP STATS */}
+        {/* KPI CARDS */}
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard
             icon="🚘"
             label="Vehicle Opportunities"
             value={
-              loading
-                ? "—"
-                : analytics.totalOpportunities
+              loading ? "—" : analytics.total
             }
-            description="Available marketplace submissions"
+            description="Current marketplace submissions"
           />
 
           <MetricCard
@@ -339,67 +293,48 @@ export default function DealerAnalyticsPage() {
               loading
                 ? "—"
                 : formatCurrency(
-                    analytics.averageAskingPrice
+                    analytics.averagePrice
                   )
             }
-            description="Based on priced submissions"
+            description="Priced marketplace submissions"
           />
         </div>
 
         {/* PIPELINE */}
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]">
           <section className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200 md:p-8">
-            <div>
-              <span className="text-xs font-black uppercase tracking-widest text-blue-600">
-                Acquisition Pipeline
-              </span>
+            <span className="text-xs font-black uppercase tracking-widest text-blue-600">
+              Acquisition Pipeline
+            </span>
 
-              <h2 className="mt-2 text-2xl font-black">
-                Marketplace Overview
-              </h2>
+            <h2 className="mt-2 text-2xl font-black">
+              Marketplace Overview
+            </h2>
 
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                A snapshot of current vehicle sourcing
-                activity available through NorthSky Auto.
-              </p>
-            </div>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Monitor the current inventory opportunity
+              available through NorthSky Auto.
+            </p>
 
-            <div className="mt-8 space-y-6">
+            <div className="mt-8 space-y-7">
               <ProgressRow
                 label="Saved Opportunities"
                 value={analytics.savedCount}
-                total={
-                  analytics.totalOpportunities
-                }
+                total={analytics.total}
                 loading={loading}
               />
 
               <ProgressRow
                 label="Active Opportunities"
                 value={analytics.activeCount}
-                total={
-                  analytics.totalOpportunities
-                }
+                total={analytics.total}
                 loading={loading}
               />
 
               <ProgressRow
                 label="Priced Opportunities"
-                value={
-                  leads.filter((lead) => {
-                    const price = Number(
-                      lead?.asking_price
-                    );
-
-                    return (
-                      Number.isFinite(price) &&
-                      price > 0
-                    );
-                  }).length
-                }
-                total={
-                  analytics.totalOpportunities
-                }
+                value={analytics.pricedCount}
+                total={analytics.total}
                 loading={loading}
               />
             </div>
@@ -411,7 +346,7 @@ export default function DealerAnalyticsPage() {
               Saved Pipeline Rate
             </span>
 
-            <div className="mt-5 flex items-end gap-2">
+            <div className="mt-5">
               <span className="text-5xl font-black">
                 {loading
                   ? "—"
@@ -422,8 +357,8 @@ export default function DealerAnalyticsPage() {
             </div>
 
             <p className="mt-4 text-sm leading-7 text-slate-300">
-              Percentage of current marketplace
-              opportunities represented in your saved
+              Percentage of marketplace opportunities
+              currently represented in your saved
               vehicle pipeline.
             </p>
 
@@ -436,30 +371,26 @@ export default function DealerAnalyticsPage() {
           </section>
         </div>
 
-        {/* MARKET INSIGHTS */}
+        {/* INVENTORY INSIGHTS */}
         <div className="mt-8 grid gap-8 lg:grid-cols-2">
-          {/* TOP MAKES */}
           <InsightCard
-            title="Top Vehicle Makes"
             eyebrow="Inventory Trends"
-            description="Makes currently represented most frequently in the marketplace."
+            title="Top Vehicle Makes"
+            description="Vehicle makes currently appearing most frequently."
           >
             {loading ? (
-              <LoadingRows count={5} />
-            ) : analytics.topMakes.length ===
-              0 ? (
+              <LoadingRows />
+            ) : analytics.topMakes.length === 0 ? (
               <EmptyInsight />
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {analytics.topMakes.map(
                   ([make, count]) => (
                     <RankingRow
                       key={make}
                       label={make}
                       value={count}
-                      total={
-                        analytics.totalOpportunities
-                      }
+                      total={analytics.total}
                     />
                   )
                 )}
@@ -467,28 +398,25 @@ export default function DealerAnalyticsPage() {
             )}
           </InsightCard>
 
-          {/* VEHICLE TYPES */}
           <InsightCard
-            title="Vehicle Types"
             eyebrow="Marketplace Mix"
-            description="Current distribution of vehicle types available to dealers."
+            title="Vehicle Types"
+            description="Current distribution of vehicle categories."
           >
             {loading ? (
-              <LoadingRows count={5} />
+              <LoadingRows />
             ) : analytics.vehicleTypes.length ===
               0 ? (
               <EmptyInsight />
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {analytics.vehicleTypes.map(
                   ([type, count]) => (
                     <RankingRow
                       key={type}
                       label={type}
                       value={count}
-                      total={
-                        analytics.totalOpportunities
-                      }
+                      total={analytics.total}
                     />
                   )
                 )}
@@ -497,29 +425,27 @@ export default function DealerAnalyticsPage() {
           </InsightCard>
         </div>
 
-        {/* LOCATION + MILEAGE */}
+        {/* MARKETS + AVERAGES */}
         <div className="mt-8 grid gap-8 lg:grid-cols-2">
           <InsightCard
-            title="Top Markets"
             eyebrow="Geographic Activity"
-            description="Locations with the highest number of current vehicle submissions."
+            title="Top Markets"
+            description="Provinces currently generating the most vehicle opportunities."
           >
             {loading ? (
-              <LoadingRows count={5} />
+              <LoadingRows />
             ) : analytics.topProvinces.length ===
               0 ? (
               <EmptyInsight />
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {analytics.topProvinces.map(
                   ([province, count]) => (
                     <RankingRow
                       key={province}
                       label={province}
                       value={count}
-                      total={
-                        analytics.totalOpportunities
-                      }
+                      total={analytics.total}
                     />
                   )
                 )}
@@ -554,7 +480,7 @@ export default function DealerAnalyticsPage() {
                   loading
                     ? "—"
                     : formatCurrency(
-                        analytics.averageAskingPrice
+                        analytics.averagePrice
                       )
                 }
               />
@@ -569,11 +495,11 @@ export default function DealerAnalyticsPage() {
               />
 
               <MetricBox
-                label="Marketplace Listings"
+                label="Priced Listings"
                 value={
                   loading
                     ? "—"
-                    : analytics.totalOpportunities
+                    : analytics.pricedCount
                 }
               />
             </div>
@@ -585,17 +511,17 @@ export default function DealerAnalyticsPage() {
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div>
               <span className="text-xs font-black uppercase tracking-widest text-blue-600">
-                Next Step
+                Dealer Marketplace
               </span>
 
               <h2 className="mt-2 text-2xl font-black">
-                Turn Market Data Into Inventory
+                Turn Data Into Inventory
               </h2>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                Browse current vehicle opportunities,
-                save promising submissions, and review
-                individual leads for acquisition potential.
+                Review vehicle opportunities, save
+                promising inventory, and evaluate seller
+                submissions for potential acquisition.
               </p>
             </div>
 
@@ -619,19 +545,23 @@ export default function DealerAnalyticsPage() {
       </section>
 
       {/* DISCLOSURE */}
-      <section className="border-t border-slate-200 bg-white px-6 py-8">
+      <footer className="border-t border-slate-200 bg-white px-6 py-8">
         <div className="mx-auto max-w-4xl text-center text-xs leading-6 text-slate-500">
           Analytics are calculated from vehicle opportunity
-          and saved vehicle data currently available to the
-          NorthSky Auto dealer portal. Marketplace counts,
-          pricing, mileage, availability, and other metrics
-          may change as new seller submissions are received
-          or existing opportunities are updated.
+          and saved vehicle data currently available to
+          the NorthSky Auto dealer portal. Marketplace
+          counts, pricing, mileage, availability, and
+          other metrics may change as seller submissions
+          are received or updated.
         </div>
-      </section>
+      </footer>
     </main>
   );
 }
+
+/* --------------------------------
+   COMPONENTS
+-------------------------------- */
 
 function MetricCard({
   icon,
@@ -642,7 +572,7 @@ function MetricCard({
   return (
     <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="flex items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-widest text-slate-400">
             {label}
           </p>
@@ -674,9 +604,7 @@ function ProgressRow({
     total > 0
       ? Math.min(
           100,
-          Math.round(
-            (value / total) * 100
-          )
+          Math.round((value / total) * 100)
         )
       : 0;
 
@@ -696,7 +624,7 @@ function ProgressRow({
 
       <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-100">
         <div
-          className="h-full rounded-full bg-blue-600 transition-all"
+          className="h-full rounded-full bg-blue-600 transition-all duration-500"
           style={{
             width: `${percentage}%`,
           }}
@@ -757,7 +685,7 @@ function RankingRow({
 
       <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
         <div
-          className="h-full rounded-full bg-blue-600"
+          className="h-full rounded-full bg-blue-600 transition-all duration-500"
           style={{
             width: `${percentage}%`,
           }}
@@ -808,9 +736,45 @@ function EmptyInsight() {
       <p className="mt-3 text-sm font-bold text-slate-600">
         Not enough marketplace data yet.
       </p>
+
+      <p className="mt-1 text-xs text-slate-400">
+        Analytics will populate as vehicle submissions
+        are received.
+      </p>
     </div>
   );
 }
+
+/* --------------------------------
+   DATA HELPERS
+-------------------------------- */
+
+function countValues(items, callback) {
+  const counts = {};
+
+  items.forEach((item) => {
+    const rawValue = callback(item);
+
+    const value =
+      String(rawValue || "Other").trim() ||
+      "Other";
+
+    counts[value] =
+      (counts[value] || 0) + 1;
+  });
+
+  return counts;
+}
+
+function getTopValues(counts, limit) {
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit);
+}
+
+/* --------------------------------
+   FORMATTERS
+-------------------------------- */
 
 function formatCurrency(value) {
   const number = Number(value);
@@ -865,13 +829,10 @@ function extractProvince(location) {
     "Yukon",
   ];
 
-  const match = provinces.find(
-    (province) =>
-      value
-        .toLowerCase()
-        .includes(
-          province.toLowerCase()
-        )
+  const match = provinces.find((province) =>
+    value
+      .toLowerCase()
+      .includes(province.toLowerCase())
   );
 
   return match || "";
