@@ -2,12 +2,12 @@ import "./globals.css";
 
 export const metadata = {
   title: "NorthSky Auto",
-  description: "Canadian Vehicle Marketplace",
+  description: "Build test",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en-CA">
+    <html lang="en">
       <body>{children}</body>
     </html>
   );
