@@ -1,156 +1,204 @@
 "use client";
+
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
 const EMPTY_FILTERS = {
-  province: "",
+  search: "",
   make: "",
   model: "",
   year: "",
-  type: "",
+  condition: "",
   maxMileage: "",
 };
+
 export default function DealerLeadsPage() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [filters, setFilters] = useState(EMPTY_FILTERS);
-  useEffect(() => {
-    let cancelled = false;
-    async function loadLeads() {
-      try {
+
+  const loadLeads = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
         setLoading(true);
-        setError("");
-        const response = await fetch("/api/leads", {
-          method: "GET",
-          cache: "no-store",
-          headers: {
-            Accept: "application/json",
-          },
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(
-            data?.error ||
-              "Unable to load vehicle opportunities."
-          );
-        }
-        if (!cancelled) {
-          setLeads(
-            Array.isArray(data?.leads)
-              ? data.leads
-              : []
-          );
-        }
-      } catch (err) {
-        console.error("Dealer leads error:", err);
-        if (!cancelled) {
-          setError(
-            err?.message ||
-              "Unable to load vehicle opportunities."
-          );
-          setLeads([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
       }
+
+      setError("");
+
+      const response = await fetch("/api/leads?limit=100", {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ||
+            "Unable to load vehicle opportunities."
+        );
+      }
+
+      setLeads(
+        Array.isArray(data?.leads)
+          ? data.leads
+          : []
+      );
+    } catch (error) {
+      console.error("Dealer leads error:", error);
+
+      setError(
+        error?.message ||
+          "Unable to load vehicle opportunities."
+      );
+
+      if (!isRefresh) {
+        setLeads([]);
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-    loadLeads();
-    return () => {
-      cancelled = true;
-    };
   }, []);
+
+  useEffect(() => {
+    loadLeads();
+  }, [loadLeads]);
+
   function handleFilterChange(event) {
     const { name, value } = event.target;
+
     setFilters((current) => ({
       ...current,
       [name]: value,
     }));
   }
+
   function clearFilters() {
     setFilters({ ...EMPTY_FILTERS });
   }
+
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
-      const province = String(
-        lead.province ||
-          lead.province_code ||
-          ""
-      ).toLowerCase();
-      const location = String(
-        lead.location || ""
-      ).toLowerCase();
+      const search = filters.search
+        .trim()
+        .toLowerCase();
+
       const make = String(
         lead.make || ""
       ).toLowerCase();
+
       const model = String(
         lead.model || ""
       ).toLowerCase();
+
+      const trim = String(
+        lead.trim || ""
+      ).toLowerCase();
+
+      const postalCode = String(
+        lead.postal_code || ""
+      ).toLowerCase();
+
+      const description = String(
+        lead.description || ""
+      ).toLowerCase();
+
       const year = String(
         lead.year || ""
       );
-      const type = String(
-        lead.vehicle_type ||
-          lead.type ||
-          ""
+
+      const condition = String(
+        lead.condition || ""
       ).toLowerCase();
+
       const mileage =
         lead.mileage !== null &&
         lead.mileage !== undefined &&
         lead.mileage !== ""
           ? Number(lead.mileage)
           : null;
+
       /*
-       * Province filtering:
-       *
-       * Your current API does not have a dedicated
-       * province field, so also check location.
+       * GENERAL SEARCH
        */
-      if (filters.province) {
-        const provinceSearch =
-          filters.province.toLowerCase();
-        const provinceMatches =
-          province.includes(provinceSearch) ||
-          location.includes(provinceSearch);
-        if (!provinceMatches) {
+      if (search) {
+        const searchableText = [
+          make,
+          model,
+          trim,
+          year,
+          postalCode,
+          description,
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        if (!searchableText.includes(search)) {
           return false;
         }
       }
+
+      /*
+       * MAKE
+       */
       if (
         filters.make &&
         !make.includes(
-          filters.make.toLowerCase()
+          filters.make.trim().toLowerCase()
         )
       ) {
         return false;
       }
+
+      /*
+       * MODEL
+       */
       if (
         filters.model &&
         !model.includes(
-          filters.model.toLowerCase()
+          filters.model.trim().toLowerCase()
         )
       ) {
         return false;
       }
+
+      /*
+       * YEAR
+       */
       if (
         filters.year &&
         year !== filters.year
       ) {
         return false;
       }
-      if (filters.type) {
-        if (
-          !type ||
-          type !== filters.type.toLowerCase()
-        ) {
-          return false;
-        }
+
+      /*
+       * CONDITION
+       */
+      if (
+        filters.condition &&
+        condition !==
+          filters.condition.toLowerCase()
+      ) {
+        return false;
       }
+
+      /*
+       * MAXIMUM MILEAGE
+       */
       if (filters.maxMileage) {
         const maxMileage = Number(
           filters.maxMileage
         );
+
         if (
           Number.isFinite(maxMileage) &&
           mileage !== null &&
@@ -159,69 +207,120 @@ export default function DealerLeadsPage() {
           return false;
         }
       }
+
       return true;
     });
   }, [leads, filters]);
+
+  const hasFilters = Object.values(
+    filters
+  ).some((value) => value !== "");
+
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-900">
+    <main className="min-h-screen bg-slate-50 text-slate-900">
       {/* HERO */}
-      <section className="bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-900 text-white">
-        <div className="mx-auto max-w-7xl px-6 py-16 md:py-20">
-          <div className="max-w-4xl">
-            <span className="inline-flex rounded-full bg-blue-500/20 px-5 py-2 text-sm font-black tracking-wide text-blue-300 ring-1 ring-blue-400/20">
-              NORTHSKY AUTO DEALER MARKETPLACE
-            </span>
-            <h1 className="mt-7 text-4xl font-black tracking-tight md:text-6xl">
-              Find Your Next
-              <span className="block text-blue-400">
-                Vehicle Acquisition
+      <section className="overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 text-white">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 md:py-16">
+          <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+            <div className="max-w-3xl">
+              <span className="inline-flex rounded-full bg-blue-500/15 px-4 py-2 text-xs font-black uppercase tracking-widest text-blue-300 ring-1 ring-blue-400/20">
+                Dealer Marketplace
               </span>
-            </h1>
-            <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300 md:text-xl">
-              Browse seller-submitted vehicles and discover
-              acquisition opportunities for your dealership
-              across Canada.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3 text-sm font-semibold text-slate-300">
-              <span>✓ Seller submissions</span>
-              <span>✓ Canadian marketplace</span>
-              <span>✓ Dealer opportunities</span>
+
+              <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl md:text-6xl">
+                Vehicle
+                <span className="block text-blue-400">
+                  Opportunities
+                </span>
+              </h1>
+
+              <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
+                Browse seller-submitted vehicles and
+                discover potential inventory acquisition
+                opportunities for your dealership.
+              </p>
+
+              <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold text-slate-300">
+                <span>✓ Canadian submissions</span>
+                <span>✓ Vehicle details</span>
+                <span>✓ Dealer sourcing</span>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => loadLeads(true)}
+              disabled={loading || refreshing}
+              className="inline-flex shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-black text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {refreshing
+                ? "Refreshing..."
+                : "↻ Refresh Opportunities"}
+            </button>
           </div>
         </div>
       </section>
-      {/* FILTERS */}
-      <section className="mx-auto max-w-7xl px-6 py-10">
-        <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+
+      {/* SEARCH */}
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-10">
+        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <span className="text-xs font-black uppercase tracking-widest text-blue-600">
+              <p className="text-xs font-black uppercase tracking-widest text-blue-600">
                 Marketplace Search
-              </span>
-              <h2 className="mt-2 text-2xl font-black">
-                Search Vehicle Opportunities
+              </p>
+
+              <h2 className="mt-2 text-2xl font-black text-slate-950">
+                Find Vehicles
               </h2>
+
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                Filter available vehicle submissions by make,
-                model, year, vehicle type, location, and mileage.
+                Search and filter available vehicle
+                submissions by make, model, year,
+                condition, and mileage.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="self-start text-sm font-black text-blue-600 transition hover:text-blue-800 md:self-auto"
-            >
-              Clear Filters
-            </button>
+
+            {hasFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-left text-sm font-black text-blue-600 transition hover:text-blue-800 sm:text-right"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
-          <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <FilterInput
-              label="Province / Location"
-              name="province"
-              value={filters.province}
-              onChange={handleFilterChange}
-              placeholder="Alberta"
-            />
+
+          {/* SEARCH BAR */}
+          <div className="mt-6">
+            <label
+              htmlFor="search"
+              className="mb-2 block text-sm font-bold text-slate-700"
+            >
+              Search Marketplace
+            </label>
+
+            <div className="relative">
+              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg">
+                🔎
+              </span>
+
+              <input
+                id="search"
+                name="search"
+                type="search"
+                value={filters.search}
+                onChange={handleFilterChange}
+                placeholder="Search make, model, trim, year, postal code..."
+                maxLength={100}
+                className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+          </div>
+
+          {/* FILTERS */}
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <FilterInput
               label="Make"
               name="make"
@@ -229,6 +328,7 @@ export default function DealerLeadsPage() {
               onChange={handleFilterChange}
               placeholder="Ford"
             />
+
             <FilterInput
               label="Model"
               name="model"
@@ -236,6 +336,7 @@ export default function DealerLeadsPage() {
               onChange={handleFilterChange}
               placeholder="F-150"
             />
+
             <FilterInput
               label="Year"
               name="year"
@@ -246,42 +347,42 @@ export default function DealerLeadsPage() {
               min="1900"
               max={new Date().getFullYear() + 1}
             />
+
             <div>
               <label
-                htmlFor="type"
+                htmlFor="condition"
                 className="mb-2 block text-sm font-bold text-slate-700"
               >
-                Vehicle Type
+                Condition
               </label>
+
               <select
-                id="type"
-                name="type"
-                value={filters.type}
+                id="condition"
+                name="condition"
+                value={filters.condition}
                 onChange={handleFilterChange}
                 className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
               >
                 <option value="">
-                  All Types
+                  All Conditions
                 </option>
-                <option value="Car">
-                  Car
+                <option value="Excellent">
+                  Excellent
                 </option>
-                <option value="Truck">
-                  Truck
+                <option value="Good">
+                  Good
                 </option>
-                <option value="SUV">
-                  SUV
+                <option value="Fair">
+                  Fair
                 </option>
-                <option value="Van">
-                  Van
-                </option>
-                <option value="Commercial">
-                  Commercial
+                <option value="Poor">
+                  Poor
                 </option>
               </select>
             </div>
+
             <FilterInput
-              label="Maximum Mileage (km)"
+              label="Maximum Mileage"
               name="maxMileage"
               value={filters.maxMileage}
               onChange={handleFilterChange}
@@ -292,18 +393,21 @@ export default function DealerLeadsPage() {
           </div>
         </div>
       </section>
+
       {/* MARKETPLACE */}
-      <section className="mx-auto max-w-7xl px-6 pb-20">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 md:pb-20">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <span className="text-xs font-black uppercase tracking-widest text-blue-600">
-              Available Opportunities
-            </span>
-            <h2 className="mt-2 text-3xl font-black">
+            <p className="text-xs font-black uppercase tracking-widest text-blue-600">
+              Available Inventory
+            </p>
+
+            <h2 className="mt-2 text-3xl font-black text-slate-950">
               Vehicle Leads
             </h2>
           </div>
-          <div className="rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-600 ring-1 ring-slate-200">
+
+          <div className="inline-flex self-start rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-600 ring-1 ring-slate-200 sm:self-auto">
             {loading
               ? "Loading..."
               : `${filteredLeads.length} ${
@@ -313,74 +417,79 @@ export default function DealerLeadsPage() {
                 }`}
           </div>
         </div>
+
         {/* ERROR */}
         {error && (
-          <div className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm font-semibold text-red-700">
-            <p>{error}</p>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="mt-3 font-black underline"
-            >
-              Try Again
-            </button>
+          <div className="mt-7 rounded-2xl border border-red-200 bg-red-50 p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="font-black text-red-900">
+                  Unable to load opportunities
+                </h3>
+
+                <p className="mt-1 text-sm leading-6 text-red-700">
+                  {error}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => loadLeads()}
+                className="rounded-xl bg-red-600 px-5 py-3 text-sm font-black text-white transition hover:bg-red-700"
+              >
+                Try Again
+              </button>
+            </div>
           </div>
         )}
+
         {/* LOADING */}
         {loading && (
-          <div className="mt-8 grid gap-7 lg:grid-cols-2">
+          <div className="mt-7 grid gap-6 lg:grid-cols-2">
             {[1, 2, 3, 4].map((item) => (
-              <div
-                key={item}
-                className="animate-pulse overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200"
-              >
-                <div className="h-48 bg-slate-200" />
-                <div className="p-7">
-                  <div className="h-4 w-20 rounded bg-slate-200" />
-                  <div className="mt-5 h-7 w-2/3 rounded bg-slate-200" />
-                  <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                    <div className="h-16 rounded-xl bg-slate-200" />
-                    <div className="h-16 rounded-xl bg-slate-200" />
-                    <div className="h-16 rounded-xl bg-slate-200" />
-                    <div className="h-16 rounded-xl bg-slate-200" />
-                  </div>
-                  <div className="mt-7 h-12 rounded-xl bg-slate-200" />
-                </div>
-              </div>
+              <LeadSkeleton key={item} />
             ))}
           </div>
         )}
-        {/* NO RESULTS */}
+
+        {/* EMPTY */}
         {!loading &&
           !error &&
           filteredLeads.length === 0 && (
-            <div className="mt-8 rounded-3xl bg-white p-12 text-center shadow-sm ring-1 ring-slate-200">
-              <div className="text-5xl">
+            <div className="mt-7 rounded-3xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-200 sm:p-14">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-blue-50 text-4xl">
                 🚘
               </div>
-              <h3 className="mt-5 text-2xl font-black">
-                No vehicle opportunities found
+
+              <h3 className="mt-6 text-2xl font-black text-slate-950">
+                {hasFilters
+                  ? "No matching vehicles"
+                  : "No vehicle opportunities yet"}
               </h3>
+
               <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-600">
-                There are currently no vehicle submissions
-                matching your search. Clear your filters or
-                check back as new seller submissions become
-                available.
+                {hasFilters
+                  ? "Try adjusting your filters or clearing your search to see more vehicle opportunities."
+                  : "New seller submissions will appear here as vehicle opportunities become available."}
               </p>
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="mt-6 rounded-xl bg-blue-600 px-6 py-3 font-black text-white transition hover:bg-blue-700"
-              >
-                Clear Filters
-              </button>
+
+              {hasFilters && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="mt-6 rounded-xl bg-blue-600 px-6 py-3 font-black text-white transition hover:bg-blue-700"
+                >
+                  Clear Filters
+                </button>
+              )}
             </div>
           )}
+
         {/* LEADS */}
         {!loading &&
           !error &&
           filteredLeads.length > 0 && (
-            <div className="mt-8 grid gap-7 lg:grid-cols-2">
+            <div className="mt-7 grid gap-6 lg:grid-cols-2">
               {filteredLeads.map((lead) => (
                 <LeadCard
                   key={lead.id}
@@ -390,32 +499,37 @@ export default function DealerLeadsPage() {
             </div>
           )}
       </section>
+
       {/* CTA */}
-      <section className="bg-white px-6 py-20">
-        <div className="mx-auto max-w-5xl rounded-3xl bg-slate-950 p-10 text-center text-white shadow-xl md:p-14">
-          <span className="inline-flex rounded-full bg-blue-500/20 px-4 py-2 text-xs font-black uppercase tracking-widest text-blue-300">
-            NorthSky Auto
+      <section className="border-t border-slate-200 bg-white px-4 py-16 sm:px-6">
+        <div className="mx-auto max-w-5xl overflow-hidden rounded-3xl bg-slate-950 p-8 text-center text-white shadow-xl sm:p-12 md:p-14">
+          <span className="inline-flex rounded-full bg-blue-500/15 px-4 py-2 text-xs font-black uppercase tracking-widest text-blue-300">
+            NorthSky Auto Dealer Portal
           </span>
-          <h2 className="mt-6 text-4xl font-black md:text-5xl">
+
+          <h2 className="mt-5 text-3xl font-black sm:text-4xl md:text-5xl">
             Build Your Acquisition Pipeline
           </h2>
-          <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-            Manage your dealership membership, review vehicle
-            opportunities, and build your inventory pipeline with
-            NorthSky Auto.
+
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
+            Review vehicle opportunities, manage your
+            dealership account, and build a more organized
+            sourcing pipeline.
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
+
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
-              href="/buyers"
-              className="rounded-xl bg-blue-600 px-8 py-4 font-black text-white transition hover:bg-blue-500"
+              href="/dealer/dashboard"
+              className="rounded-xl bg-blue-600 px-7 py-3.5 font-black text-white transition hover:bg-blue-500"
             >
-              Manage Dealer Membership
+              Dealer Dashboard →
             </Link>
+
             <Link
-              href="/contact"
-              className="rounded-xl border border-white/20 px-8 py-4 font-black text-white transition hover:bg-white/10"
+              href="/dealer/subscriptions"
+              className="rounded-xl border border-white/15 bg-white/5 px-7 py-3.5 font-black text-white transition hover:bg-white/10"
             >
-              Contact NorthSky Auto
+              Manage Membership
             </Link>
           </div>
         </div>
@@ -423,6 +537,13 @@ export default function DealerLeadsPage() {
     </main>
   );
 }
+
+/*
+|--------------------------------------------------------------------------
+| LEAD CARD
+|--------------------------------------------------------------------------
+*/
+
 function LeadCard({ lead }) {
   const vehicleName = [
     lead.year,
@@ -432,13 +553,10 @@ function LeadCard({ lead }) {
   ]
     .filter(Boolean)
     .join(" ");
+
   const location =
-    lead.location ||
-    lead.postal_code ||
-    [lead.city, lead.province]
-      .filter(Boolean)
-      .join(", ") ||
-    "Canada";
+    lead.postal_code || "Canada";
+
   const mileage =
     lead.mileage !== null &&
     lead.mileage !== undefined &&
@@ -447,6 +565,7 @@ function LeadCard({ lead }) {
           lead.mileage
         ).toLocaleString("en-CA")} km`
       : "Not provided";
+
   const askingPrice =
     lead.asking_price !== null &&
     lead.asking_price !== undefined &&
@@ -457,90 +576,168 @@ function LeadCard({ lead }) {
           maximumFractionDigits: 0,
         }).format(Number(lead.asking_price))
       : "Not provided";
+
   const condition =
     lead.condition || "Not provided";
-  const type =
-    lead.vehicle_type ||
-    lead.type ||
-    "Vehicle";
+
+  const timeline =
+    lead.selling_timeline ||
+    "Not provided";
+
   return (
     <article className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-xl">
-      {/* IMAGE PLACEHOLDER */}
-      <div className="flex h-48 items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
-        <div className="text-center">
+      {/* VEHICLE HEADER */}
+      <div className="relative flex h-44 items-center justify-center overflow-hidden bg-gradient-to-br from-slate-200 via-slate-300 to-slate-400">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.5),transparent_60%)]" />
+
+        <div className="relative text-center">
           <div className="text-5xl">
             🚘
           </div>
-          <p className="mt-2 text-xs font-bold uppercase tracking-widest text-slate-500">
+
+          <p className="mt-2 text-xs font-black uppercase tracking-widest text-slate-600">
             Vehicle Opportunity
           </p>
         </div>
+
+        {lead.status && (
+          <span className="absolute right-4 top-4 rounded-full bg-green-600 px-3 py-1.5 text-xs font-black text-white shadow-sm">
+            Available
+          </span>
+        )}
       </div>
-      <div className="p-7">
+
+      <div className="p-6 sm:p-7">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">
-              {type}
-            </span>
-            <h3 className="mt-4 break-words text-2xl font-black">
-              {vehicleName || "Vehicle Opportunity"}
+            <p className="text-xs font-black uppercase tracking-widest text-blue-600">
+              Seller Submission
+            </p>
+
+            <h3 className="mt-2 break-words text-2xl font-black leading-tight text-slate-950">
+              {vehicleName ||
+                "Vehicle Opportunity"}
             </h3>
           </div>
+
           {lead.id && (
-            <span className="shrink-0 text-xs font-bold text-slate-400">
+            <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-400">
               #{lead.id}
             </span>
           )}
         </div>
+
+        {/* KEY DETAILS */}
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           <Info
+            icon="📍"
             label="Location"
             value={location}
           />
+
           <Info
+            icon="🛣️"
             label="Mileage"
             value={mileage}
           />
+
           <Info
+            icon="🔧"
             label="Condition"
             value={condition}
           />
+
           <Info
+            icon="💰"
             label="Asking Price"
             value={askingPrice}
+            highlight
           />
         </div>
-        {lead.description && (
-          <p className="mt-5 line-clamp-2 text-sm leading-6 text-slate-500">
-            {lead.description}
-          </p>
-        )}
-        <div className="mt-7">
-          <Link
-            href={`/dealer/leads/${encodeURIComponent(
-              lead.id
-            )}`}
-            className="block w-full rounded-xl bg-blue-600 px-5 py-3.5 text-center text-sm font-black text-white transition hover:bg-blue-700"
-          >
-            View Lead Details →
-          </Link>
+
+        {/* TIMELINE */}
+        <div className="mt-3">
+          <Info
+            icon="⏱️"
+            label="Selling Timeline"
+            value={timeline}
+          />
         </div>
+
+        {/* DESCRIPTION */}
+        {lead.description && (
+          <div className="mt-5 rounded-2xl bg-slate-50 p-4">
+            <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+              Description
+            </p>
+
+            <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
+              {lead.description}
+            </p>
+          </div>
+        )}
+
+        {/* ACTION */}
+        <Link
+          href={`/dealer/leads/${encodeURIComponent(
+            lead.id
+          )}`}
+          className="mt-6 flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-black text-white transition hover:bg-blue-700"
+        >
+          View Opportunity Details →
+        </Link>
+
+        <p className="mt-3 text-center text-xs text-slate-400">
+          Seller contact information is protected.
+        </p>
       </div>
     </article>
   );
 }
-function Info({ label, value }) {
+
+/*
+|--------------------------------------------------------------------------
+| INFO
+|--------------------------------------------------------------------------
+*/
+
+function Info({
+  icon,
+  label,
+  value,
+  highlight = false,
+}) {
   return (
-    <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
-      <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-        {label}
-      </p>
-      <p className="mt-1 break-words text-sm font-bold text-slate-700">
+    <div className="rounded-xl bg-slate-50 p-3.5 ring-1 ring-slate-100">
+      <div className="flex items-center gap-2">
+        <span className="text-sm">
+          {icon}
+        </span>
+
+        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
+          {label}
+        </p>
+      </div>
+
+      <p
+        className={`mt-1 break-words text-sm font-black ${
+          highlight
+            ? "text-blue-700"
+            : "text-slate-700"
+        }`}
+      >
         {value || "Not provided"}
       </p>
     </div>
   );
 }
+
+/*
+|--------------------------------------------------------------------------
+| FILTER INPUT
+|--------------------------------------------------------------------------
+*/
+
 function FilterInput({
   label,
   name,
@@ -559,6 +756,7 @@ function FilterInput({
       >
         {label}
       </label>
+
       <input
         id={name}
         name={name}
@@ -575,6 +773,37 @@ function FilterInput({
         }
         className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
       />
+    </div>
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| LOADING SKELETON
+|--------------------------------------------------------------------------
+*/
+
+function LeadSkeleton() {
+  return (
+    <div className="animate-pulse overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div className="h-44 bg-slate-200" />
+
+      <div className="p-6 sm:p-7">
+        <div className="h-3 w-32 rounded bg-slate-200" />
+
+        <div className="mt-3 h-7 w-2/3 rounded bg-slate-200" />
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <div className="h-16 rounded-xl bg-slate-200" />
+          <div className="h-16 rounded-xl bg-slate-200" />
+          <div className="h-16 rounded-xl bg-slate-200" />
+          <div className="h-16 rounded-xl bg-slate-200" />
+        </div>
+
+        <div className="mt-3 h-16 rounded-xl bg-slate-200" />
+
+        <div className="mt-6 h-12 rounded-xl bg-slate-200" />
+      </div>
     </div>
   );
 }
