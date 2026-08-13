@@ -31,30 +31,20 @@ function getAttribution() {
   }
 
   try {
-    const params = new URLSearchParams(window.location.search);
-
-    const urlSource = params.get("source");
-    const urlCampaign = params.get("campaign");
-
-    const savedSource = sessionStorage.getItem(
-      "northsky_source"
-    );
-
-    const savedCampaign = sessionStorage.getItem(
-      "northsky_campaign"
+    const params = new URLSearchParams(
+      window.location.search
     );
 
     const source =
-      urlSource ||
-      savedSource ||
+      params.get("source") ||
+      sessionStorage.getItem("northsky_source") ||
       "direct";
 
     const campaign =
-      urlCampaign ||
-      savedCampaign ||
+      params.get("campaign") ||
+      sessionStorage.getItem("northsky_campaign") ||
       "organic";
 
-    // Preserve attribution for the rest of the session.
     sessionStorage.setItem(
       "northsky_source",
       source
@@ -77,10 +67,27 @@ function getAttribution() {
   }
 }
 
+function normalizePostalCode(value) {
+  return value
+    .toUpperCase()
+    .replace(/\s+/g, "")
+    .slice(0, 6);
+}
+
+function normalizeVin(value) {
+  return value
+    .toUpperCase()
+    .replace(/\s+/g, "")
+    .slice(0, 17);
+}
+
 export default function SellPage() {
   const [form, setForm] = useState(initialForm);
+
   const [loading, setLoading] = useState(false);
+
   const [message, setMessage] = useState("");
+
   const [success, setSuccess] = useState(false);
 
   const [attribution, setAttribution] = useState({
@@ -95,30 +102,88 @@ export default function SellPage() {
   function handleChange(e) {
     const { name, value } = e.target;
 
+    let nextValue = value;
+
+    if (name === "vin") {
+      nextValue = normalizeVin(value);
+    }
+
+    if (name === "postal_code") {
+      nextValue = normalizePostalCode(value);
+    }
+
     setForm((current) => ({
       ...current,
-      [name]:
-        name === "vin"
-          ? value
-              .toUpperCase()
-              .replace(/\s/g, "")
-          : name === "postal_code"
-          ? value.toUpperCase()
-          : value,
+      [name]: nextValue,
     }));
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
 
+    if (loading) return;
+
     setLoading(true);
     setMessage("");
     setSuccess(false);
 
     try {
+      const trimmedForm = {
+        ...form,
+        name: form.name.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: form.phone.trim(),
+        postal_code: form.postal_code.trim().toUpperCase(),
+        year: form.year.trim(),
+        make: form.make.trim(),
+        model: form.model.trim(),
+        trim: form.trim.trim(),
+        mileage: form.mileage.trim(),
+        vin: form.vin.trim().toUpperCase(),
+        condition: form.condition.trim(),
+        selling_timeline:
+          form.selling_timeline.trim(),
+        accident_history:
+          form.accident_history.trim(),
+        description: form.description.trim(),
+        asking_price: form.asking_price.trim(),
+      };
+
+      if (!trimmedForm.name) {
+        throw new Error(
+          "Please enter your full name."
+        );
+      }
+
+      if (!trimmedForm.email) {
+        throw new Error(
+          "Please enter your email address."
+        );
+      }
+
+      if (!trimmedForm.phone) {
+        throw new Error(
+          "Please enter your phone number."
+        );
+      }
+
+      if (!trimmedForm.postal_code) {
+        throw new Error(
+          "Please enter your postal code."
+        );
+      }
+
+      if (
+        trimmedForm.vin &&
+        trimmedForm.vin.length !== 17
+      ) {
+        throw new Error(
+          "If provided, the VIN must contain 17 characters."
+        );
+      }
+
       /*
-       * Step 1:
-       * Submit the vehicle to the existing leads API.
+       * Submit vehicle lead.
        */
       const response = await fetch(
         "/api/leads",
@@ -127,7 +192,11 @@ export default function SellPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(form),
+          body: JSON.stringify({
+            ...trimmedForm,
+            source: attribution.source,
+            campaign: attribution.campaign,
+          }),
         }
       );
 
@@ -139,7 +208,7 @@ export default function SellPage() {
         data = {};
       }
 
-      if (!response.ok || !data.success) {
+      if (!response.ok || !data?.success) {
         throw new Error(
           data?.error ||
             "Unable to submit your vehicle. Please try again."
@@ -147,31 +216,34 @@ export default function SellPage() {
       }
 
       /*
-       * Step 2:
-       * The vehicle submission succeeded.
+       * Tracking is secondary.
        *
-       * Now record the marketing conversion.
+       * If tracking fails, the vehicle submission
+       * should still remain successful.
        */
-      await trackSellerSubmission({
-        source: attribution.source,
-        campaign: attribution.campaign,
-        metadata: {
-          vehicle_year: form.year,
-          vehicle_make: form.make,
-          vehicle_model: form.model,
-          selling_timeline:
-            form.selling_timeline || null,
-        },
-      });
+      try {
+        await trackSellerSubmission({
+          source: attribution.source,
+          campaign: attribution.campaign,
+          metadata: {
+            vehicle_year: trimmedForm.year,
+            vehicle_make: trimmedForm.make,
+            vehicle_model: trimmedForm.model,
+            selling_timeline:
+              trimmedForm.selling_timeline || null,
+          },
+        });
+      } catch (trackingError) {
+        console.error(
+          "Seller tracking error:",
+          trackingError
+        );
+      }
 
-      /*
-       * Step 3:
-       * Show success message.
-       */
       setSuccess(true);
 
       setMessage(
-        "Your vehicle has been submitted successfully. NorthSky Auto can now review your submission for potential dealership acquisition opportunities."
+        "Your vehicle has been submitted successfully. NorthSky Auto will review your submission for potential dealership acquisition opportunities."
       );
 
       setForm(initialForm);
@@ -202,7 +274,7 @@ export default function SellPage() {
           </span>
 
           <h1 className="mt-6 text-4xl font-black tracking-tight md:text-5xl">
-            Sell Your Vehicle to Canadian Dealers
+            Submit Your Vehicle to NorthSky Auto
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-300">
@@ -228,7 +300,7 @@ export default function SellPage() {
             onSubmit={handleSubmit}
             className="space-y-8"
           >
-            {/* SELLER INFORMATION */}
+            {/* SELLER */}
             <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
               <SectionHeading
                 step="01"
@@ -273,16 +345,17 @@ export default function SellPage() {
                   onChange={handleChange}
                   placeholder="T9E 0A1"
                   required
+                  maxLength={7}
                 />
               </div>
             </div>
 
-            {/* VEHICLE INFORMATION */}
+            {/* VEHICLE */}
             <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
               <SectionHeading
                 step="02"
                 title="Vehicle Information"
-                description="Give dealerships the basic information they need to evaluate your vehicle."
+                description="Give dealerships the information they need to evaluate your vehicle."
               />
 
               <div className="grid gap-5 md:grid-cols-2">
@@ -359,8 +432,8 @@ export default function SellPage() {
                 />
 
                 <p className="mt-2 text-xs text-slate-400">
-                  Your VIN should normally contain 17
-                  characters. Do not include spaces.
+                  VINs are normally 17 characters. Do not
+                  include spaces.
                 </p>
               </div>
             </div>
@@ -370,7 +443,7 @@ export default function SellPage() {
               <SectionHeading
                 step="03"
                 title="Vehicle Condition"
-                description="Provide additional information that can help dealerships understand the vehicle."
+                description="Provide additional information that can help dealerships evaluate the vehicle."
               />
 
               <div className="grid gap-5 md:grid-cols-3">
@@ -451,7 +524,6 @@ export default function SellPage() {
                     <span className="font-black text-blue-600">
                       ✓
                     </span>
-
                     <span>
                       Your vehicle information is securely
                       submitted to NorthSky Auto.
@@ -462,11 +534,9 @@ export default function SellPage() {
                     <span className="font-black text-blue-600">
                       ✓
                     </span>
-
                     <span>
-                      Your submission can be reviewed for
-                      potential dealership acquisition
-                      opportunities.
+                      NorthSky Auto can review your submission
+                      for potential acquisition opportunities.
                     </span>
                   </li>
 
@@ -474,10 +544,9 @@ export default function SellPage() {
                     <span className="font-black text-blue-600">
                       ✓
                     </span>
-
                     <span>
-                      NorthSky Auto may contact you regarding
-                      your submission.
+                      We may contact you regarding your
+                      submission.
                     </span>
                   </li>
 
@@ -485,7 +554,6 @@ export default function SellPage() {
                     <span className="font-black text-blue-600">
                       ✓
                     </span>
-
                     <span>
                       Submission does not guarantee an offer,
                       buyer, or sale.
@@ -506,7 +574,8 @@ export default function SellPage() {
 
               {message && (
                 <div
-                  role="alert"
+                  role="status"
+                  aria-live="polite"
                   className={`mt-5 rounded-xl p-4 text-center text-sm font-bold ${
                     success
                       ? "bg-green-50 text-green-700 ring-1 ring-green-200"
@@ -520,12 +589,19 @@ export default function SellPage() {
               <p className="mt-5 text-center text-xs leading-5 text-slate-400">
                 By submitting this form, you agree that
                 NorthSky Auto may contact you regarding your
-                vehicle submission. Review our{" "}
+                vehicle submission. See our{" "}
                 <Link
                   href="/privacy"
                   className="font-semibold text-blue-600 hover:underline"
                 >
                   Privacy Policy
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="/terms"
+                  className="font-semibold text-blue-600 hover:underline"
+                >
+                  Terms of Use
                 </Link>
                 .
               </p>
@@ -536,12 +612,6 @@ export default function SellPage() {
     </main>
   );
 }
-
-/*
-|--------------------------------------------------------------------------
-| Section Heading
-|--------------------------------------------------------------------------
-*/
 
 function SectionHeading({
   step,
@@ -564,12 +634,6 @@ function SectionHeading({
     </div>
   );
 }
-
-/*
-|--------------------------------------------------------------------------
-| Input Field
-|--------------------------------------------------------------------------
-*/
 
 function Field({
   label,
@@ -628,12 +692,6 @@ function Field({
   );
 }
 
-/*
-|--------------------------------------------------------------------------
-| Select Field
-|--------------------------------------------------------------------------
-*/
-
 function SelectField({
   label,
   name,
@@ -657,15 +715,10 @@ function SelectField({
         onChange={onChange}
         className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
       >
-        <option value="">
-          Select...
-        </option>
+        <option value="">Select...</option>
 
         {options.map((option) => (
-          <option
-            key={option}
-            value={option}
-          >
+          <option key={option} value={option}>
             {option}
           </option>
         ))}
