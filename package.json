@@ -1,4 +1,3 @@
-```json
 {
   "name": "northsky-auto",
   "version": "1.0.0",
@@ -23,4 +22,3 @@
     "tailwindcss": "^4.1.11"
   }
 }
-```
