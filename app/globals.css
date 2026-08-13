@@ -1,17 +1,86 @@
 @import "tailwindcss";
+
+/* =========================================================
+   NORTHSKY AUTO — GLOBAL STYLES
+   ========================================================= */
+
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --brand: #2563eb;
+  --brand-dark: #1d4ed8;
 }
+
 * {
   box-sizing: border-box;
 }
+
 html {
   scroll-behavior: smooth;
+  background: var(--background);
 }
+
 body {
   margin: 0;
+  min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Prevent images from overflowing containers */
+
+img,
+svg,
+video {
+  max-width: 100%;
+}
+
+/* Form elements inherit the site's font */
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+/* Better keyboard accessibility */
+
+:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.45);
+  outline-offset: 2px;
+}
+
+/* Remove default button appearance issues */
+
+button {
+  cursor: pointer;
+}
+
+/* Disabled buttons */
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Selection */
+
+::selection {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+/* Mobile tap behavior */
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
 }
