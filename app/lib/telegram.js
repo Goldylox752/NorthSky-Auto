@@ -1,13 +1,20 @@
-const TELEGRAM_API = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}`;
+const TELEGRAM_BASE_URL =
+  "https://api.telegram.org";
 
 export async function sendTelegramMessage({
   message,
   buttonText = "View Opportunity",
   buttonUrl,
-}) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+} = {}) {
+  const token =
+    process.env.TELEGRAM_BOT_TOKEN;
 
+  const chatId =
+    process.env.TELEGRAM_CHAT_ID;
+
+  /*
+   * Telegram configuration
+   */
   if (!token || !chatId) {
     console.warn(
       "Telegram environment variables are not configured."
@@ -16,16 +23,36 @@ export async function sendTelegramMessage({
     return {
       success: false,
       skipped: true,
+      error:
+        "Telegram is not configured.",
     };
   }
 
-  if (!message || !message.trim()) {
+  /*
+   * Validate message
+   */
+  if (
+    typeof message !== "string" ||
+    !message.trim()
+  ) {
     return {
       success: false,
-      error: "Telegram message is empty.",
+      skipped: false,
+      error:
+        "Telegram message is empty.",
     };
   }
 
+  /*
+   * Build API URL only after
+   * confirming the bot token exists.
+   */
+  const apiUrl =
+    `${TELEGRAM_BASE_URL}/bot${token}/sendMessage`;
+
+  /*
+   * Telegram request body
+   */
   const body = {
     chat_id: chatId,
     text: message,
@@ -33,13 +60,21 @@ export async function sendTelegramMessage({
     disable_web_page_preview: false,
   };
 
-  if (buttonUrl) {
+  /*
+   * Optional dealer portal button
+   */
+  if (
+    typeof buttonUrl === "string" &&
+    buttonUrl.trim()
+  ) {
     body.reply_markup = {
       inline_keyboard: [
         [
           {
-            text: buttonText,
-            url: buttonUrl,
+            text:
+              buttonText ||
+              "View Opportunity",
+            url: buttonUrl.trim(),
           },
         ],
       ],
@@ -48,37 +83,69 @@ export async function sendTelegramMessage({
 
   try {
     const response = await fetch(
-      `${TELEGRAM_API}/sendMessage`,
+      apiUrl,
       {
         method: "POST",
+
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type":
+            "application/json",
         },
+
         body: JSON.stringify(body),
+
         cache: "no-store",
       }
     );
 
-    const data = await response.json();
+    /*
+     * Telegram normally returns JSON,
+     * but protect against an unexpected
+     * non-JSON response.
+     */
+    let data = null;
 
-    if (!response.ok || !data.ok) {
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    /*
+     * Telegram rejected the request
+     */
+    if (
+      !response.ok ||
+      !data?.ok
+    ) {
       console.error(
         "Telegram API error:",
-        data
+        {
+          status: response.status,
+          description:
+            data?.description ||
+            "Unknown Telegram API error.",
+        }
       );
 
       return {
         success: false,
+        skipped: false,
         error:
           data?.description ||
-          "Telegram API request failed.",
+          `Telegram API request failed with status ${response.status}.`,
       };
     }
 
+    /*
+     * Successful Telegram message
+     */
     return {
       success: true,
+      skipped: false,
       messageId:
-        data.result?.message_id || null,
+        data?.result?.message_id ||
+        null,
     };
   } catch (error) {
     console.error(
@@ -88,6 +155,7 @@ export async function sendTelegramMessage({
 
     return {
       success: false,
+      skipped: false,
       error:
         "Unable to reach Telegram.",
     };
