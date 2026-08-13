@@ -2,19 +2,46 @@ import Link from "next/link";
 import DealerCheckoutButton from "@/components/DealerCheckoutButton";
 import DealerTracking from "./DealerTracking";
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  "https://northsky-auto.vercel.app";
+
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Dealer Memberships | NorthSky Auto",
   description:
-    "Join NorthSky Auto as a dealer and discover vehicle acquisition opportunities submitted by sellers across Canada.",
+    "Join NorthSky Auto as a dealer and access vehicle acquisition opportunities, sourcing tools, saved vehicles, analytics, and dealer marketplace features across Canada.",
+  keywords: [
+    "NorthSky Auto dealer",
+    "dealer membership Canada",
+    "vehicle acquisition",
+    "dealer vehicle sourcing",
+    "used vehicle sourcing",
+    "car dealer marketplace Canada",
+    "vehicle leads for dealers",
+  ],
   alternates: {
-    canonical: "/buyers",
+    canonical: `${SITE_URL}/buyers`,
+  },
+  robots: {
+    index: true,
+    follow: true,
   },
   openGraph: {
     title: "Dealer Memberships | NorthSky Auto",
     description:
       "Choose a NorthSky Auto dealer membership and build a more organized vehicle acquisition pipeline.",
-    url: "/buyers",
+    url: `${SITE_URL}/buyers`,
+    siteName: "NorthSky Auto",
     type: "website",
+    locale: "en_CA",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dealer Memberships | NorthSky Auto",
+    description:
+      "Discover vehicle acquisition opportunities and build your dealership sourcing pipeline with NorthSky Auto.",
   },
 };
 
@@ -30,7 +57,7 @@ const plans = [
     features: [
       "Access available vehicle opportunities",
       "Dealer account",
-      "Available vehicle and seller information",
+      "Vehicle and seller information",
       "Vehicle opportunity notifications",
       "Dealer marketplace access",
     ],
@@ -59,17 +86,20 @@ const benefits = [
   {
     icon: "🚗",
     title: "Discover Vehicles",
-    text: "Find vehicle acquisition opportunities submitted by sellers.",
+    text:
+      "Find vehicle acquisition opportunities submitted by sellers through the NorthSky Auto marketplace.",
   },
   {
     icon: "📊",
     title: "Manage Your Pipeline",
-    text: "Organize potential acquisitions and manage your sourcing activity.",
+    text:
+      "Organize potential acquisitions and manage your vehicle sourcing activity from one dealer environment.",
   },
   {
     icon: "⭐",
     title: "Save Opportunities",
-    text: "Save promising vehicles for additional review and follow-up.",
+    text:
+      "Save promising vehicles for additional review, comparison, and follow-up.",
   },
 ];
 
@@ -77,22 +107,26 @@ const steps = [
   {
     number: "01",
     title: "Choose Your Plan",
-    text: "Select the membership that fits your dealership and sourcing needs.",
+    text:
+      "Select the dealer membership that fits your dealership and sourcing needs.",
   },
   {
     number: "02",
     title: "Complete Checkout",
-    text: "Subscribe securely through Stripe and complete the dealer onboarding process.",
+    text:
+      "Subscribe securely through Stripe and complete the dealer onboarding process.",
   },
   {
     number: "03",
     title: "Access Your Account",
-    text: "Use your NorthSky Auto dealer environment to access available platform features.",
+    text:
+      "Access your NorthSky Auto dealer environment and available platform features.",
   },
   {
     number: "04",
     title: "Build Your Pipeline",
-    text: "Review available vehicle opportunities and identify potential inventory.",
+    text:
+      "Review vehicle opportunities and identify potential inventory for your dealership.",
   },
 ];
 
@@ -121,8 +155,40 @@ export default async function BuyersPage({ searchParams }) {
     "organic"
   );
 
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: "NorthSky Auto Dealer Memberships",
+    url: `${SITE_URL}/buyers`,
+    description:
+      "Dealer memberships for dealerships seeking vehicle acquisition opportunities through NorthSky Auto.",
+    isPartOf: {
+      "@type": "WebSite",
+      name: "NorthSky Auto",
+      url: SITE_URL,
+    },
+    about: {
+      "@type": "AutomotiveBusiness",
+      name: "NorthSky Auto",
+      url: SITE_URL,
+      areaServed: {
+        "@type": "Country",
+        name: "Canada",
+      },
+    },
+  };
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
+      {/* SEO STRUCTURED DATA */}
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(schema),
+        }}
+      />
+
       {/* MARKETING TRACKING */}
 
       <DealerTracking
@@ -150,8 +216,9 @@ export default async function BuyersPage({ searchParams }) {
           </h1>
 
           <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-300 md:text-xl">
-            NorthSky Auto helps dealerships discover vehicle acquisition
-            opportunities submitted by sellers across Canada.
+            NorthSky Auto helps dealerships discover vehicle
+            acquisition opportunities submitted by sellers across
+            Canada.
           </p>
 
           <div className="mt-9 flex flex-wrap justify-center gap-4">
@@ -188,7 +255,7 @@ export default async function BuyersPage({ searchParams }) {
             </p>
 
             <h2 className="mt-4 text-3xl font-black md:text-4xl">
-              A Better Way to Organize Your Vehicle Sourcing
+              A Better Way to Organize Vehicle Sourcing
             </h2>
 
             <p className="mt-4 leading-7 text-slate-600">
@@ -221,7 +288,7 @@ export default async function BuyersPage({ searchParams }) {
         </div>
       </section>
 
-      {/* PLANS */}
+      {/* PRICING */}
 
       <section
         id="plans"
@@ -238,8 +305,8 @@ export default async function BuyersPage({ searchParams }) {
             </h2>
 
             <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-              Start building a more organized vehicle acquisition
-              pipeline with a NorthSky Auto dealer membership.
+              Simple monthly memberships designed for dealerships
+              building a more organized vehicle acquisition pipeline.
             </p>
           </div>
 
@@ -265,9 +332,7 @@ export default async function BuyersPage({ searchParams }) {
                   </span>
 
                   {plan.popular && (
-                    <span className="text-xl">
-                      ⭐
-                    </span>
+                    <span className="text-xl">⭐</span>
                   )}
                 </div>
 
@@ -301,9 +366,7 @@ export default async function BuyersPage({ searchParams }) {
                         ✓
                       </span>
 
-                      <span>
-                        {feature}
-                      </span>
+                      <span>{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -319,10 +382,10 @@ export default async function BuyersPage({ searchParams }) {
           </div>
 
           <div className="mx-auto mt-8 max-w-3xl rounded-2xl bg-slate-100 p-5 text-center text-sm leading-6 text-slate-500">
-            Membership provides access to the NorthSky Auto dealer
+            NorthSky Auto memberships provide access to the dealer
             platform and available vehicle acquisition opportunities.
-            Opportunity availability may vary by market, vehicle type,
-            seller activity, and dealer eligibility.
+            Opportunity availability varies by market, seller activity,
+            vehicle type, and dealer eligibility.
           </div>
         </div>
       </section>
@@ -377,22 +440,26 @@ export default async function BuyersPage({ searchParams }) {
               {
                 icon: "🔎",
                 title: "Discover Potential Inventory",
-                text: "Review vehicle opportunities submitted through the NorthSky Auto marketplace and identify vehicles that may fit your dealership.",
+                text:
+                  "Review vehicle opportunities submitted through the NorthSky Auto marketplace and identify vehicles that may fit your dealership.",
               },
               {
                 icon: "📊",
                 title: "Manage Your Pipeline",
-                text: "Organize potential acquisitions and use your dealer tools to manage opportunities as your sourcing activity grows.",
+                text:
+                  "Organize potential acquisitions and use your dealer tools to manage opportunities as your sourcing activity grows.",
               },
               {
                 icon: "⭐",
                 title: "Save Promising Vehicles",
-                text: "Keep vehicles you're interested in available for additional review and follow-up.",
+                text:
+                  "Keep vehicles you're interested in available for additional review and follow-up.",
               },
               {
                 icon: "⚡",
                 title: "Make Better Acquisition Decisions",
-                text: "Review available vehicle and seller information before deciding which opportunities deserve your attention.",
+                text:
+                  "Review available vehicle and seller information before deciding which opportunities deserve your attention.",
               },
             ].map((item) => (
               <div
@@ -416,13 +483,11 @@ export default async function BuyersPage({ searchParams }) {
         </div>
       </section>
 
-      {/* TELEGRAM CTA */}
+      {/* TELEGRAM */}
 
       <section className="border-y border-slate-200 bg-slate-50 px-6 py-16">
         <div className="mx-auto max-w-4xl rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200 md:p-12">
-          <div className="text-5xl">
-            📲
-          </div>
+          <div className="text-5xl">📲</div>
 
           <h2 className="mt-5 text-3xl font-black">
             Follow NorthSky Auto on Telegram
@@ -430,8 +495,8 @@ export default async function BuyersPage({ searchParams }) {
 
           <p className="mx-auto mt-4 max-w-2xl leading-7 text-slate-600">
             Get vehicle opportunities, automotive updates, dealer
-            opportunities and featured inventory directly through our
-            Telegram channel.
+            opportunities, and featured inventory through our Telegram
+            channel.
           </p>
 
           <a
@@ -447,7 +512,7 @@ export default async function BuyersPage({ searchParams }) {
         </div>
       </section>
 
-      {/* CTA */}
+      {/* FINAL CTA */}
 
       <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 p-10 text-center text-white shadow-xl md:p-14">
@@ -484,9 +549,9 @@ export default async function BuyersPage({ searchParams }) {
         <div className="mx-auto max-w-4xl text-center text-sm leading-6 text-slate-500">
           NorthSky Auto dealer memberships are subject to applicable
           membership terms and account requirements. Subscription payments
-          are processed securely through Stripe. Vehicle opportunities
-          and seller availability are not guaranteed and may vary by
-          market, seller activity, and inventory.
+          are processed securely through Stripe. Vehicle opportunities,
+          seller availability, pricing, condition, and transaction
+          outcomes are not guaranteed.
         </div>
       </section>
     </main>
