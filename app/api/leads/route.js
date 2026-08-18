@@ -1,24 +1,26 @@
+```js
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendTelegramMessage } from "@/app/lib/telegram";
 
 export const dynamic = "force-dynamic";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
   "https://northsky-auto.vercel.app";
 
 function getSupabase() {
-  if (!supabaseUrl || !supabaseServiceKey) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     return null;
   }
 
   return createClient(
-    supabaseUrl,
-    supabaseServiceKey
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY
   );
 }
 
@@ -35,21 +37,15 @@ function isValidEmail(email) {
 }
 
 function isValidYear(year) {
-  const currentYear = new Date().getFullYear() + 1;
   const numericYear = Number(year);
+  const maxYear = new Date().getFullYear() + 1;
 
   return (
     Number.isInteger(numericYear) &&
     numericYear >= 1900 &&
-    numericYear <= currentYear
+    numericYear <= maxYear
   );
 }
-
-/*
-|--------------------------------------------------------------------------
-| Escape HTML for Telegram
-|--------------------------------------------------------------------------
-*/
 
 function escapeTelegramHtml(value) {
   return String(value ?? "")
@@ -57,17 +53,6 @@ function escapeTelegramHtml(value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 }
-
-/*
-|--------------------------------------------------------------------------
-| Format public vehicle opportunity
-|--------------------------------------------------------------------------
-|
-| IMPORTANT:
-| Seller name, email, phone and VIN are intentionally excluded.
-|
-|--------------------------------------------------------------------------
-*/
 
 function formatPublicLead(vehicle) {
   return {
@@ -85,49 +70,45 @@ function formatPublicLead(vehicle) {
     accident_history: vehicle.accident_history ?? null,
     status: vehicle.status || "new",
     created_at: vehicle.created_at ?? null,
-    location: vehicle.postal_code || "Canada",
-    vehicle_type: vehicle.vehicle_type || null,
   };
 }
 
-/*
-|--------------------------------------------------------------------------
-| Build Telegram opportunity message
-|--------------------------------------------------------------------------
-*/
-
 function buildTelegramMessage(vehicle) {
-  const year = escapeTelegramHtml(vehicle.year);
-  const make = escapeTelegramHtml(vehicle.make);
-  const model = escapeTelegramHtml(vehicle.model);
-  const trim = escapeTelegramHtml(vehicle.trim);
-  const mileage = escapeTelegramHtml(vehicle.mileage);
-  const condition = escapeTelegramHtml(vehicle.condition);
-  const askingPrice = escapeTelegramHtml(
-    vehicle.asking_price
-  );
-  const postalCode = escapeTelegramHtml(
+  const vehicleName = [
+    vehicle.year,
+    vehicle.make,
+    vehicle.model,
+    vehicle.trim,
+  ]
+    .map(escapeTelegramHtml)
+    .filter(Boolean)
+    .join(" ");
+
+  const location = escapeTelegramHtml(
     vehicle.postal_code || "Canada"
   );
 
-  const vehicleName = [
-    year,
-    make,
-    model,
-    trim,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const mileage = escapeTelegramHtml(
+    vehicle.mileage
+  );
+
+  const price = escapeTelegramHtml(
+    vehicle.asking_price
+  );
+
+  const condition = escapeTelegramHtml(
+    vehicle.condition || "Not provided"
+  );
 
   return [
     "🚗 <b>NEW VEHICLE OPPORTUNITY</b>",
     "",
     `<b>${vehicleName || "Vehicle Opportunity"}</b>`,
     "",
-    `📍 Location: ${postalCode}`,
+    `📍 Location: ${location}`,
     `🛣️ Mileage: ${mileage || "Not provided"} km`,
-    `💰 Asking Price: $${askingPrice || "Contact NorthSky Auto"}`,
-    `🔧 Condition: ${condition || "Not provided"}`,
+    `💰 Asking Price: $${price || "Contact NorthSky Auto"}`,
+    `🔧 Condition: ${condition}`,
     "",
     "A new vehicle submission has been received by NorthSky Auto.",
     "",
@@ -135,19 +116,12 @@ function buildTelegramMessage(vehicle) {
   ].join("\n");
 }
 
-/*
-|--------------------------------------------------------------------------
-| GET
-|--------------------------------------------------------------------------
-|
-| GET /api/leads
-| Returns vehicle opportunities.
-|
-| GET /api/leads?id=123
-| Returns one vehicle opportunity.
-|
-|--------------------------------------------------------------------------
-*/
+function serverError(message) {
+  return NextResponse.json(
+    { error: message },
+    { status: 500 }
+  );
+}
 
 export async function GET(request) {
   try {
@@ -155,51 +129,38 @@ export async function GET(request) {
 
     if (!supabase) {
       console.error(
-        "Missing Supabase environment variables."
+        "Missing Supabase server environment variables."
       );
 
-      return NextResponse.json(
-        {
-          error:
-            "Server database configuration is incomplete.",
-        },
-        {
-          status: 500,
-        }
+      return serverError(
+        "Server database configuration is incomplete."
       );
     }
 
     const { searchParams } = new URL(request.url);
+    const id = clean(searchParams.get("id"));
 
-    const id = clean(
-      searchParams.get("id")
-    );
-
-    /*
-    |--------------------------------------------------------------------------
-    | INDIVIDUAL LEAD
-    |--------------------------------------------------------------------------
-    */
+    const publicFields = `
+      id,
+      year,
+      make,
+      model,
+      trim,
+      mileage,
+      condition,
+      asking_price,
+      postal_code,
+      description,
+      selling_timeline,
+      accident_history,
+      status,
+      created_at
+    `;
 
     if (id) {
       const { data, error } = await supabase
         .from("vehicle_leads")
-        .select(`
-          id,
-          year,
-          make,
-          model,
-          trim,
-          mileage,
-          condition,
-          asking_price,
-          postal_code,
-          description,
-          selling_timeline,
-          accident_history,
-          status,
-          created_at
-        `)
+        .select(publicFields)
         .eq("id", id)
         .in("status", [
           "new",
@@ -210,18 +171,12 @@ export async function GET(request) {
 
       if (error) {
         console.error(
-          "Supabase vehicle lead lookup failed:",
+          "Vehicle lookup failed:",
           error
         );
 
-        return NextResponse.json(
-          {
-            error:
-              "Unable to load this vehicle opportunity.",
-          },
-          {
-            status: 500,
-          }
+        return serverError(
+          "Unable to load this vehicle opportunity."
         );
       }
 
@@ -231,9 +186,7 @@ export async function GET(request) {
             error:
               "Vehicle opportunity not found.",
           },
-          {
-            status: 404,
-          }
+          { status: 404 }
         );
       }
 
@@ -252,20 +205,14 @@ export async function GET(request) {
       );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | MARKETPLACE LIST
-    |--------------------------------------------------------------------------
-    */
-
-    const limitValue = Number(
+    const requestedLimit = Number(
       searchParams.get("limit") || 100
     );
 
     const limit = Math.min(
       Math.max(
-        Number.isFinite(limitValue)
-          ? limitValue
+        Number.isFinite(requestedLimit)
+          ? Math.floor(requestedLimit)
           : 100,
         1
       ),
@@ -274,22 +221,7 @@ export async function GET(request) {
 
     const { data, error } = await supabase
       .from("vehicle_leads")
-      .select(`
-        id,
-        year,
-        make,
-        model,
-        trim,
-        mileage,
-        condition,
-        asking_price,
-        postal_code,
-        description,
-        selling_timeline,
-        accident_history,
-        status,
-        created_at
-      `)
+      .select(publicFields)
       .in("status", [
         "new",
         "available",
@@ -302,18 +234,12 @@ export async function GET(request) {
 
     if (error) {
       console.error(
-        "Supabase vehicle leads query failed:",
+        "Vehicle opportunities query failed:",
         error
       );
 
-      return NextResponse.json(
-        {
-          error:
-            "Unable to load vehicle opportunities.",
-        },
-        {
-          status: 500,
-        }
+      return serverError(
+        "Unable to load vehicle opportunities."
       );
     }
 
@@ -337,43 +263,15 @@ export async function GET(request) {
     );
   } catch (error) {
     console.error(
-      "Dealer leads GET error:",
+      "Vehicle leads GET error:",
       error
     );
 
-    return NextResponse.json(
-      {
-        error:
-          "An unexpected error occurred while loading vehicle opportunities.",
-      },
-      {
-        status: 500,
-      }
+    return serverError(
+      "An unexpected error occurred while loading vehicle opportunities."
     );
   }
 }
-
-/*
-|--------------------------------------------------------------------------
-| POST
-|--------------------------------------------------------------------------
-|
-| Creates seller vehicle submission.
-|
-| Flow:
-|
-| Seller
-|   ↓
-| /api/leads
-|   ↓
-| Supabase vehicle_leads
-|   ↓
-| Telegram notification
-|   ↓
-| Dealer opportunity
-|
-|--------------------------------------------------------------------------
-*/
 
 export async function POST(request) {
   try {
@@ -381,102 +279,71 @@ export async function POST(request) {
 
     if (!supabase) {
       console.error(
-        "Missing Supabase environment variables."
+        "Missing Supabase server environment variables."
       );
 
-      return NextResponse.json(
-        {
-          error:
-            "Server database configuration is incomplete.",
-        },
-        {
-          status: 500,
-        }
+      return serverError(
+        "Server database configuration is incomplete."
       );
     }
 
-    const body = await request.json();
+    let body;
+
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        {
+          error:
+            "Invalid request body.",
+        },
+        { status: 400 }
+      );
+    }
 
     if (
       !body ||
-      typeof body !== "object"
+      typeof body !== "object" ||
+      Array.isArray(body)
     ) {
       return NextResponse.json(
         {
           error:
             "Invalid vehicle submission.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Clean incoming data
-    |--------------------------------------------------------------------------
-    */
-
     const lead = {
       name: clean(body.name),
-
       email: clean(body.email).toLowerCase(),
-
       phone: clean(body.phone),
-
       postal_code: clean(
         body.postal_code
       ).toUpperCase(),
-
       year: clean(body.year),
-
       make: clean(body.make),
-
       model: clean(body.model),
-
       trim: clean(body.trim),
-
       mileage: clean(body.mileage),
-
       vin: clean(body.vin).toUpperCase(),
-
-      condition: clean(
-        body.condition
-      ),
-
+      condition: clean(body.condition),
       selling_timeline: clean(
         body.selling_timeline
       ),
-
       accident_history: clean(
         body.accident_history
       ),
-
       description: clean(
         body.description
       ),
-
       asking_price: clean(
         body.asking_price
       ),
-
-      /*
-      |--------------------------------------------------------------------------
-      | Optional campaign tracking
-      |--------------------------------------------------------------------------
-      */
-
       source: clean(body.source),
-
       campaign: clean(body.campaign),
     };
-
-    /*
-    |--------------------------------------------------------------------------
-    | Required fields
-    |--------------------------------------------------------------------------
-    */
 
     const requiredFields = [
       "name",
@@ -495,25 +362,16 @@ export async function POST(request) {
         (field) => !lead[field]
       );
 
-    if (missingFields.length) {
+    if (missingFields.length > 0) {
       return NextResponse.json(
         {
           error:
             "Please complete all required fields.",
-
           fields: missingFields,
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Validate email
-    |--------------------------------------------------------------------------
-    */
 
     if (!isValidEmail(lead.email)) {
       return NextResponse.json(
@@ -521,17 +379,9 @@ export async function POST(request) {
           error:
             "Please provide a valid email address.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Validate year
-    |--------------------------------------------------------------------------
-    */
 
     if (!isValidYear(lead.year)) {
       return NextResponse.json(
@@ -539,27 +389,16 @@ export async function POST(request) {
           error:
             "Please provide a valid vehicle year.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Validate text lengths
-    |--------------------------------------------------------------------------
-    */
 
     if (lead.name.length > 150) {
       return NextResponse.json(
         {
-          error:
-            "Name is too long.",
+          error: "Name is too long.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
@@ -569,9 +408,7 @@ export async function POST(request) {
           error:
             "Email address is too long.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
@@ -581,9 +418,7 @@ export async function POST(request) {
           error:
             "Phone number is too long.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
@@ -593,23 +428,12 @@ export async function POST(request) {
           error:
             "Vehicle description is too long.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Convert numeric values
-    |--------------------------------------------------------------------------
-    */
-
     const mileage = Number(
-      lead.mileage.replace(
-        /[^0-9]/g,
-        ""
-      )
+      lead.mileage.replace(/[^0-9]/g, "")
     );
 
     const askingPrice = Number(
@@ -628,9 +452,7 @@ export async function POST(request) {
           error:
             "Please provide a valid mileage.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
@@ -643,129 +465,63 @@ export async function POST(request) {
           error:
             "Please provide a valid asking price.",
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Create database record
-    |--------------------------------------------------------------------------
-    */
 
     const vehicleRecord = {
       name: lead.name,
-
       email: lead.email,
-
       phone: lead.phone,
-
-      postal_code:
-        lead.postal_code,
-
+      postal_code: lead.postal_code,
       year: Number(lead.year),
-
       make: lead.make,
-
       model: lead.model,
-
-      trim:
-        lead.trim || null,
-
+      trim: lead.trim || null,
       mileage,
-
-      vin:
-        lead.vin || null,
-
-      condition:
-        lead.condition || null,
-
+      vin: lead.vin || null,
+      condition: lead.condition || null,
       selling_timeline:
-        lead.selling_timeline ||
-        null,
-
+        lead.selling_timeline || null,
       accident_history:
-        lead.accident_history ||
-        null,
-
+        lead.accident_history || null,
       description:
-        lead.description ||
-        null,
-
-      asking_price:
-        askingPrice,
-
+        lead.description || null,
+      asking_price: askingPrice,
       status: "new",
     };
 
-    const { data, error } =
-      await supabase
-        .from("vehicle_leads")
-        .insert(
-          vehicleRecord
-        )
-        .select(`
-          id,
-          year,
-          make,
-          model,
-          trim,
-          mileage,
-          condition,
-          asking_price,
-          postal_code,
-          description,
-          selling_timeline,
-          accident_history,
-          status,
-          created_at
-        `)
-        .single();
+    const { data, error } = await supabase
+      .from("vehicle_leads")
+      .insert(vehicleRecord)
+      .select(`
+        id,
+        year,
+        make,
+        model,
+        trim,
+        mileage,
+        condition,
+        asking_price,
+        postal_code,
+        description,
+        selling_timeline,
+        accident_history,
+        status,
+        created_at
+      `)
+      .single();
 
     if (error) {
       console.error(
-        "Supabase vehicle lead insert failed:",
+        "Vehicle lead insert failed:",
         error
       );
 
-      return NextResponse.json(
-        {
-          error:
-            "We could not submit your vehicle right now. Please try again.",
-        },
-        {
-          status: 500,
-        }
+      return serverError(
+        "We could not submit your vehicle right now. Please try again."
       );
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Telegram notification
-    |--------------------------------------------------------------------------
-    |
-    | IMPORTANT:
-    | Telegram receives only public vehicle information.
-    |
-    | Seller:
-    | ❌ Name
-    | ❌ Email
-    | ❌ Phone
-    | ❌ VIN
-    |
-    | Vehicle:
-    | ✅ Year
-    | ✅ Make
-    | ✅ Model
-    | ✅ Mileage
-    | ✅ Condition
-    | ✅ Asking price
-    | ✅ General location
-    |
-    |--------------------------------------------------------------------------
-    */
 
     const opportunityUrl =
       `${SITE_URL}/dealer/leads/${data.id}`;
@@ -773,29 +529,27 @@ export async function POST(request) {
     const telegramMessage =
       buildTelegramMessage(data);
 
-    const telegramResult =
-      await sendTelegramMessage({
-        message:
-          telegramMessage,
+    let telegramResult = null;
 
-        buttonText:
-          "🏪 View Dealer Opportunity",
+    try {
+      telegramResult =
+        await sendTelegramMessage({
+          message: telegramMessage,
+          buttonText:
+            "🏪 View Dealer Opportunity",
+          buttonUrl: opportunityUrl,
+        });
+    } catch (telegramError) {
+      console.error(
+        "Telegram notification error:",
+        telegramError
+      );
 
-        buttonUrl:
-          opportunityUrl,
-      });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Log Telegram failure without failing seller submission
-    |--------------------------------------------------------------------------
-    |
-    | The vehicle is already safely stored in Supabase.
-    | A temporary Telegram outage should NOT cause the seller
-    | to submit the same vehicle again.
-    |
-    |--------------------------------------------------------------------------
-    */
+      telegramResult = {
+        success: false,
+        skipped: false,
+      };
+    }
 
     if (
       !telegramResult?.success &&
@@ -807,28 +561,16 @@ export async function POST(request) {
       );
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Success response
-    |--------------------------------------------------------------------------
-    */
-
     return NextResponse.json(
       {
         success: true,
-
         message:
           "Your vehicle has been submitted successfully.",
-
-        leadId:
-          data?.id || null,
-
+        leadId: data?.id || null,
         telegramNotified:
           telegramResult?.success === true,
       },
-      {
-        status: 201,
-      }
+      { status: 201 }
     );
   } catch (error) {
     console.error(
@@ -841,9 +583,37 @@ export async function POST(request) {
         error:
           "Unable to process your vehicle submission.",
       },
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }
+```
+
+This version keeps your existing API behavior but cleans up the structure and, importantly, retains the exact import that your new Telegram utility should satisfy:
+
+```js
+import { sendTelegramMessage } from "@/app/lib/telegram";
+```
+
+So make sure these two files exist:
+
+```text
+app/
+├── api/
+│   └── leads/
+│       └── route.js
+└── lib/
+    └── telegram.js
+```
+
+And Vercel needs:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=...
+SUPABASE_SERVICE_ROLE_KEY=...
+NEXT_PUBLIC_SITE_URL=https://northsky-auto.vercel.app
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_CHAT_ID=...
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` and `TELEGRAM_BOT_TOKEN` must remain **server-only**.
