@@ -2,14 +2,24 @@ import Stripe from "stripe";
 import { headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 
-const stripe = new Stripe(
-  process.env.STRIPE_SECRET_KEY
-);
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceRoleKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const stripe = stripeSecretKey
+  ? new Stripe(stripeSecretKey, {
+      apiVersion: "2025-03-31.basil",
+    })
+  : null;
+
+const supabase =
+  supabaseUrl && supabaseServiceRoleKey
+    ? createClient(
+        supabaseUrl,
+        supabaseServiceRoleKey
+      )
+    : null;
 
 /*
 |--------------------------------------------------------------------------
@@ -116,6 +126,22 @@ function getMarketingAttribution(metadata) {
 
 /*
 |--------------------------------------------------------------------------
+| Supabase Guard
+|--------------------------------------------------------------------------
+*/
+
+function requireSupabase() {
+  if (!supabase) {
+    throw new Error(
+      "Supabase is not configured. Required environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+    );
+  }
+
+  return supabase;
+}
+
+/*
+|--------------------------------------------------------------------------
 | Supabase Helpers
 |--------------------------------------------------------------------------
 */
@@ -124,6 +150,8 @@ async function findDealer({
   customerId,
   email,
 }) {
+  const db = requireSupabase();
+
   if (!customerId && !email) {
     return null;
   }
@@ -134,7 +162,7 @@ async function findDealer({
 
   if (customerId) {
     const { data, error } =
-      await supabase
+      await db
         .from("dealers")
         .select("*")
         .eq(
@@ -161,7 +189,7 @@ async function findDealer({
 
   if (email) {
     const { data, error } =
-      await supabase
+      await db
         .from("dealers")
         .select("*")
         .ilike("email", email)
@@ -199,6 +227,8 @@ async function createDealer({
   sessionId,
   name,
 }) {
+  const db = requireSupabase();
+
   if (!email && !customerId) {
     console.warn(
       "Unable to create dealer: no email or Stripe customer ID."
@@ -235,7 +265,7 @@ async function createDealer({
   };
 
   const { data, error } =
-    await supabase
+    await db
       .from("dealers")
       .insert(dealerData)
       .select("*")
@@ -275,10 +305,12 @@ async function updateDealer(
   dealerId,
   updates
 ) {
+  const db = requireSupabase();
+
   if (!dealerId) return;
 
   const { error } =
-    await supabase
+    await db
       .from("dealers")
       .update(updates)
       .eq("id", dealerId);
@@ -430,6 +462,41 @@ function getSubscriptionDetails(
 */
 
 export async function POST(request) {
+  /*
+   * Stripe must be configured before processing
+   * any webhook.
+   */
+
+  if (!stripe) {
+    console.error(
+      "STRIPE_SECRET_KEY is not configured."
+    );
+
+    return new Response(
+      "Webhook configuration error",
+      {
+        status: 500,
+      }
+    );
+  }
+
+  /*
+   * Supabase is required for dealer synchronization.
+   */
+
+  if (!supabase) {
+    console.error(
+      "Supabase is not configured. Required environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+    );
+
+    return new Response(
+      "Webhook database configuration error",
+      {
+        status: 500,
+      }
+    );
+  }
+
   const body = await request.text();
 
   const headersList = await headers();
