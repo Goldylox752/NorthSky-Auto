@@ -6,20 +6,25 @@ export const runtime = "nodejs";
 
 /*
 |--------------------------------------------------------------------------
-| Environment Helpers
+| Runtime Clients
 |--------------------------------------------------------------------------
+|
+| IMPORTANT:
+| Do not initialize Stripe or Supabase at module load time.
+| Next.js may evaluate this file during build/collection.
+|
 */
 
 function getStripe() {
   const secretKey = process.env.STRIPE_SECRET_KEY;
 
   if (!secretKey) {
-    throw new Error(
-      "STRIPE_SECRET_KEY is not configured."
-    );
+    throw new Error("STRIPE_SECRET_KEY is not configured.");
   }
 
-  return new Stripe(secretKey);
+  return new Stripe(secretKey, {
+    apiVersion: "2025-03-31.basil",
+  });
 }
 
 function getSupabase() {
@@ -59,7 +64,9 @@ const PLAN_NAMES = {
 };
 
 function normalizePlan(plan) {
-  if (!plan) return null;
+  if (!plan) {
+    return null;
+  }
 
   const value = String(plan)
     .toLowerCase()
@@ -104,8 +111,16 @@ function getPlanFromPriceId(priceId) {
   return null;
 }
 
+/*
+|--------------------------------------------------------------------------
+| Stripe Helpers
+|--------------------------------------------------------------------------
+*/
+
 function getCustomerId(customer) {
-  if (!customer) return null;
+  if (!customer) {
+    return null;
+  }
 
   if (typeof customer === "string") {
     return customer;
@@ -152,7 +167,7 @@ function getMarketingAttribution(metadata) {
 
 /*
 |--------------------------------------------------------------------------
-| Supabase Helpers
+| Supabase Dealer Helpers
 |--------------------------------------------------------------------------
 */
 
@@ -218,12 +233,6 @@ async function findDealer({
 
   return null;
 }
-
-/*
-|--------------------------------------------------------------------------
-| Create Dealer
-|--------------------------------------------------------------------------
-*/
 
 async function createDealer({
   supabase,
@@ -303,18 +312,14 @@ async function createDealer({
   return data;
 }
 
-/*
-|--------------------------------------------------------------------------
-| Update Dealer
-|--------------------------------------------------------------------------
-*/
-
 async function updateDealer(
   supabase,
   dealerId,
   updates
 ) {
-  if (!dealerId) return;
+  if (!dealerId) {
+    return;
+  }
 
   const { error } =
     await supabase
@@ -331,12 +336,6 @@ async function updateDealer(
     throw error;
   }
 }
-
-/*
-|--------------------------------------------------------------------------
-| Find Or Create Dealer
-|--------------------------------------------------------------------------
-*/
 
 async function findOrCreateDealer({
   supabase,
@@ -367,7 +366,8 @@ async function findOrCreateDealer({
         status || "active",
 
       subscription_plan:
-        plan || dealer.subscription_plan,
+        plan ||
+        dealer.subscription_plan,
     };
 
     if (customerId) {
@@ -412,7 +412,7 @@ async function findOrCreateDealer({
   }
 
   /*
-   * No dealer exists.
+   * Create dealer.
    */
 
   return createDealer({
@@ -431,7 +431,7 @@ async function findOrCreateDealer({
 
 /*
 |--------------------------------------------------------------------------
-| Subscription Details
+| Subscription Helpers
 |--------------------------------------------------------------------------
 */
 
@@ -467,14 +467,17 @@ function getSubscriptionDetails(
 
 /*
 |--------------------------------------------------------------------------
-| Stripe Webhook
+| POST /api/stripe/webhook
 |--------------------------------------------------------------------------
 */
 
 export async function POST(request) {
   /*
-   * Validate environment at request time,
-   * not during next build.
+   * Validate configuration at request time.
+   *
+   * This is intentionally NOT done at module scope
+   * so `next build` can complete without production
+   * environment variables being present.
    */
 
   const stripeSecretKey =
@@ -541,15 +544,18 @@ export async function POST(request) {
     );
   }
 
-  const stripe =
-    getStripe();
+  /*
+   * Create clients only after configuration
+   * has been validated at request time.
+   */
 
-  const supabase =
-    getSupabase();
+  const stripe = getStripe();
+  const supabase = getSupabase();
 
   /*
    * IMPORTANT:
-   * Read the raw body before Stripe verification.
+   * Stripe signature verification requires
+   * the raw request body.
    */
 
   const body =
@@ -564,6 +570,10 @@ export async function POST(request) {
     );
 
   if (!signature) {
+    console.error(
+      "Missing stripe-signature header."
+    );
+
     return new Response(
       "Missing stripe-signature",
       {
@@ -602,10 +612,17 @@ export async function POST(request) {
     );
   }
 
+  /*
+   * Process verified Stripe event.
+   */
+
   try {
     console.log(
       "Stripe webhook received:",
-      event.type
+      {
+        id: event.id,
+        type: event.type,
+      }
     );
 
     /*
@@ -658,13 +675,23 @@ export async function POST(request) {
       console.log(
         "Checkout completed:",
         {
-          sessionId: session.id,
+          checkoutSessionId:
+            session.id,
+
           customerId,
+
           subscriptionId,
+
           email,
+
           plan,
+
           source,
+
           campaign,
+
+          marketingSessionId:
+            sessionId,
         }
       );
 
@@ -700,10 +727,14 @@ export async function POST(request) {
         {
           dealerId:
             dealer?.id,
+
           plan,
+
           planName:
             PLAN_NAMES[plan],
+
           source,
+
           campaign,
         }
       );
@@ -749,12 +780,18 @@ export async function POST(request) {
         {
           subscriptionId:
             subscription.id,
+
           customerId,
+
           priceId,
+
           plan,
+
           status:
             subscription.status,
+
           source,
+
           campaign,
         }
       );
@@ -775,16 +812,25 @@ export async function POST(request) {
       const dealer =
         await findOrCreateDealer({
           supabase,
+
           customerId,
+
           email: null,
+
           subscriptionId:
             subscription.id,
+
           plan,
+
           status:
             subscription.status,
+
           source,
+
           campaign,
+
           sessionId,
+
           name: null,
         });
 
@@ -834,15 +880,28 @@ export async function POST(request) {
         {
           subscriptionId:
             subscription.id,
+
           customerId,
+
           priceId,
+
           plan,
+
           status:
             subscription.status,
+
+          source,
+
+          campaign,
         }
       );
 
       if (!plan) {
+        console.warn(
+          "Unsupported subscription plan:",
+          priceId
+        );
+
         return Response.json({
           received: true,
           warning:
@@ -858,7 +917,12 @@ export async function POST(request) {
 
       if (!dealer) {
         console.warn(
-          "No dealer found for updated subscription."
+          "No dealer found for updated subscription:",
+          {
+            customerId,
+            subscriptionId:
+              subscription.id,
+          }
         );
       } else {
         const updates = {
@@ -921,6 +985,7 @@ export async function POST(request) {
         {
           subscriptionId:
             subscription.id,
+
           customerId,
         }
       );
@@ -939,6 +1004,11 @@ export async function POST(request) {
             subscription_status:
               "canceled",
           }
+        );
+
+        console.log(
+          "Dealer subscription marked canceled:",
+          dealer.id
         );
       }
     }
@@ -966,6 +1036,7 @@ export async function POST(request) {
         {
           invoiceId:
             invoice.id,
+
           customerId,
         }
       );
@@ -984,6 +1055,11 @@ export async function POST(request) {
             subscription_status:
               "active",
           }
+        );
+
+        console.log(
+          "Dealer subscription marked active:",
+          dealer.id
         );
       }
     }
@@ -1011,6 +1087,7 @@ export async function POST(request) {
         {
           invoiceId:
             invoice.id,
+
           customerId,
         }
       );
@@ -1030,6 +1107,11 @@ export async function POST(request) {
               "past_due",
           }
         );
+
+        console.log(
+          "Dealer subscription marked past_due:",
+          dealer.id
+        );
       }
     }
 
@@ -1045,6 +1127,11 @@ export async function POST(request) {
         event.type
       );
     }
+
+    /*
+     * Always acknowledge successfully processed
+     * or intentionally ignored Stripe events.
+     */
 
     return Response.json({
       received: true,
