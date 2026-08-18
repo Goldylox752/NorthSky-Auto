@@ -57,62 +57,57 @@ export default function DealerRegisterPage() {
       }
 
       if (dealershipName.length > 150) {
-        throw new Error("Dealership name must be 150 characters or less.");
+        throw new Error(
+          "Dealership name must be 150 characters or less."
+        );
       }
 
       if (contactName.length > 150) {
-        throw new Error("Contact name must be 150 characters or less.");
+        throw new Error(
+          "Contact name must be 150 characters or less."
+        );
       }
 
       if (email.length > 254) {
         throw new Error("Email address is too long.");
       }
 
-      const emailValid =
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-      if (!emailValid) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         throw new Error("Please enter a valid email address.");
       }
 
       if (form.password.length < 8) {
-        throw new Error(
-          "Password must be at least 8 characters."
-        );
+        throw new Error("Password must be at least 8 characters.");
       }
 
       if (form.password !== form.confirm_password) {
         throw new Error("Passwords do not match.");
       }
 
+      if (phone.length > 50) {
+        throw new Error("Phone number is too long.");
+      }
+
       const supabase = createClient();
 
-      const { data, error } =
-        await supabase.auth.signUp({
-          email,
-          password: form.password,
-
-          options: {
-            data: {
-              role: "dealer",
-              dealership_name: dealershipName,
-              contact_name: contactName,
-              phone: phone || null,
-            },
-
-            emailRedirectTo:
-              `${window.location.origin}/dealer/dashboard`,
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: form.password,
+        options: {
+          data: {
+            role: "dealer",
+            dealership_name: dealershipName,
+            contact_name: contactName,
+            phone: phone || null,
           },
-        });
+          emailRedirectTo: `${window.location.origin}/dealer/dashboard`,
+        },
+      });
 
       if (error) {
-        console.error(
-          "Supabase dealer registration error:",
-          error
-        );
+        console.error("Supabase dealer registration error:", error);
 
-        const errorText =
-          error.message?.toLowerCase() || "";
+        const errorText = error.message?.toLowerCase() || "";
 
         if (
           errorText.includes("already registered") ||
@@ -124,30 +119,19 @@ export default function DealerRegisterPage() {
         }
 
         throw new Error(
-          error.message ||
-            "Unable to create your dealer account."
+          error.message || "Unable to create your dealer account."
         );
       }
 
-      /*
-       * Email confirmation enabled.
-       */
       if (!data?.session) {
         setSuccess(true);
-
         setMessage(
           "Your dealer account has been created. Check your email to confirm your account before signing in."
         );
-
         setForm(initialForm);
-
         return;
       }
 
-      /*
-       * Email confirmation disabled.
-       * User already has an authenticated session.
-       */
       setSuccess(true);
       setMessage(
         "Dealer account created successfully. Redirecting..."
@@ -155,15 +139,10 @@ export default function DealerRegisterPage() {
 
       router.push("/dealer/dashboard");
       router.refresh();
-
     } catch (error) {
-      console.error(
-        "Dealer registration error:",
-        error
-      );
+      console.error("Dealer registration error:", error);
 
       setSuccess(false);
-
       setMessage(
         error?.message ||
           "Unable to create your dealer account. Please try again."
@@ -175,13 +154,9 @@ export default function DealerRegisterPage() {
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
-
       {/* HERO */}
-
       <section className="bg-slate-950 text-white">
-
         <div className="mx-auto max-w-5xl px-6 py-14 text-center md:py-20">
-
           <Link
             href="/"
             className="inline-flex text-sm font-bold text-blue-300 transition hover:text-white"
@@ -198,27 +173,17 @@ export default function DealerRegisterPage() {
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-            Join NorthSky Auto and create an account for
-            dealership vehicle acquisition opportunities.
+            Join NorthSky Auto and create an account for dealership
+            vehicle acquisition opportunities.
           </p>
-
         </div>
-
       </section>
 
-
       {/* FORM */}
-
       <section className="px-6 py-12 md:py-16">
-
         <div className="mx-auto max-w-2xl">
-
           <div className="rounded-3xl bg-white p-7 shadow-xl ring-1 ring-slate-200 sm:p-9">
-
-            {/* HEADER */}
-
             <div>
-
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-xl font-black text-white shadow-lg shadow-blue-200">
                 N
               </div>
@@ -232,14 +197,10 @@ export default function DealerRegisterPage() {
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Create your account using your dealership
-                and primary contact information.
+                Create your account using your dealership and primary
+                contact information.
               </p>
-
             </div>
-
-
-            {/* MESSAGE */}
 
             {message && (
               <div
@@ -255,14 +216,10 @@ export default function DealerRegisterPage() {
               </div>
             )}
 
-
-            {/* FORM */}
-
             <form
               onSubmit={handleSubmit}
               className="mt-7 space-y-5"
             >
-
               <Field
                 label="Dealership Name"
                 name="dealership_name"
@@ -338,23 +295,16 @@ export default function DealerRegisterPage() {
                 disabled={loading}
               />
 
-
-              {/* TERMS */}
-
               <div className="rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-500 ring-1 ring-slate-200">
-
-                By creating a dealer account, you agree to
-                the NorthSky Auto{" "}
-
+                By creating a dealer account, you agree to the
+                NorthSky Auto{" "}
                 <Link
                   href="/terms"
                   className="font-bold text-blue-600 hover:underline"
                 >
                   Terms of Service
                 </Link>{" "}
-
                 and acknowledge the{" "}
-
                 <Link
                   href="/privacy"
                   className="font-bold text-blue-600 hover:underline"
@@ -362,11 +312,7 @@ export default function DealerRegisterPage() {
                   Privacy Policy
                 </Link>
                 .
-
               </div>
-
-
-              {/* SUBMIT */}
 
               <button
                 type="submit"
@@ -377,14 +323,9 @@ export default function DealerRegisterPage() {
                   ? "Creating Account..."
                   : "Create Dealer Account →"}
               </button>
-
             </form>
 
-
-            {/* LOGIN */}
-
             <div className="mt-8 border-t border-slate-200 pt-7 text-center">
-
               <p className="text-sm text-slate-500">
                 Already have a dealer account?
               </p>
@@ -395,22 +336,15 @@ export default function DealerRegisterPage() {
               >
                 Sign In to Dealer Portal →
               </Link>
-
             </div>
-
           </div>
 
-
-          {/* NEXT STEPS */}
-
           <div className="mt-6 rounded-2xl border border-blue-100 bg-blue-50 p-6">
-
             <h3 className="text-center font-black text-slate-900">
               What happens next?
             </h3>
 
             <div className="mt-5 grid gap-5 sm:grid-cols-3">
-
               <Step
                 number="01"
                 title="Create Account"
@@ -428,13 +362,11 @@ export default function DealerRegisterPage() {
                 title="Source Vehicles"
                 text="Review acquisition opportunities."
               />
-
             </div>
 
             <div className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs font-semibold">
-
               <Link
-                href="/pricing"
+                href="/buyers"
                 className="text-blue-600 hover:underline"
               >
                 Dealer Plans
@@ -460,39 +392,22 @@ export default function DealerRegisterPage() {
               >
                 Contact
               </Link>
-
             </div>
-
           </div>
 
-
-          {/* BACK */}
-
           <div className="mt-6 text-center">
-
             <Link
               href="/"
               className="text-sm font-semibold text-slate-500 transition hover:text-slate-900"
             >
               ← Back to NorthSky Auto
             </Link>
-
           </div>
-
         </div>
-
       </section>
-
     </main>
   );
 }
-
-
-/*
-|--------------------------------------------------------------------------
-| Field
-|--------------------------------------------------------------------------
-*/
 
 function Field({
   label,
@@ -509,7 +424,6 @@ function Field({
 }) {
   return (
     <div>
-
       <label
         htmlFor={name}
         className="mb-2 block text-sm font-bold text-slate-700"
@@ -517,9 +431,7 @@ function Field({
         {label}
 
         {required && (
-          <span className="ml-1 text-red-500">
-            *
-          </span>
+          <span className="ml-1 text-red-500">*</span>
         )}
       </label>
 
@@ -537,26 +449,13 @@ function Field({
         disabled={disabled}
         className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
       />
-
     </div>
   );
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| Step
-|--------------------------------------------------------------------------
-*/
-
-function Step({
-  number,
-  title,
-  text,
-}) {
+function Step({ number, title, text }) {
   return (
     <div className="text-center">
-
       <div className="text-sm font-black text-blue-600">
         {number}
       </div>
@@ -568,7 +467,6 @@ function Step({
       <p className="mt-1 text-xs leading-5 text-slate-500">
         {text}
       </p>
-
     </div>
   );
 }
