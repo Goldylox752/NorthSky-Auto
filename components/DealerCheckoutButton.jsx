@@ -2,18 +2,30 @@
 
 import { useState } from "react";
 
-function getSessionId() {
-  try {
-    const key = "northsky_marketing_session";
+const SESSION_KEY = "northsky_marketing_session";
+const SOURCE_KEY = "northsky_source";
+const CAMPAIGN_KEY = "northsky_campaign";
 
-    let sessionId = sessionStorage.getItem(key);
+function getSessionId() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    let sessionId =
+      window.sessionStorage.getItem(
+        SESSION_KEY
+      );
 
     if (!sessionId) {
       sessionId = `${Date.now()}-${Math.random()
         .toString(36)
-        .substring(2, 12)}`;
+        .slice(2, 12)}`;
 
-      sessionStorage.setItem(key, sessionId);
+      window.sessionStorage.setItem(
+        SESSION_KEY,
+        sessionId
+      );
     }
 
     return sessionId;
@@ -23,18 +35,24 @@ function getSessionId() {
 }
 
 function getAttribution() {
-  try {
-    const source =
-      sessionStorage.getItem("northsky_source") ||
-      "direct";
-
-    const campaign =
-      sessionStorage.getItem("northsky_campaign") ||
-      "organic";
-
+  if (typeof window === "undefined") {
     return {
-      source,
-      campaign,
+      source: "direct",
+      campaign: "organic",
+    };
+  }
+
+  try {
+    return {
+      source:
+        window.sessionStorage.getItem(
+          SOURCE_KEY
+        ) || "direct",
+
+      campaign:
+        window.sessionStorage.getItem(
+          CAMPAIGN_KEY
+        ) || "organic",
     };
   } catch {
     return {
@@ -46,27 +64,33 @@ function getAttribution() {
 
 async function trackCheckoutStarted(plan) {
   try {
-    const { source, campaign } = getAttribution();
+    const { source, campaign } =
+      getAttribution();
 
     await fetch("/api/marketing/track", {
       method: "POST",
+
       headers: {
         "Content-Type": "application/json",
       },
+
       body: JSON.stringify({
         source,
         campaign,
         event: "checkout_started",
         page: window.location.pathname,
         session_id: getSessionId(),
+
         metadata: {
           plan,
           destination: "stripe_checkout",
         },
       }),
+
       keepalive: true,
     });
   } catch (error) {
+    // Tracking should never prevent checkout.
     console.error(
       "Dealer marketing tracking failed:",
       error
@@ -78,42 +102,55 @@ export default function DealerCheckoutButton({
   plan,
   label = "Subscribe",
 }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
 
   async function handleCheckout() {
-    if (loading) return;
-
-    if (!plan) {
-      setError("Please select a dealer plan.");
+    if (loading) {
       return;
     }
 
+    const selectedPlan =
+      typeof plan === "string"
+        ? plan.trim()
+        : "";
+
+    if (!selectedPlan) {
+      setError(
+        "Please select a dealer plan."
+      );
+
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
     try {
-      setLoading(true);
-      setError("");
-
       /*
-       * Track the marketing conversion attempt.
-       *
-       * We do this before redirecting to Stripe because
-       * the browser will leave the NorthSky Auto website
-       * once Stripe Checkout opens.
+       * Tracking is intentionally non-blocking.
+       * A tracking failure must never prevent
+       * the dealer from reaching Stripe.
        */
-      await trackCheckoutStarted(plan);
+      void trackCheckoutStarted(
+        selectedPlan
+      );
 
-      /*
-       * Start Stripe Checkout.
-       */
       const response = await fetch(
         "/api/payments/checkout",
         {
           method: "POST",
+
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
+
           body: JSON.stringify({
-            plan,
+            plan: selectedPlan,
           }),
         }
       );
@@ -135,16 +172,18 @@ export default function DealerCheckoutButton({
         );
       }
 
-      if (!data?.url) {
+      if (
+        !data?.url ||
+        typeof data.url !== "string"
+      ) {
         throw new Error(
           "Stripe checkout URL was not returned."
         );
       }
 
-      /*
-       * Send the dealer to Stripe.
-       */
-      window.location.assign(data.url);
+      window.location.assign(
+        data.url
+      );
     } catch (checkoutError) {
       console.error(
         "Dealer checkout error:",
@@ -183,14 +222,15 @@ export default function DealerCheckoutButton({
         )}
       </button>
 
-      {error && (
+      {error ? (
         <div
           role="alert"
+          aria-live="polite"
           className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-center text-sm font-semibold text-red-600"
         >
           {error}
         </div>
-      )}
+      ) : null}
 
       <p className="mt-3 text-center text-xs text-slate-500">
         Secure recurring checkout powered by Stripe.
