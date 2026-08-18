@@ -143,12 +143,7 @@ function getSearchParam(searchParams, key, fallback) {
 export default async function BuyersPage({ searchParams }) {
   const params = await searchParams;
 
-  const source = getSearchParam(
-    params,
-    "source",
-    "direct"
-  );
-
+  const source = getSearchParam(params, "source", "direct");
   const campaign = getSearchParam(
     params,
     "campaign",
@@ -180,8 +175,6 @@ export default async function BuyersPage({ searchParams }) {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
-      {/* SEO STRUCTURED DATA */}
-
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -189,18 +182,14 @@ export default async function BuyersPage({ searchParams }) {
         }}
       />
 
-      {/* MARKETING TRACKING */}
-
       <DealerTracking
         source={source}
         campaign={campaign}
       />
 
       {/* HERO */}
-
       <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-900 px-6 py-24 text-white">
         <div className="absolute -right-40 -top-40 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl" />
-
         <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-indigo-500/20 blur-3xl" />
 
         <div className="relative mx-auto max-w-6xl text-center">
@@ -245,8 +234,7 @@ export default async function BuyersPage({ searchParams }) {
         </div>
       </section>
 
-      {/* VALUE PROPOSITION */}
-
+      {/* BENEFITS */}
       <section className="px-6 py-16 md:py-20">
         <div className="mx-auto max-w-6xl">
           <div className="mx-auto max-w-3xl text-center">
@@ -271,9 +259,7 @@ export default async function BuyersPage({ searchParams }) {
                 key={benefit.title}
                 className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-lg"
               >
-                <div className="text-4xl">
-                  {benefit.icon}
-                </div>
+                <div className="text-4xl">{benefit.icon}</div>
 
                 <h3 className="mt-5 text-xl font-black">
                   {benefit.title}
@@ -289,7 +275,6 @@ export default async function BuyersPage({ searchParams }) {
       </section>
 
       {/* PRICING */}
-
       <section
         id="plans"
         className="scroll-mt-20 px-6 py-20 md:py-24"
@@ -332,7 +317,9 @@ export default async function BuyersPage({ searchParams }) {
                   </span>
 
                   {plan.popular && (
-                    <span className="text-xl">⭐</span>
+                    <span className="text-xl" aria-hidden="true">
+                      ⭐
+                    </span>
                   )}
                 </div>
 
@@ -391,7 +378,6 @@ export default async function BuyersPage({ searchParams }) {
       </section>
 
       {/* HOW IT WORKS */}
-
       <section className="bg-slate-950 px-6 py-20 text-white md:py-24">
         <div className="mx-auto max-w-7xl">
           <div className="mx-auto max-w-3xl text-center">
@@ -432,7 +418,6 @@ export default async function BuyersPage({ searchParams }) {
       </section>
 
       {/* FEATURES */}
-
       <section className="px-6 py-20 md:py-24">
         <div className="mx-auto max-w-6xl">
           <div className="grid gap-6 md:grid-cols-2">
@@ -466,9 +451,7 @@ export default async function BuyersPage({ searchParams }) {
                 key={item.title}
                 className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200"
               >
-                <div className="text-4xl">
-                  {item.icon}
-                </div>
+                <div className="text-4xl">{item.icon}</div>
 
                 <h2 className="mt-5 text-2xl font-black">
                   {item.title}
@@ -484,10 +467,11 @@ export default async function BuyersPage({ searchParams }) {
       </section>
 
       {/* TELEGRAM */}
-
       <section className="border-y border-slate-200 bg-slate-50 px-6 py-16">
         <div className="mx-auto max-w-4xl rounded-3xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200 md:p-12">
-          <div className="text-5xl">📲</div>
+          <div className="text-5xl" aria-hidden="true">
+            📲
+          </div>
 
           <h2 className="mt-5 text-3xl font-black">
             Follow NorthSky Auto on Telegram
@@ -513,7 +497,6 @@ export default async function BuyersPage({ searchParams }) {
       </section>
 
       {/* FINAL CTA */}
-
       <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 p-10 text-center text-white shadow-xl md:p-14">
           <h2 className="text-4xl font-black md:text-5xl">
@@ -544,7 +527,6 @@ export default async function BuyersPage({ searchParams }) {
       </section>
 
       {/* DISCLOSURE */}
-
       <section className="border-t border-slate-200 bg-white px-6 py-8">
         <div className="mx-auto max-w-4xl text-center text-sm leading-6 text-slate-500">
           NorthSky Auto dealer memberships are subject to applicable
