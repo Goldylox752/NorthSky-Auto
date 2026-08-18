@@ -1,80 +1,70 @@
-const TELEGRAM_BASE_URL =
-  "https://api.telegram.org";
+const TELEGRAM_BASE_URL = "https://api.telegram.org";
+
+function clean(value) {
+  return typeof value === "string"
+    ? value.trim()
+    : "";
+}
 
 export async function sendTelegramMessage({
   message,
   buttonText = "View Opportunity",
   buttonUrl,
 } = {}) {
-  const token =
-    process.env.TELEGRAM_BOT_TOKEN;
+  const token = clean(
+    process.env.TELEGRAM_BOT_TOKEN
+  );
 
-  const chatId =
-    process.env.TELEGRAM_CHAT_ID;
+  const chatId = clean(
+    process.env.TELEGRAM_CHAT_ID
+  );
 
-  /*
-   * Telegram configuration
-   */
+  // Telegram is optional.
+  // Do not fail the vehicle submission
+  // if Telegram is not configured.
   if (!token || !chatId) {
     console.warn(
-      "Telegram environment variables are not configured."
+      "Telegram is not configured. Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID."
     );
 
     return {
       success: false,
       skipped: true,
-      error:
-        "Telegram is not configured.",
+      error: "Telegram is not configured.",
     };
   }
 
-  /*
-   * Validate message
-   */
-  if (
-    typeof message !== "string" ||
-    !message.trim()
-  ) {
+  const cleanMessage = clean(message);
+
+  if (!cleanMessage) {
     return {
       success: false,
       skipped: false,
-      error:
-        "Telegram message is empty.",
+      error: "Telegram message is empty.",
     };
   }
 
-  /*
-   * Build API URL only after
-   * confirming the bot token exists.
-   */
   const apiUrl =
     `${TELEGRAM_BASE_URL}/bot${token}/sendMessage`;
 
-  /*
-   * Telegram request body
-   */
   const body = {
     chat_id: chatId,
-    text: message,
+    text: cleanMessage,
     parse_mode: "HTML",
     disable_web_page_preview: false,
   };
 
-  /*
-   * Optional dealer portal button
-   */
-  if (
-    typeof buttonUrl === "string" &&
-    buttonUrl.trim()
-  ) {
+  const cleanButtonUrl = clean(buttonUrl);
+  const cleanButtonText =
+    clean(buttonText) || "View Opportunity";
+
+  if (cleanButtonUrl) {
     body.reply_markup = {
       inline_keyboard: [
         [
           {
-            text:
-              buttonText ||
-              "View Opportunity",
-            url: buttonUrl.trim(),
+            text: cleanButtonText,
+            url: cleanButtonUrl,
           },
         ],
       ],
@@ -82,74 +72,49 @@ export async function sendTelegramMessage({
   }
 
   try {
-    const response = await fetch(
-      apiUrl,
-      {
-        method: "POST",
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
 
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-
-        body: JSON.stringify(body),
-
-        cache: "no-store",
-      }
-    );
-
-    /*
-     * Telegram normally returns JSON,
-     * but protect against an unexpected
-     * non-JSON response.
-     */
     let data = null;
 
     try {
       data = await response.json();
     } catch {
-      data = null;
+      // Telegram returned a non-JSON response.
     }
 
-    /*
-     * Telegram rejected the request
-     */
-    if (
-      !response.ok ||
-      !data?.ok
-    ) {
+    if (!response.ok || !data?.ok) {
+      const errorMessage =
+        data?.description ||
+        `Telegram API request failed with status ${response.status}.`;
+
       console.error(
         "Telegram API error:",
-        {
-          status: response.status,
-          description:
-            data?.description ||
-            "Unknown Telegram API error.",
-        }
+        errorMessage
       );
 
       return {
         success: false,
         skipped: false,
-        error:
-          data?.description ||
-          `Telegram API request failed with status ${response.status}.`,
+        error: errorMessage,
       };
     }
 
-    /*
-     * Successful Telegram message
-     */
     return {
       success: true,
       skipped: false,
       messageId:
-        data?.result?.message_id ||
-        null,
+        data?.result?.message_id ?? null,
     };
   } catch (error) {
     console.error(
-      "Telegram request failed:",
+      "Telegram network error:",
       error
     );
 
@@ -157,6 +122,7 @@ export async function sendTelegramMessage({
       success: false,
       skipped: false,
       error:
+        error?.message ||
         "Unable to reach Telegram.",
     };
   }
