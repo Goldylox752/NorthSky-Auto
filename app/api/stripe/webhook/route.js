@@ -2,24 +2,50 @@ import Stripe from "stripe";
 import { headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY;
+export const runtime = "nodejs";
 
-const stripe = stripeSecretKey
-  ? new Stripe(stripeSecretKey, {
-      apiVersion: "2025-03-31.basil",
-    })
-  : null;
+/*
+|--------------------------------------------------------------------------
+| Environment Helpers
+|--------------------------------------------------------------------------
+*/
 
-const supabase =
-  supabaseUrl && supabaseServiceRoleKey
-    ? createClient(
-        supabaseUrl,
-        supabaseServiceRoleKey
-      )
-    : null;
+function getStripe() {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+
+  if (!secretKey) {
+    throw new Error(
+      "STRIPE_SECRET_KEY is not configured."
+    );
+  }
+
+  return new Stripe(secretKey);
+}
+
+function getSupabase() {
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl) {
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_URL is not configured."
+    );
+  }
+
+  if (!serviceRoleKey) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY is not configured."
+    );
+  }
+
+  return createClient(
+    supabaseUrl,
+    serviceRoleKey
+  );
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -126,32 +152,15 @@ function getMarketingAttribution(metadata) {
 
 /*
 |--------------------------------------------------------------------------
-| Supabase Guard
-|--------------------------------------------------------------------------
-*/
-
-function requireSupabase() {
-  if (!supabase) {
-    throw new Error(
-      "Supabase is not configured. Required environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
-    );
-  }
-
-  return supabase;
-}
-
-/*
-|--------------------------------------------------------------------------
 | Supabase Helpers
 |--------------------------------------------------------------------------
 */
 
 async function findDealer({
+  supabase,
   customerId,
   email,
 }) {
-  const db = requireSupabase();
-
   if (!customerId && !email) {
     return null;
   }
@@ -162,7 +171,7 @@ async function findDealer({
 
   if (customerId) {
     const { data, error } =
-      await db
+      await supabase
         .from("dealers")
         .select("*")
         .eq(
@@ -189,7 +198,7 @@ async function findDealer({
 
   if (email) {
     const { data, error } =
-      await db
+      await supabase
         .from("dealers")
         .select("*")
         .ilike("email", email)
@@ -217,6 +226,7 @@ async function findDealer({
 */
 
 async function createDealer({
+  supabase,
   email,
   customerId,
   subscriptionId,
@@ -227,8 +237,6 @@ async function createDealer({
   sessionId,
   name,
 }) {
-  const db = requireSupabase();
-
   if (!email && !customerId) {
     console.warn(
       "Unable to create dealer: no email or Stripe customer ID."
@@ -265,7 +273,7 @@ async function createDealer({
   };
 
   const { data, error } =
-    await db
+    await supabase
       .from("dealers")
       .insert(dealerData)
       .select("*")
@@ -302,15 +310,14 @@ async function createDealer({
 */
 
 async function updateDealer(
+  supabase,
   dealerId,
   updates
 ) {
-  const db = requireSupabase();
-
   if (!dealerId) return;
 
   const { error } =
-    await db
+    await supabase
       .from("dealers")
       .update(updates)
       .eq("id", dealerId);
@@ -332,6 +339,7 @@ async function updateDealer(
 */
 
 async function findOrCreateDealer({
+  supabase,
   customerId,
   email,
   subscriptionId,
@@ -342,8 +350,9 @@ async function findOrCreateDealer({
   sessionId,
   name,
 }) {
-  let dealer =
+  const dealer =
     await findDealer({
+      supabase,
       customerId,
       email,
     });
@@ -391,6 +400,7 @@ async function findOrCreateDealer({
     }
 
     await updateDealer(
+      supabase,
       dealer.id,
       updates
     );
@@ -403,10 +413,10 @@ async function findOrCreateDealer({
 
   /*
    * No dealer exists.
-   * Create one automatically.
    */
 
   return createDealer({
+    supabase,
     email,
     customerId,
     subscriptionId,
@@ -463,11 +473,23 @@ function getSubscriptionDetails(
 
 export async function POST(request) {
   /*
-   * Stripe must be configured before processing
-   * any webhook.
+   * Validate environment at request time,
+   * not during next build.
    */
 
-  if (!stripe) {
+  const stripeSecretKey =
+    process.env.STRIPE_SECRET_KEY;
+
+  const webhookSecret =
+    process.env.STRIPE_WEBHOOK_SECRET;
+
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  const supabaseServiceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!stripeSecretKey) {
     console.error(
       "STRIPE_SECRET_KEY is not configured."
     );
@@ -480,52 +502,7 @@ export async function POST(request) {
     );
   }
 
-  /*
-   * Supabase is required for dealer synchronization.
-   */
-
-  if (!supabase) {
-    console.error(
-      "Supabase is not configured. Required environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
-    );
-
-    return new Response(
-      "Webhook database configuration error",
-      {
-        status: 500,
-      }
-    );
-  }
-
-  const body = await request.text();
-
-  const headersList = await headers();
-
-  const signature =
-    headersList.get(
-      "stripe-signature"
-    );
-
-  /*
-   * Require Stripe signature.
-   */
-
-  if (!signature) {
-    return new Response(
-      "Missing stripe-signature",
-      {
-        status: 400,
-      }
-    );
-  }
-
-  /*
-   * Require webhook secret.
-   */
-
-  if (
-    !process.env.STRIPE_WEBHOOK_SECRET
-  ) {
+  if (!webhookSecret) {
     console.error(
       "STRIPE_WEBHOOK_SECRET is not configured."
     );
@@ -534,6 +511,63 @@ export async function POST(request) {
       "Webhook configuration error",
       {
         status: 500,
+      }
+    );
+  }
+
+  if (!supabaseUrl) {
+    console.error(
+      "NEXT_PUBLIC_SUPABASE_URL is not configured."
+    );
+
+    return new Response(
+      "Webhook configuration error",
+      {
+        status: 500,
+      }
+    );
+  }
+
+  if (!supabaseServiceRoleKey) {
+    console.error(
+      "SUPABASE_SERVICE_ROLE_KEY is not configured."
+    );
+
+    return new Response(
+      "Webhook configuration error",
+      {
+        status: 500,
+      }
+    );
+  }
+
+  const stripe =
+    getStripe();
+
+  const supabase =
+    getSupabase();
+
+  /*
+   * IMPORTANT:
+   * Read the raw body before Stripe verification.
+   */
+
+  const body =
+    await request.text();
+
+  const headersList =
+    await headers();
+
+  const signature =
+    headersList.get(
+      "stripe-signature"
+    );
+
+  if (!signature) {
+    return new Response(
+      "Missing stripe-signature",
+      {
+        status: 400,
       }
     );
   }
@@ -549,17 +583,19 @@ export async function POST(request) {
       stripe.webhooks.constructEvent(
         body,
         signature,
-        process.env
-          .STRIPE_WEBHOOK_SECRET
+        webhookSecret
       );
   } catch (error) {
     console.error(
       "Stripe webhook signature verification failed:",
-      error.message
+      error?.message
     );
 
     return new Response(
-      `Webhook Error: ${error.message}`,
+      `Webhook Error: ${
+        error?.message ||
+        "Invalid signature"
+      }`,
       {
         status: 400,
       }
@@ -632,10 +668,6 @@ export async function POST(request) {
         }
       );
 
-      /*
-       * Never activate unsupported plans.
-       */
-
       if (!plan) {
         console.warn(
           "Invalid dealer plan:",
@@ -649,12 +681,9 @@ export async function POST(request) {
         });
       }
 
-      /*
-       * Create or update dealer.
-       */
-
       const dealer =
         await findOrCreateDealer({
+          supabase,
           customerId,
           email,
           subscriptionId,
@@ -745,6 +774,7 @@ export async function POST(request) {
 
       const dealer =
         await findOrCreateDealer({
+          supabase,
           customerId,
           email: null,
           subscriptionId:
@@ -822,6 +852,7 @@ export async function POST(request) {
 
       const dealer =
         await findDealer({
+          supabase,
           customerId,
         });
 
@@ -860,6 +891,7 @@ export async function POST(request) {
         }
 
         await updateDealer(
+          supabase,
           dealer.id,
           updates
         );
@@ -895,11 +927,13 @@ export async function POST(request) {
 
       const dealer =
         await findDealer({
+          supabase,
           customerId,
         });
 
       if (dealer) {
         await updateDealer(
+          supabase,
           dealer.id,
           {
             subscription_status:
@@ -938,11 +972,13 @@ export async function POST(request) {
 
       const dealer =
         await findDealer({
+          supabase,
           customerId,
         });
 
       if (dealer) {
         await updateDealer(
+          supabase,
           dealer.id,
           {
             subscription_status:
@@ -981,11 +1017,13 @@ export async function POST(request) {
 
       const dealer =
         await findDealer({
+          supabase,
           customerId,
         });
 
       if (dealer) {
         await updateDealer(
+          supabase,
           dealer.id,
           {
             subscription_status:
