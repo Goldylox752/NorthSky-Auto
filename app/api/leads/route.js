@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendTelegramMessage } from "@/app/lib/telegram";
+import { sendTelegramMessage } from "@/lib/telegram";
 
 export const dynamic = "force-dynamic";
 
@@ -13,140 +13,6 @@ const SUPABASE_SERVICE_ROLE_KEY =
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
   "https://northsky-auto.vercel.app";
-
-const PUBLIC_STATUSES = [
-  "new",
-  "available",
-  "active",
-];
-
-function getSupabase() {
-  if (
-    !SUPABASE_URL ||
-    !SUPABASE_SERVICE_ROLE_KEY
-  ) {
-    return null;
-  }
-
-  return createClient(
-    SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY
-  );
-}
-
-function clean(value) {
-  if (value === null || value === undefined) {
-    return "";
-  }
-
-  return String(value).trim();
-}
-
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function isValidYear(year) {
-  const numericYear = Number(year);
-  const maxYear = new Date().getFullYear() + 1;
-
-  return (
-    Number.isInteger(numericYear) &&
-    numericYear >= 1900 &&
-    numericYear <= maxYear
-  );
-}
-
-function escapeTelegramHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-function formatPublicLead(vehicle) {
-  return {
-    id: vehicle.id ?? null,
-    year: vehicle.year ?? null,
-    make: vehicle.make ?? null,
-    model: vehicle.model ?? null,
-    trim: vehicle.trim ?? null,
-    mileage: vehicle.mileage ?? null,
-    condition: vehicle.condition ?? null,
-    asking_price:
-      vehicle.asking_price ?? null,
-    postal_code:
-      vehicle.postal_code ?? null,
-    description:
-      vehicle.description ?? null,
-    selling_timeline:
-      vehicle.selling_timeline ?? null,
-    accident_history:
-      vehicle.accident_history ?? null,
-    status: vehicle.status || "new",
-    created_at:
-      vehicle.created_at ?? null,
-  };
-}
-
-function buildTelegramMessage(vehicle) {
-  const vehicleName = [
-    vehicle.year,
-    vehicle.make,
-    vehicle.model,
-    vehicle.trim,
-  ]
-    .map(escapeTelegramHtml)
-    .filter(Boolean)
-    .join(" ");
-
-  const location =
-    escapeTelegramHtml(
-      vehicle.postal_code || "Canada"
-    );
-
-  const mileage =
-    escapeTelegramHtml(
-      vehicle.mileage
-    );
-
-  const price =
-    escapeTelegramHtml(
-      vehicle.asking_price
-    );
-
-  const condition =
-    escapeTelegramHtml(
-      vehicle.condition ||
-        "Not provided"
-    );
-
-  return [
-    "🚗 <b>NEW VEHICLE OPPORTUNITY</b>",
-    "",
-    `<b>${vehicleName || "Vehicle Opportunity"}</b>`,
-    "",
-    `📍 Location: ${location}`,
-    `🛣️ Mileage: ${mileage || "Not provided"} km`,
-    `💰 Asking Price: $${price || "Contact NorthSky Auto"}`,
-    `🔧 Condition: ${condition}`,
-    "",
-    "A new vehicle submission has been received by NorthSky Auto.",
-    "",
-    "Dealers can review the opportunity through the NorthSky Auto dealer portal.",
-  ].join("\n");
-}
-
-function serverError(message) {
-  return NextResponse.json(
-    {
-      error: message,
-    },
-    {
-      status: 500,
-    }
-  );
-}
 
 const PUBLIC_FIELDS = `
   id,
@@ -165,6 +31,213 @@ const PUBLIC_FIELDS = `
   created_at
 `;
 
+const PUBLIC_STATUSES = [
+  "new",
+  "available",
+  "active",
+];
+
+function getSupabase() {
+  if (
+    !SUPABASE_URL ||
+    !SUPABASE_SERVICE_ROLE_KEY
+  ) {
+    return null;
+  }
+
+  return createClient(
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
+}
+
+function clean(value) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    return "";
+  }
+
+  return String(value).trim();
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    email
+  );
+}
+
+function isValidYear(year) {
+  const numericYear = Number(year);
+  const currentYear =
+    new Date().getFullYear();
+
+  return (
+    Number.isInteger(numericYear) &&
+    numericYear >= 1900 &&
+    numericYear <= currentYear + 1
+  );
+}
+
+function parseNumber(value) {
+  if (typeof value === "number") {
+    return Number.isFinite(value)
+      ? value
+      : null;
+  }
+
+  const cleaned = String(value ?? "")
+    .replace(/,/g, "")
+    .replace(/[^0-9.]/g, "");
+
+  if (!cleaned) {
+    return null;
+  }
+
+  const number = Number(cleaned);
+
+  return Number.isFinite(number)
+    ? number
+    : null;
+}
+
+function escapeTelegramHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function formatPublicLead(vehicle) {
+  return {
+    id: vehicle?.id ?? null,
+    year: vehicle?.year ?? null,
+    make: vehicle?.make ?? null,
+    model: vehicle?.model ?? null,
+    trim: vehicle?.trim ?? null,
+    mileage: vehicle?.mileage ?? null,
+    condition: vehicle?.condition ?? null,
+    asking_price:
+      vehicle?.asking_price ?? null,
+    postal_code:
+      vehicle?.postal_code ?? null,
+    description:
+      vehicle?.description ?? null,
+    selling_timeline:
+      vehicle?.selling_timeline ?? null,
+    accident_history:
+      vehicle?.accident_history ?? null,
+    status:
+      vehicle?.status || "new",
+    created_at:
+      vehicle?.created_at ?? null,
+  };
+}
+
+function buildTelegramMessage(vehicle) {
+  const vehicleName = [
+    vehicle?.year,
+    vehicle?.make,
+    vehicle?.model,
+    vehicle?.trim,
+  ]
+    .map((value) =>
+      escapeTelegramHtml(value)
+    )
+    .filter(Boolean)
+    .join(" ");
+
+  const location =
+    escapeTelegramHtml(
+      vehicle?.postal_code ||
+        "Canada"
+    );
+
+  const mileage =
+    escapeTelegramHtml(
+      vehicle?.mileage
+    );
+
+  const price =
+    escapeTelegramHtml(
+      vehicle?.asking_price
+    );
+
+  const condition =
+    escapeTelegramHtml(
+      vehicle?.condition ||
+        "Not provided"
+    );
+
+  return [
+    "🚗 <b>NEW VEHICLE OPPORTUNITY</b>",
+    "",
+    `<b>${
+      vehicleName ||
+      "Vehicle Opportunity"
+    }</b>`,
+    "",
+    `📍 Location: ${location}`,
+    `🛣️ Mileage: ${
+      mileage || "Not provided"
+    } km`,
+    `💰 Asking Price: $${
+      price ||
+      "Contact NorthSky Auto"
+    }`,
+    `🔧 Condition: ${condition}`,
+    "",
+    "A new vehicle submission has been received by NorthSky Auto.",
+    "",
+    "Dealers can review the opportunity through the NorthSky Auto dealer portal.",
+  ].join("\n");
+}
+
+function errorResponse(
+  message,
+  status = 500,
+  extra = {}
+) {
+  return NextResponse.json(
+    {
+      error: message,
+      ...extra,
+    },
+    { status }
+  );
+}
+
+function noStoreResponse(data, status = 200) {
+  return NextResponse.json(
+    data,
+    {
+      status,
+      headers: {
+        "Cache-Control":
+          "no-store, max-age=0",
+      },
+    }
+  );
+}
+
+/*
+|--------------------------------------------------------------------------
+| GET /api/leads
+|--------------------------------------------------------------------------
+|
+| GET /api/leads
+| GET /api/leads?limit=25
+| GET /api/leads?id=<lead-id>
+|
+*/
+
 export async function GET(request) {
   try {
     const supabase = getSupabase();
@@ -174,7 +247,7 @@ export async function GET(request) {
         "Missing Supabase server environment variables."
       );
 
-      return serverError(
+      return errorResponse(
         "Server database configuration is incomplete."
       );
     }
@@ -186,17 +259,25 @@ export async function GET(request) {
       searchParams.get("id")
     );
 
+    /*
+     * ------------------------------------------------------------
+     * Single vehicle opportunity
+     * ------------------------------------------------------------
+     */
+
     if (id) {
-      const { data, error } =
-        await supabase
-          .from("vehicle_leads")
-          .select(PUBLIC_FIELDS)
-          .eq("id", id)
-          .in(
-            "status",
-            PUBLIC_STATUSES
-          )
-          .maybeSingle();
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("vehicle_leads")
+        .select(PUBLIC_FIELDS)
+        .eq("id", id)
+        .in(
+          "status",
+          PUBLIC_STATUSES
+        )
+        .maybeSingle();
 
       if (error) {
         console.error(
@@ -204,72 +285,67 @@ export async function GET(request) {
           error
         );
 
-        return serverError(
+        return errorResponse(
           "Unable to load this vehicle opportunity."
         );
       }
 
       if (!data) {
-        return NextResponse.json(
-          {
-            error:
-              "Vehicle opportunity not found.",
-          },
-          {
-            status: 404,
-          }
+        return errorResponse(
+          "Vehicle opportunity not found.",
+          404
         );
       }
 
-      return NextResponse.json(
-        {
-          success: true,
-          lead:
-            formatPublicLead(data),
-        },
-        {
-          status: 200,
-          headers: {
-            "Cache-Control":
-              "no-store, max-age=0",
-          },
-        }
-      );
+      return noStoreResponse({
+        success: true,
+        lead: formatPublicLead(data),
+      });
     }
+
+    /*
+     * ------------------------------------------------------------
+     * Vehicle opportunity list
+     * ------------------------------------------------------------
+     */
 
     const requestedLimit =
       Number(
-        searchParams.get(
-          "limit"
-        ) || 100
+        searchParams.get("limit") ||
+          100
       );
+
+    const safeRequestedLimit =
+      Number.isFinite(
+        requestedLimit
+      )
+        ? Math.floor(
+            requestedLimit
+          )
+        : 100;
 
     const limit = Math.min(
       Math.max(
-        Number.isFinite(
-          requestedLimit
-        )
-          ? Math.floor(
-              requestedLimit
-            )
-          : 100,
+        safeRequestedLimit,
         1
       ),
       100
     );
 
-    const { data, error } =
-      await supabase
-        .from("vehicle_leads")
-        .select(PUBLIC_FIELDS)
-        .in(
-          "status",
-          PUBLIC_STATUSES
-        )
-        .order("created_at", {
-          ascending: false,
-        })
-        .limit(limit);
+    const {
+      data,
+      error,
+    } = await supabase
+      .from("vehicle_leads")
+      .select(PUBLIC_FIELDS)
+      .in(
+        "status",
+        PUBLIC_STATUSES
+      )
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(limit);
 
     if (error) {
       console.error(
@@ -277,7 +353,7 @@ export async function GET(request) {
         error
       );
 
-      return serverError(
+      return errorResponse(
         "Unable to load vehicle opportunities."
       );
     }
@@ -286,31 +362,28 @@ export async function GET(request) {
       data || []
     ).map(formatPublicLead);
 
-    return NextResponse.json(
-      {
-        success: true,
-        leads,
-        count: leads.length,
-      },
-      {
-        status: 200,
-        headers: {
-          "Cache-Control":
-            "no-store, max-age=0",
-        },
-      }
-    );
+    return noStoreResponse({
+      success: true,
+      leads,
+      count: leads.length,
+    });
   } catch (error) {
     console.error(
       "Vehicle leads GET error:",
       error
     );
 
-    return serverError(
+    return errorResponse(
       "An unexpected error occurred while loading vehicle opportunities."
     );
   }
 }
+
+/*
+|--------------------------------------------------------------------------
+| POST /api/leads
+|--------------------------------------------------------------------------
+*/
 
 export async function POST(request) {
   try {
@@ -321,24 +394,25 @@ export async function POST(request) {
         "Missing Supabase server environment variables."
       );
 
-      return serverError(
+      return errorResponse(
         "Server database configuration is incomplete."
       );
     }
+
+    /*
+     * ------------------------------------------------------------
+     * Parse request body
+     * ------------------------------------------------------------
+     */
 
     let body;
 
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json(
-        {
-          error:
-            "Invalid request body.",
-        },
-        {
-          status: 400,
-        }
+      return errorResponse(
+        "Invalid request body.",
+        400
       );
     }
 
@@ -347,46 +421,60 @@ export async function POST(request) {
       typeof body !== "object" ||
       Array.isArray(body)
     ) {
-      return NextResponse.json(
-        {
-          error:
-            "Invalid vehicle submission.",
-        },
-        {
-          status: 400,
-        }
+      return errorResponse(
+        "Invalid vehicle submission.",
+        400
       );
     }
+
+    /*
+     * ------------------------------------------------------------
+     * Clean incoming values
+     * ------------------------------------------------------------
+     */
 
     const lead = {
       name: clean(body.name),
 
-      email:
-        clean(body.email).toLowerCase(),
+      email: clean(
+        body.email
+      ).toLowerCase(),
 
-      phone: clean(body.phone),
+      phone: clean(
+        body.phone
+      ),
 
-      postal_code:
-        clean(
-          body.postal_code
-        ).toUpperCase(),
+      postal_code: clean(
+        body.postal_code
+      ).toUpperCase(),
 
-      year: clean(body.year),
+      year: clean(
+        body.year
+      ),
 
-      make: clean(body.make),
+      make: clean(
+        body.make
+      ),
 
-      model: clean(body.model),
+      model: clean(
+        body.model
+      ),
 
-      trim: clean(body.trim),
+      trim: clean(
+        body.trim
+      ),
 
-      mileage:
-        clean(body.mileage),
+      mileage: clean(
+        body.mileage
+      ),
 
-      vin:
-        clean(body.vin).toUpperCase(),
+      vin: clean(
+        body.vin
+      ).toUpperCase(),
 
-      condition:
-        clean(body.condition),
+      condition: clean(
+        body.condition
+      ),
 
       selling_timeline:
         clean(
@@ -398,18 +486,28 @@ export async function POST(request) {
           body.accident_history
         ),
 
-      description:
-        clean(body.description),
+      description: clean(
+        body.description
+      ),
 
-      asking_price:
-        clean(body.asking_price),
+      asking_price: clean(
+        body.asking_price
+      ),
 
-      source:
-        clean(body.source),
+      source: clean(
+        body.source
+      ),
 
-      campaign:
-        clean(body.campaign),
+      campaign: clean(
+        body.campaign
+      ),
     };
+
+    /*
+     * ------------------------------------------------------------
+     * Required fields
+     * ------------------------------------------------------------
+     */
 
     const requiredFields = [
       "name",
@@ -425,219 +523,207 @@ export async function POST(request) {
 
     const missingFields =
       requiredFields.filter(
-        (field) =>
-          !lead[field]
+        (field) => !lead[field]
       );
 
     if (
       missingFields.length > 0
     ) {
-      return NextResponse.json(
+      return errorResponse(
+        "Please complete all required fields.",
+        400,
         {
-          error:
-            "Please complete all required fields.",
-          fields:
-            missingFields,
-        },
-        {
-          status: 400,
+          fields: missingFields,
         }
       );
     }
+
+    /*
+     * ------------------------------------------------------------
+     * Validate email
+     * ------------------------------------------------------------
+     */
 
     if (
       !isValidEmail(
         lead.email
       )
     ) {
-      return NextResponse.json(
-        {
-          error:
-            "Please provide a valid email address.",
-        },
-        {
-          status: 400,
-        }
+      return errorResponse(
+        "Please provide a valid email address.",
+        400
       );
     }
+
+    /*
+     * ------------------------------------------------------------
+     * Validate year
+     * ------------------------------------------------------------
+     */
 
     if (
       !isValidYear(
         lead.year
       )
     ) {
-      return NextResponse.json(
-        {
-          error:
-            "Please provide a valid vehicle year.",
-        },
-        {
-          status: 400,
-        }
+      return errorResponse(
+        "Please provide a valid vehicle year.",
+        400
       );
     }
 
-    if (
-      lead.name.length > 150
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Name is too long.",
-        },
-        {
-          status: 400,
-        }
-      );
+    /*
+     * ------------------------------------------------------------
+     * Validate field lengths
+     * ------------------------------------------------------------
+     */
+
+    const maxLengths = {
+      name: 150,
+      email: 254,
+      phone: 50,
+      postal_code: 20,
+      make: 100,
+      model: 100,
+      trim: 150,
+      vin: 50,
+      condition: 100,
+      selling_timeline: 100,
+      accident_history: 500,
+      description: 5000,
+      source: 100,
+      campaign: 150,
+    };
+
+    for (const [
+      field,
+      maxLength,
+    ] of Object.entries(
+      maxLengths
+    )) {
+      if (
+        lead[field] &&
+        lead[field].length >
+          maxLength
+      ) {
+        return errorResponse(
+          `${field.replace(
+            /_/g,
+            " "
+          )} is too long.`,
+          400
+        );
+      }
     }
 
-    if (
-      lead.email.length > 254
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Email address is too long.",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
+    /*
+     * ------------------------------------------------------------
+     * Parse numeric fields
+     * ------------------------------------------------------------
+     */
 
-    if (
-      lead.phone.length > 50
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Phone number is too long.",
-        },
-        {
-          status: 400,
-        }
+    const mileage =
+      parseNumber(
+        lead.mileage
       );
-    }
-
-    if (
-      lead.description.length >
-      5000
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Vehicle description is too long.",
-        },
-        {
-          status: 400,
-        }
-      );
-    }
-
-    const mileage = Number(
-      lead.mileage.replace(
-        /[^0-9]/g,
-        ""
-      )
-    );
 
     const askingPrice =
-      Number(
-        lead.asking_price.replace(
-          /[^0-9.]/g,
-          ""
-        )
+      parseNumber(
+        lead.asking_price
       );
 
     if (
-      !Number.isFinite(
-        mileage
-      ) ||
+      mileage === null ||
       mileage < 0
     ) {
-      return NextResponse.json(
-        {
-          error:
-            "Please provide a valid mileage.",
-        },
-        {
-          status: 400,
-        }
+      return errorResponse(
+        "Please provide a valid mileage.",
+        400
       );
     }
 
     if (
-      !Number.isFinite(
-        askingPrice
-      ) ||
+      askingPrice === null ||
       askingPrice < 0
     ) {
-      return NextResponse.json(
-        {
-          error:
-            "Please provide a valid asking price.",
-        },
-        {
-          status: 400,
-        }
+      return errorResponse(
+        "Please provide a valid asking price.",
+        400
       );
     }
+
+    /*
+     * ------------------------------------------------------------
+     * Build database record
+     * ------------------------------------------------------------
+     */
 
     const vehicleRecord = {
       name: lead.name,
       email: lead.email,
       phone: lead.phone,
+
       postal_code:
         lead.postal_code,
+
       year: Number(
         lead.year
       ),
+
       make: lead.make,
       model: lead.model,
+
       trim:
         lead.trim || null,
+
       mileage,
+
       vin:
         lead.vin || null,
+
       condition:
         lead.condition || null,
+
       selling_timeline:
         lead.selling_timeline ||
         null,
+
       accident_history:
         lead.accident_history ||
         null,
+
       description:
         lead.description ||
         null,
+
       asking_price:
         askingPrice,
+
+      source:
+        lead.source || null,
+
+      campaign:
+        lead.campaign || null,
+
       status: "new",
     };
 
-    const { data, error } =
-      await supabase
-        .from("vehicle_leads")
-        .insert(
-          vehicleRecord
-        )
-        .select(`
-          id,
-          year,
-          make,
-          model,
-          trim,
-          mileage,
-          condition,
-          asking_price,
-          postal_code,
-          description,
-          selling_timeline,
-          accident_history,
-          status,
-          created_at
-        `)
-        .single();
+    /*
+     * ------------------------------------------------------------
+     * Insert vehicle lead
+     * ------------------------------------------------------------
+     */
+
+    const {
+      data,
+      error,
+    } = await supabase
+      .from("vehicle_leads")
+      .insert(
+        vehicleRecord
+      )
+      .select(PUBLIC_FIELDS)
+      .single();
 
     if (error) {
       console.error(
@@ -645,27 +731,38 @@ export async function POST(request) {
         error
       );
 
-      return serverError(
+      return errorResponse(
         "We could not submit your vehicle right now. Please try again."
       );
     }
 
+    /*
+     * ------------------------------------------------------------
+     * Build dealer opportunity URL
+     * ------------------------------------------------------------
+     */
+
     const opportunityUrl =
       `${SITE_URL}/dealer/leads/${data.id}`;
 
-    const telegramMessage =
-      buildTelegramMessage(
-        data
-      );
+    /*
+     * ------------------------------------------------------------
+     * Telegram notification
+     * ------------------------------------------------------------
+     */
 
-    let telegramResult =
-      null;
+    let telegramResult = {
+      success: false,
+      skipped: true,
+    };
 
     try {
       telegramResult =
         await sendTelegramMessage({
           message:
-            telegramMessage,
+            buildTelegramMessage(
+              data
+            ),
 
           buttonText:
             "🏪 View Dealer Opportunity",
@@ -673,9 +770,7 @@ export async function POST(request) {
           buttonUrl:
             opportunityUrl,
         });
-    } catch (
-      telegramError
-    ) {
+    } catch (telegramError) {
       console.error(
         "Telegram notification error:",
         telegramError
@@ -685,6 +780,7 @@ export async function POST(request) {
         success: false,
         skipped: false,
         error:
+          telegramError?.message ||
           "Telegram notification failed.",
       };
     }
@@ -699,6 +795,12 @@ export async function POST(request) {
       );
     }
 
+    /*
+     * ------------------------------------------------------------
+     * Success response
+     * ------------------------------------------------------------
+     */
+
     return NextResponse.json(
       {
         success: true,
@@ -710,8 +812,7 @@ export async function POST(request) {
           data?.id || null,
 
         telegramNotified:
-          telegramResult?.success ===
-          true,
+          telegramResult?.success === true,
       },
       {
         status: 201,
@@ -723,7 +824,7 @@ export async function POST(request) {
       error
     );
 
-    return serverError(
+    return errorResponse(
       "Unable to process your vehicle submission."
     );
   }
