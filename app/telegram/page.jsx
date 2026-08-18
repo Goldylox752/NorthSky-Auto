@@ -8,14 +8,14 @@ import {
 export const metadata = {
   title: "NorthSky Auto on Telegram | Vehicle Opportunities & Dealer Network",
   description:
-    "Follow NorthSky Auto on Telegram for Canadian vehicle opportunities, automotive updates, featured vehicles, and dealer acquisition opportunities.",
+    "Follow NorthSky Auto on Telegram for Canadian vehicle opportunities, featured vehicles, automotive updates, and dealer opportunities.",
   alternates: {
     canonical: "https://northsky-auto.vercel.app/telegram",
   },
   openGraph: {
     title: "NorthSky Auto on Telegram | Canadian Vehicle Opportunities",
     description:
-      "Follow NorthSky Auto on Telegram for vehicle opportunities, automotive updates, featured vehicles, and dealer opportunities across Canada.",
+      "Follow NorthSky Auto on Telegram for Canadian vehicle opportunities, featured vehicles, automotive updates, and dealer opportunities.",
     url: "https://northsky-auto.vercel.app/telegram",
     siteName: "NorthSky Auto",
     type: "website",
@@ -23,6 +23,73 @@ export const metadata = {
 };
 
 const TELEGRAM_URL = "https://t.me/NorthSkyAutoCanada";
+
+const opportunities = [
+  {
+    icon: "🚗",
+    title: "Vehicle Opportunities",
+    text: "Discover vehicle opportunities submitted through NorthSky Auto.",
+  },
+  {
+    icon: "🔥",
+    title: "Featured Vehicles",
+    text: "See selected vehicles and automotive opportunities shared by NorthSky Auto.",
+  },
+  {
+    icon: "🏪",
+    title: "Dealer Opportunities",
+    text: "Stay connected with information relevant to dealerships and vehicle acquisition.",
+  },
+  {
+    icon: "🇨🇦",
+    title: "Canadian Market",
+    text: "Connect with a marketplace focused on Canadian vehicle sellers and dealers.",
+  },
+  {
+    icon: "📈",
+    title: "Acquisition Updates",
+    text: "Stay informed about NorthSky Auto and its growing dealer network.",
+  },
+  {
+    icon: "📲",
+    title: "Direct Access",
+    text: "Follow Telegram updates and return to NorthSky Auto when an opportunity interests you.",
+  },
+];
+
+const sellerInformation = [
+  "Year, make and model",
+  "Mileage and condition",
+  "Vehicle history",
+  "Asking price",
+  "Contact information",
+];
+
+const dealerBenefits = [
+  "Discover potential vehicle opportunities",
+  "Review seller submissions",
+  "Find potential inventory",
+  "Manage opportunities through your dealer account",
+  "Build a stronger acquisition pipeline",
+];
+
+const steps = [
+  {
+    number: "01",
+    title: "Follow",
+    text: "Join the NorthSky Auto Telegram community and stay connected to updates.",
+  },
+  {
+    number: "02",
+    title: "Discover",
+    text: "Explore vehicle and dealership opportunities through NorthSky Auto.",
+  },
+  {
+    number: "03",
+    title: "Take Action",
+    text: "Submit a vehicle or explore the dealer network when an opportunity fits your needs.",
+  },
+];
 
 export default async function TelegramPage({ searchParams }) {
   const params = await searchParams;
@@ -37,20 +104,17 @@ export default async function TelegramPage({ searchParams }) {
       ? params.campaign.trim().slice(0, 150)
       : "telegram-general";
 
-  const trackingParams = new URLSearchParams({
+  const trackingQuery = new URLSearchParams({
     source,
     campaign,
   }).toString();
 
-  const sellUrl = `/sell?${trackingParams}`;
-  const buyersUrl = `/buyers?${trackingParams}`;
+  const sellUrl = `/sell?${trackingQuery}`;
+  const buyersUrl = `/buyers?${trackingQuery}`;
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
-      <TelegramTracking
-        source={source}
-        campaign={campaign}
-      />
+      <TelegramTracking source={source} campaign={campaign} />
 
       {/* HERO */}
       <section className="border-b border-white/10">
@@ -61,15 +125,13 @@ export default async function TelegramPage({ searchParams }) {
 
           <h1 className="mx-auto max-w-4xl text-4xl font-bold tracking-tight sm:text-6xl">
             Stay Connected to
-            <span className="block text-sky-400">
-              NorthSky Auto
-            </span>
+            <span className="block text-sky-400">NorthSky Auto</span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300">
             Follow NorthSky Auto on Telegram for Canadian vehicle
-            opportunities, featured vehicles, automotive updates, and
-            dealership acquisition opportunities.
+            opportunities, featured vehicles, automotive updates, and dealer
+            opportunities.
           </p>
 
           <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
@@ -86,7 +148,7 @@ export default async function TelegramPage({ searchParams }) {
               href={sellUrl}
               source={source}
               campaign={campaign}
-              className="rounded-xl border border-white/20 bg-white/5 px-7 py-4 font-semibold text-white transition hover:bg-white/10"
+              className="rounded-xl border border-white/20 bg-white/5 px-7 py-4 font-semibold transition hover:bg-white/10"
             >
               🚗 Sell Your Vehicle
             </SellerTrackingLink>
@@ -94,7 +156,7 @@ export default async function TelegramPage({ searchParams }) {
 
           <p className="mt-5 text-sm text-slate-500">
             Follow the channel for updates and return to NorthSky Auto when
-            you are ready to take action.
+            you're ready to take action.
           </p>
         </div>
       </section>
@@ -107,61 +169,26 @@ export default async function TelegramPage({ searchParams }) {
           </p>
 
           <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
-            What you can follow
+            What you'll find
           </h2>
 
           <p className="mx-auto mt-4 max-w-2xl text-slate-400">
-            Our Telegram community gives sellers and dealerships another
-            way to stay connected with NorthSky Auto.
+            Stay connected with vehicle opportunities, automotive updates, and
+            information for Canadian sellers and dealerships.
           </p>
         </div>
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            {
-              icon: "🚗",
-              title: "Vehicle Opportunities",
-              text: "Keep an eye on vehicle opportunities submitted through NorthSky Auto.",
-            },
-            {
-              icon: "🔥",
-              title: "Featured Vehicles",
-              text: "Discover selected vehicle opportunities and automotive content.",
-            },
-            {
-              icon: "🏪",
-              title: "Dealer Opportunities",
-              text: "Stay connected to information relevant to dealerships and vehicle acquisition.",
-            },
-            {
-              icon: "🇨🇦",
-              title: "Canadian Market",
-              text: "Follow a marketplace focused on Canadian vehicle sellers and dealers.",
-            },
-            {
-              icon: "📈",
-              title: "Acquisition Updates",
-              text: "Stay informed about NorthSky Auto and its growing dealer network.",
-            },
-            {
-              icon: "📲",
-              title: "Direct Access",
-              text: "Use Telegram to stay connected and return to NorthSky Auto when an opportunity interests you.",
-            },
-          ].map((item) => (
+          {opportunities.map((item) => (
             <div
               key={item.title}
               className="rounded-2xl border border-white/10 bg-white/[0.03] p-7 transition hover:border-sky-400/30 hover:bg-white/[0.05]"
             >
               <div className="text-3xl">{item.icon}</div>
 
-              <h3 className="mt-5 text-xl font-semibold">
-                {item.title}
-              </h3>
+              <h3 className="mt-5 text-xl font-semibold">{item.title}</h3>
 
-              <p className="mt-3 leading-7 text-slate-400">
-                {item.text}
-              </p>
+              <p className="mt-3 leading-7 text-slate-400">{item.text}</p>
             </div>
           ))}
         </div>
@@ -178,14 +205,14 @@ export default async function TelegramPage({ searchParams }) {
             </h2>
 
             <p className="mt-5 leading-8 text-slate-300">
-              You can submit your vehicle directly through NorthSky Auto.
-              Provide the details dealerships need to evaluate your vehicle
-              and potential acquisition opportunity.
+              Submit your vehicle directly through NorthSky Auto and provide
+              dealerships with the information they need to evaluate the
+              opportunity.
             </p>
 
             <p className="mt-4 leading-8 text-slate-400">
-              Submit information such as the year, make, model, mileage,
-              condition, history, asking price, and contact details.
+              Include details such as the year, make, model, mileage,
+              condition, history, asking price, and contact information.
             </p>
 
             <SellerTrackingLink
@@ -199,16 +226,12 @@ export default async function TelegramPage({ searchParams }) {
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-slate-900 p-8">
-            <h3 className="text-xl font-semibold">
-              Vehicle information
-            </h3>
+            <h3 className="text-xl font-semibold">Vehicle information</h3>
 
             <ul className="mt-6 space-y-4 text-slate-300">
-              <li>✓ Year, make and model</li>
-              <li>✓ Mileage and condition</li>
-              <li>✓ Vehicle history</li>
-              <li>✓ Asking price</li>
-              <li>✓ Contact information</li>
+              {sellerInformation.map((item) => (
+                <li key={item}>✓ {item}</li>
+              ))}
             </ul>
           </div>
         </div>
@@ -223,11 +246,9 @@ export default async function TelegramPage({ searchParams }) {
             </h3>
 
             <ul className="mt-6 space-y-4 text-slate-300">
-              <li>✓ Discover potential vehicle opportunities</li>
-              <li>✓ Review seller submissions</li>
-              <li>✓ Find potential inventory</li>
-              <li>✓ Manage opportunities through your dealer account</li>
-              <li>✓ Build a stronger acquisition pipeline</li>
+              {dealerBenefits.map((item) => (
+                <li key={item}>✓ {item}</li>
+              ))}
             </ul>
           </div>
 
@@ -244,8 +265,8 @@ export default async function TelegramPage({ searchParams }) {
             </p>
 
             <p className="mt-4 leading-8 text-slate-400">
-              Use the dealer network to explore opportunities and build your
-              dealership's vehicle acquisition pipeline.
+              Explore the dealer network to discover opportunities and build a
+              stronger vehicle acquisition pipeline.
             </p>
 
             <DealerTrackingLink
@@ -279,35 +300,15 @@ export default async function TelegramPage({ searchParams }) {
           </div>
 
           <div className="mt-12 grid gap-8 md:grid-cols-3">
-            {[
-              {
-                number: "01",
-                title: "Follow",
-                text: "Join the NorthSky Auto Telegram community and stay connected to updates.",
-              },
-              {
-                number: "02",
-                title: "Discover",
-                text: "Explore vehicle and dealership opportunities through NorthSky Auto.",
-              },
-              {
-                number: "03",
-                title: "Take Action",
-                text: "Submit a vehicle or access the dealer network when an opportunity fits your needs.",
-              },
-            ].map((step) => (
+            {steps.map((step) => (
               <div key={step.number} className="text-center">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-sky-500 text-lg font-bold">
                   {step.number}
                 </div>
 
-                <h3 className="mt-5 text-xl font-semibold">
-                  {step.title}
-                </h3>
+                <h3 className="mt-5 text-xl font-semibold">{step.title}</h3>
 
-                <p className="mt-3 leading-7 text-slate-400">
-                  {step.text}
-                </p>
+                <p className="mt-3 leading-7 text-slate-400">{step.text}</p>
               </div>
             ))}
           </div>
