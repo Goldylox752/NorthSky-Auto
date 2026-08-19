@@ -1,230 +1,272 @@
+import Link from "next/link";
+
+export const metadata = {
+  title: "NorthSky Auto | Vehicle Marketplace",
+  description:
+    "NorthSky Auto connects vehicle sellers with automotive dealers across Canada.",
+};
+
+const benefits = [
+  {
+    title: "Simple Vehicle Submission",
+    text: "Tell us about your vehicle through a straightforward online submission.",
+    icon: "🚗",
+  },
+  {
+    title: "Dealer Opportunities",
+    text: "Connect qualified vehicle opportunities with dealerships looking for inventory.",
+    icon: "🏢",
+  },
+  {
+    title: "Straightforward Process",
+    text: "Keep the process simple from vehicle submission through dealer review.",
+    icon: "✓",
+  },
+];
+
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-screen bg-white text-slate-900">
       {/* Navigation */}
-      <header className="border-b border-white/10 bg-slate-950/95">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <a href="/" className="text-2xl font-bold tracking-tight">
-            NorthSky <span className="text-blue-500">Auto</span>
-          </a>
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <Link
+            href="/"
+            className="text-2xl font-black tracking-tight text-slate-950"
+          >
+            NorthSky <span className="text-blue-600">Auto</span>
+          </Link>
 
-          <nav className="hidden items-center gap-8 text-sm text-slate-300 md:flex">
-            <a href="#inventory" className="transition hover:text-white">
-              Inventory
-            </a>
-            <a href="#financing" className="transition hover:text-white">
-              Financing
-            </a>
-            <a href="#trade" className="transition hover:text-white">
-              Trade-In
-            </a>
-            <a href="#contact" className="transition hover:text-white">
+          <nav className="hidden items-center gap-7 text-sm font-semibold text-slate-600 md:flex">
+            <Link href="/sell" className="hover:text-blue-600">
+              Sell Your Vehicle
+            </Link>
+
+            <Link href="/buyers" className="hover:text-blue-600">
+              Dealers
+            </Link>
+
+            <Link href="/pricing" className="hover:text-blue-600">
+              Pricing
+            </Link>
+
+            <Link href="/about" className="hover:text-blue-600">
+              About
+            </Link>
+
+            <Link href="/contact" className="hover:text-blue-600">
               Contact
-            </a>
+            </Link>
           </nav>
 
-          <a
-            href="#inventory"
-            className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold transition hover:bg-blue-500"
+          <Link
+            href="/sell"
+            className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-500"
           >
-            View Inventory
-          </a>
+            Submit Vehicle
+          </Link>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-950/50 via-slate-950 to-slate-950" />
+      <section className="relative overflow-hidden bg-slate-950 text-white">
+        <div className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-blue-600/20 blur-3xl" />
+        <div className="absolute -bottom-40 -left-32 h-96 w-96 rounded-full bg-indigo-600/20 blur-3xl" />
 
-        <div className="relative mx-auto max-w-7xl px-6 py-28 md:py-36">
-          <div className="max-w-3xl">
-            <p className="mb-5 text-sm font-semibold uppercase tracking-[0.25em] text-blue-400">
+        <div className="relative mx-auto max-w-7xl px-6 py-24 lg:py-32">
+          <div className="max-w-4xl">
+            <p className="text-sm font-black uppercase tracking-[0.25em] text-blue-400">
               NorthSky Auto
             </p>
 
-            <h1 className="text-5xl font-black leading-tight tracking-tight sm:text-6xl md:text-7xl">
-              Drive something
-              <span className="block text-blue-500">worth coming home to.</span>
+            <h1 className="mt-5 text-5xl font-black tracking-tight sm:text-6xl lg:text-7xl">
+              Connecting vehicles with
+              <span className="block text-blue-500">
+                the right dealers.
+              </span>
             </h1>
 
             <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300">
-              Quality vehicles, transparent pricing, and a straightforward
-              buying experience. Find your next vehicle with NorthSky Auto.
+              NorthSky Auto makes it easier for vehicle owners to submit
+              their vehicles and for automotive dealers to discover new
+              inventory opportunities.
             </p>
 
             <div className="mt-9 flex flex-col gap-4 sm:flex-row">
-              <a
-                href="#inventory"
-                className="rounded-xl bg-blue-600 px-7 py-4 text-center font-bold transition hover:bg-blue-500"
+              <Link
+                href="/sell"
+                className="rounded-xl bg-blue-600 px-7 py-4 text-center font-black text-white transition hover:bg-blue-500"
               >
-                Browse Vehicles
-              </a>
+                Submit Your Vehicle
+              </Link>
 
-              <a
-                href="#contact"
-                className="rounded-xl border border-white/15 bg-white/5 px-7 py-4 text-center font-bold transition hover:bg-white/10"
+              <Link
+                href="/buyers"
+                className="rounded-xl border border-white/15 bg-white/5 px-7 py-4 text-center font-black text-white transition hover:bg-white/10"
               >
-                Contact Us
-              </a>
+                Dealer Information
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Search */}
-      <section className="border-y border-white/10 bg-slate-900">
-        <div className="mx-auto max-w-7xl px-6 py-8">
-          <div className="grid gap-4 md:grid-cols-4">
-            <select className="rounded-lg border border-white/10 bg-slate-950 px-4 py-3 text-slate-300 outline-none">
-              <option>Any Make</option>
-              <option>Ford</option>
-              <option>Chevrolet</option>
-              <option>Toyota</option>
-              <option>Honda</option>
-              <option>BMW</option>
-            </select>
+      {/* Quick Actions */}
+      <section className="border-b border-slate-200 bg-white">
+        <div className="mx-auto grid max-w-7xl gap-4 px-6 py-8 md:grid-cols-3">
+          <Link
+            href="/sell"
+            className="rounded-2xl border border-slate-200 bg-slate-50 p-6 transition hover:border-blue-300 hover:bg-blue-50"
+          >
+            <div className="text-3xl">🚗</div>
 
-            <select className="rounded-lg border border-white/10 bg-slate-950 px-4 py-3 text-slate-300 outline-none">
-              <option>Any Model</option>
-              <option>SUV</option>
-              <option>Truck</option>
-              <option>Car</option>
-              <option>Van</option>
-            </select>
+            <h2 className="mt-4 text-xl font-black">
+              I Have a Vehicle to Sell
+            </h2>
 
-            <select className="rounded-lg border border-white/10 bg-slate-950 px-4 py-3 text-slate-300 outline-none">
-              <option>Any Price</option>
-              <option>Under $20,000</option>
-              <option>$20,000 - $35,000</option>
-              <option>$35,000 - $50,000</option>
-              <option>$50,000+</option>
-            </select>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Submit your vehicle details and tell us about the opportunity.
+            </p>
 
-            <a
-              href="#inventory"
-              className="rounded-lg bg-blue-600 px-5 py-3 text-center font-semibold transition hover:bg-blue-500"
-            >
-              Search Inventory
-            </a>
-          </div>
+            <span className="mt-4 inline-block text-sm font-black text-blue-600">
+              Submit Vehicle →
+            </span>
+          </Link>
+
+          <Link
+            href="/buyers"
+            className="rounded-2xl border border-slate-200 bg-slate-50 p-6 transition hover:border-blue-300 hover:bg-blue-50"
+          >
+            <div className="text-3xl">🏢</div>
+
+            <h2 className="mt-4 text-xl font-black">
+              I&apos;m a Dealer
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Learn how dealerships can access vehicle opportunities through
+              NorthSky Auto.
+            </p>
+
+            <span className="mt-4 inline-block text-sm font-black text-blue-600">
+              Dealer Information →
+            </span>
+          </Link>
+
+          <Link
+            href="/contact"
+            className="rounded-2xl border border-slate-200 bg-slate-50 p-6 transition hover:border-blue-300 hover:bg-blue-50"
+          >
+            <div className="text-3xl">💬</div>
+
+            <h2 className="mt-4 text-xl font-black">
+              I Have a Question
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Contact the NorthSky Auto team with questions or partnership
+              inquiries.
+            </p>
+
+            <span className="mt-4 inline-block text-sm font-black text-blue-600">
+              Contact Us →
+            </span>
+          </Link>
         </div>
       </section>
 
-      {/* Inventory */}
-      <section id="inventory" className="mx-auto max-w-7xl px-6 py-24">
-        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-widest text-blue-400">
-              Featured Inventory
-            </p>
+      {/* How It Works */}
+      <section className="mx-auto max-w-7xl px-6 py-20 lg:py-24">
+        <div className="max-w-3xl">
+          <p className="text-sm font-black uppercase tracking-widest text-blue-600">
+            HOW IT WORKS
+          </p>
 
-            <h2 className="mt-3 text-4xl font-bold tracking-tight">
-              Vehicles worth a closer look.
-            </h2>
+          <h2 className="mt-3 text-4xl font-black tracking-tight text-slate-950">
+            A simpler vehicle marketplace.
+          </h2>
 
-            <p className="mt-4 max-w-2xl text-slate-400">
-              Explore some of the vehicles available at NorthSky Auto.
-            </p>
-          </div>
-
-          <a
-            href="#inventory"
-            className="text-sm font-semibold text-blue-400 hover:text-blue-300"
-          >
-            View all inventory →
-          </a>
+          <p className="mt-5 text-lg leading-8 text-slate-600">
+            NorthSky Auto is designed to make the connection between vehicle
+            sellers and automotive dealers easier.
+          </p>
         </div>
 
         <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {[
-            {
-              name: "Premium SUV",
-              details: "AWD • Automatic • Low Mileage",
-              price: "$34,995",
-            },
-            {
-              name: "Full-Size Truck",
-              details: "4x4 • Automatic • Crew Cab",
-              price: "$42,995",
-            },
-            {
-              name: "Sport Sedan",
-              details: "AWD • Automatic • Premium Package",
-              price: "$29,995",
-            },
-          ].map((vehicle) => (
-            <article
-              key={vehicle.name}
-              className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900"
-            >
-              <div className="flex h-52 items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950">
-                <span className="text-sm font-medium text-slate-500">
-                  Vehicle Image
-                </span>
-              </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-lg font-black text-white">
+              01
+            </div>
 
-              <div className="p-6">
-                <h3 className="text-xl font-bold">{vehicle.name}</h3>
+            <h3 className="mt-6 text-xl font-black">
+              Submit Your Vehicle
+            </h3>
 
-                <p className="mt-2 text-sm text-slate-400">
-                  {vehicle.details}
-                </p>
+            <p className="mt-3 leading-7 text-slate-600">
+              Provide the basic information about your vehicle, including
+              details that help dealers understand the opportunity.
+            </p>
+          </div>
 
-                <div className="mt-6 flex items-center justify-between">
-                  <span className="text-xl font-bold text-blue-400">
-                    {vehicle.price}
-                  </span>
+          <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-lg font-black text-white">
+              02
+            </div>
 
-                  <button className="rounded-lg border border-white/10 px-4 py-2 text-sm font-semibold transition hover:bg-white/5">
-                    Details
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
+            <h3 className="mt-6 text-xl font-black">
+              Vehicle Is Reviewed
+            </h3>
+
+            <p className="mt-3 leading-7 text-slate-600">
+              Your submission can be reviewed as part of the NorthSky Auto
+              vehicle opportunity process.
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-lg font-black text-white">
+              03
+            </div>
+
+            <h3 className="mt-6 text-xl font-black">
+              Dealer Opportunity
+            </h3>
+
+            <p className="mt-3 leading-7 text-slate-600">
+              Qualified opportunities can be made available to participating
+              automotive dealers.
+            </p>
+          </div>
         </div>
       </section>
 
-      {/* Why Us */}
-      <section className="border-y border-white/10 bg-slate-900">
-        <div className="mx-auto max-w-7xl px-6 py-24">
-          <div className="max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-widest text-blue-400">
-              Why NorthSky
+      {/* Benefits */}
+      <section className="border-y border-slate-200 bg-slate-50">
+        <div className="mx-auto max-w-7xl px-6 py-20 lg:py-24">
+          <div className="max-w-3xl">
+            <p className="text-sm font-black uppercase tracking-widest text-blue-600">
+              WHY NORTHSKY
             </p>
 
-            <h2 className="mt-3 text-4xl font-bold">
-              A better way to buy a vehicle.
+            <h2 className="mt-3 text-4xl font-black tracking-tight">
+              Built around the vehicle opportunity.
             </h2>
           </div>
 
           <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {[
-              {
-                title: "Transparent Pricing",
-                text: "Straightforward pricing without unnecessary surprises.",
-              },
-              {
-                title: "Quality Vehicles",
-                text: "We focus on vehicles that are ready for the road.",
-              },
-              {
-                title: "Easy Experience",
-                text: "From browsing to financing, we keep the process simple.",
-              },
-            ].map((item) => (
+            {benefits.map((benefit) => (
               <div
-                key={item.title}
-                className="rounded-2xl border border-white/10 bg-slate-950 p-7"
+                key={benefit.title}
+                className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"
               >
-                <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-lg bg-blue-600/10 text-blue-400">
-                  ✓
-                </div>
+                <div className="text-4xl">{benefit.icon}</div>
 
-                <h3 className="text-xl font-bold">{item.title}</h3>
+                <h3 className="mt-5 text-xl font-black">
+                  {benefit.title}
+                </h3>
 
-                <p className="mt-3 leading-7 text-slate-400">
-                  {item.text}
+                <p className="mt-3 leading-7 text-slate-600">
+                  {benefit.text}
                 </p>
               </div>
             ))}
@@ -232,135 +274,146 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Financing */}
-      <section id="financing" className="mx-auto max-w-7xl px-6 py-24">
-        <div className="rounded-3xl border border-blue-500/20 bg-gradient-to-br from-blue-950/60 to-slate-900 p-8 md:p-14">
+      {/* Dealer CTA */}
+      <section className="mx-auto max-w-7xl px-6 py-20 lg:py-24">
+        <div className="overflow-hidden rounded-3xl bg-slate-950 px-8 py-12 text-white md:px-14 md:py-16">
           <div className="max-w-3xl">
-            <p className="text-sm font-semibold uppercase tracking-widest text-blue-400">
-              Financing
+            <p className="text-sm font-black uppercase tracking-widest text-blue-400">
+              FOR DEALERS
             </p>
 
-            <h2 className="mt-3 text-4xl font-bold">
-              Get behind the wheel sooner.
+            <h2 className="mt-3 text-4xl font-black tracking-tight">
+              Looking for your next inventory opportunity?
             </h2>
 
-            <p className="mt-5 leading-8 text-slate-300">
-              Explore financing options and find a payment that works for
-              your budget.
+            <p className="mt-5 text-lg leading-8 text-slate-300">
+              Learn how NorthSky Auto works with dealerships and explore
+              available access options.
             </p>
 
-            <a
-              href="#contact"
-              className="mt-8 inline-block rounded-xl bg-blue-600 px-7 py-4 font-bold transition hover:bg-blue-500"
-            >
-              Talk to Our Team
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Trade */}
-      <section id="trade" className="border-y border-white/10 bg-slate-900">
-        <div className="mx-auto max-w-7xl px-6 py-24">
-          <div className="grid gap-12 md:grid-cols-2 md:items-center">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-widest text-blue-400">
-                Trade-In
-              </p>
-
-              <h2 className="mt-3 text-4xl font-bold">
-                Ready to trade your current vehicle?
-              </h2>
-
-              <p className="mt-5 leading-8 text-slate-400">
-                Bring us your current vehicle and let our team help you
-                explore your options toward your next one.
-              </p>
-
-              <a
-                href="#contact"
-                className="mt-8 inline-block rounded-xl border border-white/10 bg-white/5 px-7 py-4 font-bold transition hover:bg-white/10"
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+              <Link
+                href="/buyers"
+                className="rounded-xl bg-blue-600 px-7 py-4 text-center font-black transition hover:bg-blue-500"
               >
-                Get a Trade Estimate
-              </a>
-            </div>
+                Dealer Information
+              </Link>
 
-            <div className="rounded-2xl border border-white/10 bg-slate-950 p-8">
-              <div className="text-5xl font-black text-blue-500">01</div>
-              <h3 className="mt-5 text-2xl font-bold">
-                Tell us about your vehicle
-              </h3>
-              <p className="mt-3 text-slate-400">
-                Share a few details and our team can help determine your next
-                step.
-              </p>
+              <Link
+                href="/pricing"
+                className="rounded-xl border border-white/15 bg-white/5 px-7 py-4 text-center font-black transition hover:bg-white/10"
+              >
+                View Pricing
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Contact */}
-      <section id="contact" className="mx-auto max-w-7xl px-6 py-24">
-        <div className="grid gap-12 md:grid-cols-2">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-widest text-blue-400">
-              Contact
-            </p>
+      {/* Seller CTA */}
+      <section className="border-y border-slate-200 bg-blue-50">
+        <div className="mx-auto max-w-4xl px-6 py-20 text-center">
+          <p className="text-sm font-black uppercase tracking-widest text-blue-600">
+            HAVE A VEHICLE?
+          </p>
 
-            <h2 className="mt-3 text-4xl font-bold">
-              Let's find your next vehicle.
-            </h2>
+          <h2 className="mt-3 text-4xl font-black tracking-tight">
+            Start your vehicle submission.
+          </h2>
 
-            <p className="mt-5 leading-8 text-slate-400">
-              Have a question about a vehicle, financing, or trade-in?
-              Contact the NorthSky Auto team.
-            </p>
-          </div>
+          <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">
+            Give NorthSky Auto the information needed to understand your
+            vehicle and the opportunity it represents.
+          </p>
 
-          <div className="rounded-2xl border border-white/10 bg-slate-900 p-7">
-            <div className="space-y-6">
-              <div>
-                <p className="text-sm text-slate-500">Phone</p>
-                <p className="mt-1 text-lg font-semibold">
-                  Contact NorthSky Auto
-                </p>
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-500">Email</p>
-                <p className="mt-1 text-lg font-semibold">
-                  sales@northskyauto.com
-                </p>
-              </div>
-
-              <a
-                href="mailto:sales@northskyauto.com"
-                className="block rounded-xl bg-blue-600 px-6 py-4 text-center font-bold transition hover:bg-blue-500"
-              >
-                Contact Us
-              </a>
-            </div>
-          </div>
+          <Link
+            href="/sell"
+            className="mt-8 inline-flex rounded-xl bg-blue-600 px-8 py-4 font-black text-white transition hover:bg-blue-500"
+          >
+            Submit Your Vehicle →
+          </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 bg-slate-950">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-6 py-8 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
-          <p>
-            © {new Date().getFullYear()} NorthSky Auto. All rights reserved.
-          </p>
+      <footer className="bg-slate-950 text-slate-300">
+        <div className="mx-auto max-w-7xl px-6 py-12">
+          <div className="grid gap-10 md:grid-cols-4">
+            <div className="md:col-span-2">
+              <Link
+                href="/"
+                className="text-2xl font-black text-white"
+              >
+                NorthSky <span className="text-blue-500">Auto</span>
+              </Link>
 
-          <div className="flex gap-6">
-            <a href="#inventory" className="hover:text-white">
-              Inventory
-            </a>
-            <a href="#financing" className="hover:text-white">
-              Financing
-            </a>
-            <a href="#contact" className="hover:text-white">
-              Contact
-            </a>
+              <p className="mt-4 max-w-md text-sm leading-6 text-slate-400">
+                Connecting vehicle sellers with automotive dealer
+                opportunities across Canada.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-black text-white">
+                Marketplace
+              </h3>
+
+              <div className="mt-4 space-y-3 text-sm">
+                <Link
+                  href="/sell"
+                  className="block hover:text-white"
+                >
+                  Sell Your Vehicle
+                </Link>
+
+                <Link
+                  href="/buyers"
+                  className="block hover:text-white"
+                >
+                  Dealers
+                </Link>
+
+                <Link
+                  href="/pricing"
+                  className="block hover:text-white"
+                >
+                  Pricing
+                </Link>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-black text-white">
+                Company
+              </h3>
+
+              <div className="mt-4 space-y-3 text-sm">
+                <Link
+                  href="/about"
+                  className="block hover:text-white"
+                >
+                  About
+                </Link>
+
+                <Link
+                  href="/contact"
+                  className="block hover:text-white"
+                >
+                  Contact
+                </Link>
+
+                <Link
+                  href="/"
+                  className="block hover:text-white"
+                >
+                  Home
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-10 border-t border-white/10 pt-6 text-xs text-slate-500">
+            © {new Date().getFullYear()} NorthSky Auto. All rights reserved.
           </div>
         </div>
       </footer>
