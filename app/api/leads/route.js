@@ -1,831 +1,362 @@
-import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { sendTelegramMessage } from "@/lib/telegram";
+import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+export const metadata = {
+  title: "NorthSky Auto | Connect Your Vehicle With Canadian Dealers",
+  description:
+    "NorthSky Auto connects vehicle sellers with automotive dealers across Canada. Submit your vehicle and create an opportunity for dealer acquisition.",
+};
 
-const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-const SUPABASE_SERVICE_ROLE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  "https://northsky-auto.vercel.app";
-
-const PUBLIC_FIELDS = `
-  id,
-  year,
-  make,
-  model,
-  trim,
-  mileage,
-  condition,
-  asking_price,
-  postal_code,
-  description,
-  selling_timeline,
-  accident_history,
-  status,
-  created_at
-`;
-
-const PUBLIC_STATUSES = [
-  "new",
-  "available",
-  "active",
+const benefits = [
+  {
+    number: "01",
+    title: "Submit Your Vehicle",
+    text: "Provide the key details about your vehicle through a fast, straightforward submission.",
+  },
+  {
+    number: "02",
+    title: "Reach Dealer Opportunities",
+    text: "Your submission enters the NorthSky Auto marketplace for participating automotive dealers to review.",
+  },
+  {
+    number: "03",
+    title: "Let Dealers Evaluate",
+    text: "Dealers can discover vehicles that match their inventory needs and acquisition strategy.",
+  },
 ];
 
-function getSupabase() {
-  if (
-    !SUPABASE_URL ||
-    !SUPABASE_SERVICE_ROLE_KEY
-  ) {
-    return null;
-  }
+const stats = [
+  {
+    value: "01",
+    label: "Simple submission",
+  },
+  {
+    value: "CA",
+    label: "Canadian marketplace",
+  },
+  {
+    value: "24/7",
+    label: "Online access",
+  },
+];
 
-  return createClient(
-    SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    }
-  );
-}
-
-function clean(value) {
-  if (
-    value === null ||
-    value === undefined
-  ) {
-    return "";
-  }
-
-  return String(value).trim();
-}
-
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-    email
-  );
-}
-
-function isValidYear(year) {
-  const numericYear = Number(year);
-  const currentYear =
-    new Date().getFullYear();
-
+export default function HomePage() {
   return (
-    Number.isInteger(numericYear) &&
-    numericYear >= 1900 &&
-    numericYear <= currentYear + 1
-  );
-}
-
-function parseNumber(value) {
-  if (typeof value === "number") {
-    return Number.isFinite(value)
-      ? value
-      : null;
-  }
-
-  const cleaned = String(value ?? "")
-    .replace(/,/g, "")
-    .replace(/[^0-9.]/g, "");
-
-  if (!cleaned) {
-    return null;
-  }
-
-  const number = Number(cleaned);
-
-  return Number.isFinite(number)
-    ? number
-    : null;
-}
-
-function escapeTelegramHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-function formatPublicLead(vehicle) {
-  return {
-    id: vehicle?.id ?? null,
-    year: vehicle?.year ?? null,
-    make: vehicle?.make ?? null,
-    model: vehicle?.model ?? null,
-    trim: vehicle?.trim ?? null,
-    mileage: vehicle?.mileage ?? null,
-    condition: vehicle?.condition ?? null,
-    asking_price:
-      vehicle?.asking_price ?? null,
-    postal_code:
-      vehicle?.postal_code ?? null,
-    description:
-      vehicle?.description ?? null,
-    selling_timeline:
-      vehicle?.selling_timeline ?? null,
-    accident_history:
-      vehicle?.accident_history ?? null,
-    status:
-      vehicle?.status || "new",
-    created_at:
-      vehicle?.created_at ?? null,
-  };
-}
-
-function buildTelegramMessage(vehicle) {
-  const vehicleName = [
-    vehicle?.year,
-    vehicle?.make,
-    vehicle?.model,
-    vehicle?.trim,
-  ]
-    .map((value) =>
-      escapeTelegramHtml(value)
-    )
-    .filter(Boolean)
-    .join(" ");
-
-  const location =
-    escapeTelegramHtml(
-      vehicle?.postal_code ||
-        "Canada"
-    );
-
-  const mileage =
-    escapeTelegramHtml(
-      vehicle?.mileage
-    );
-
-  const price =
-    escapeTelegramHtml(
-      vehicle?.asking_price
-    );
-
-  const condition =
-    escapeTelegramHtml(
-      vehicle?.condition ||
-        "Not provided"
-    );
-
-  return [
-    "🚗 <b>NEW VEHICLE OPPORTUNITY</b>",
-    "",
-    `<b>${
-      vehicleName ||
-      "Vehicle Opportunity"
-    }</b>`,
-    "",
-    `📍 Location: ${location}`,
-    `🛣️ Mileage: ${
-      mileage || "Not provided"
-    } km`,
-    `💰 Asking Price: $${
-      price ||
-      "Contact NorthSky Auto"
-    }`,
-    `🔧 Condition: ${condition}`,
-    "",
-    "A new vehicle submission has been received by NorthSky Auto.",
-    "",
-    "Dealers can review the opportunity through the NorthSky Auto dealer portal.",
-  ].join("\n");
-}
-
-function errorResponse(
-  message,
-  status = 500,
-  extra = {}
-) {
-  return NextResponse.json(
-    {
-      error: message,
-      ...extra,
-    },
-    { status }
-  );
-}
-
-function noStoreResponse(data, status = 200) {
-  return NextResponse.json(
-    data,
-    {
-      status,
-      headers: {
-        "Cache-Control":
-          "no-store, max-age=0",
-      },
-    }
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| GET /api/leads
-|--------------------------------------------------------------------------
-|
-| GET /api/leads
-| GET /api/leads?limit=25
-| GET /api/leads?id=<lead-id>
-|
-*/
-
-export async function GET(request) {
-  try {
-    const supabase = getSupabase();
-
-    if (!supabase) {
-      console.error(
-        "Missing Supabase server environment variables."
-      );
-
-      return errorResponse(
-        "Server database configuration is incomplete."
-      );
-    }
-
-    const { searchParams } =
-      new URL(request.url);
-
-    const id = clean(
-      searchParams.get("id")
-    );
-
-    /*
-     * ------------------------------------------------------------
-     * Single vehicle opportunity
-     * ------------------------------------------------------------
-     */
-
-    if (id) {
-      const {
-        data,
-        error,
-      } = await supabase
-        .from("vehicle_leads")
-        .select(PUBLIC_FIELDS)
-        .eq("id", id)
-        .in(
-          "status",
-          PUBLIC_STATUSES
-        )
-        .maybeSingle();
-
-      if (error) {
-        console.error(
-          "Vehicle lookup failed:",
-          error
-        );
-
-        return errorResponse(
-          "Unable to load this vehicle opportunity."
-        );
-      }
-
-      if (!data) {
-        return errorResponse(
-          "Vehicle opportunity not found.",
-          404
-        );
-      }
-
-      return noStoreResponse({
-        success: true,
-        lead: formatPublicLead(data),
-      });
-    }
-
-    /*
-     * ------------------------------------------------------------
-     * Vehicle opportunity list
-     * ------------------------------------------------------------
-     */
-
-    const requestedLimit =
-      Number(
-        searchParams.get("limit") ||
-          100
-      );
-
-    const safeRequestedLimit =
-      Number.isFinite(
-        requestedLimit
-      )
-        ? Math.floor(
-            requestedLimit
-          )
-        : 100;
-
-    const limit = Math.min(
-      Math.max(
-        safeRequestedLimit,
-        1
-      ),
-      100
-    );
-
-    const {
-      data,
-      error,
-    } = await supabase
-      .from("vehicle_leads")
-      .select(PUBLIC_FIELDS)
-      .in(
-        "status",
-        PUBLIC_STATUSES
-      )
-      .order("created_at", {
-        ascending: false,
-      })
-      .limit(limit);
-
-    if (error) {
-      console.error(
-        "Vehicle opportunities query failed:",
-        error
-      );
-
-      return errorResponse(
-        "Unable to load vehicle opportunities."
-      );
-    }
-
-    const leads = (
-      data || []
-    ).map(formatPublicLead);
-
-    return noStoreResponse({
-      success: true,
-      leads,
-      count: leads.length,
-    });
-  } catch (error) {
-    console.error(
-      "Vehicle leads GET error:",
-      error
-    );
-
-    return errorResponse(
-      "An unexpected error occurred while loading vehicle opportunities."
-    );
-  }
-}
-
-/*
-|--------------------------------------------------------------------------
-| POST /api/leads
-|--------------------------------------------------------------------------
-*/
-
-export async function POST(request) {
-  try {
-    const supabase = getSupabase();
-
-    if (!supabase) {
-      console.error(
-        "Missing Supabase server environment variables."
-      );
-
-      return errorResponse(
-        "Server database configuration is incomplete."
-      );
-    }
-
-    /*
-     * ------------------------------------------------------------
-     * Parse request body
-     * ------------------------------------------------------------
-     */
-
-    let body;
-
-    try {
-      body = await request.json();
-    } catch {
-      return errorResponse(
-        "Invalid request body.",
-        400
-      );
-    }
-
-    if (
-      !body ||
-      typeof body !== "object" ||
-      Array.isArray(body)
-    ) {
-      return errorResponse(
-        "Invalid vehicle submission.",
-        400
-      );
-    }
-
-    /*
-     * ------------------------------------------------------------
-     * Clean incoming values
-     * ------------------------------------------------------------
-     */
-
-    const lead = {
-      name: clean(body.name),
-
-      email: clean(
-        body.email
-      ).toLowerCase(),
-
-      phone: clean(
-        body.phone
-      ),
-
-      postal_code: clean(
-        body.postal_code
-      ).toUpperCase(),
-
-      year: clean(
-        body.year
-      ),
-
-      make: clean(
-        body.make
-      ),
-
-      model: clean(
-        body.model
-      ),
-
-      trim: clean(
-        body.trim
-      ),
-
-      mileage: clean(
-        body.mileage
-      ),
-
-      vin: clean(
-        body.vin
-      ).toUpperCase(),
-
-      condition: clean(
-        body.condition
-      ),
-
-      selling_timeline:
-        clean(
-          body.selling_timeline
-        ),
-
-      accident_history:
-        clean(
-          body.accident_history
-        ),
-
-      description: clean(
-        body.description
-      ),
-
-      asking_price: clean(
-        body.asking_price
-      ),
-
-      source: clean(
-        body.source
-      ),
-
-      campaign: clean(
-        body.campaign
-      ),
-    };
-
-    /*
-     * ------------------------------------------------------------
-     * Required fields
-     * ------------------------------------------------------------
-     */
-
-    const requiredFields = [
-      "name",
-      "email",
-      "phone",
-      "postal_code",
-      "year",
-      "make",
-      "model",
-      "mileage",
-      "asking_price",
-    ];
-
-    const missingFields =
-      requiredFields.filter(
-        (field) => !lead[field]
-      );
-
-    if (
-      missingFields.length > 0
-    ) {
-      return errorResponse(
-        "Please complete all required fields.",
-        400,
-        {
-          fields: missingFields,
-        }
-      );
-    }
-
-    /*
-     * ------------------------------------------------------------
-     * Validate email
-     * ------------------------------------------------------------
-     */
-
-    if (
-      !isValidEmail(
-        lead.email
-      )
-    ) {
-      return errorResponse(
-        "Please provide a valid email address.",
-        400
-      );
-    }
-
-    /*
-     * ------------------------------------------------------------
-     * Validate year
-     * ------------------------------------------------------------
-     */
-
-    if (
-      !isValidYear(
-        lead.year
-      )
-    ) {
-      return errorResponse(
-        "Please provide a valid vehicle year.",
-        400
-      );
-    }
-
-    /*
-     * ------------------------------------------------------------
-     * Validate field lengths
-     * ------------------------------------------------------------
-     */
-
-    const maxLengths = {
-      name: 150,
-      email: 254,
-      phone: 50,
-      postal_code: 20,
-      make: 100,
-      model: 100,
-      trim: 150,
-      vin: 50,
-      condition: 100,
-      selling_timeline: 100,
-      accident_history: 500,
-      description: 5000,
-      source: 100,
-      campaign: 150,
-    };
-
-    for (const [
-      field,
-      maxLength,
-    ] of Object.entries(
-      maxLengths
-    )) {
-      if (
-        lead[field] &&
-        lead[field].length >
-          maxLength
-      ) {
-        return errorResponse(
-          `${field.replace(
-            /_/g,
-            " "
-          )} is too long.`,
-          400
-        );
-      }
-    }
-
-    /*
-     * ------------------------------------------------------------
-     * Parse numeric fields
-     * ------------------------------------------------------------
-     */
-
-    const mileage =
-      parseNumber(
-        lead.mileage
-      );
-
-    const askingPrice =
-      parseNumber(
-        lead.asking_price
-      );
-
-    if (
-      mileage === null ||
-      mileage < 0
-    ) {
-      return errorResponse(
-        "Please provide a valid mileage.",
-        400
-      );
-    }
-
-    if (
-      askingPrice === null ||
-      askingPrice < 0
-    ) {
-      return errorResponse(
-        "Please provide a valid asking price.",
-        400
-      );
-    }
-
-    /*
-     * ------------------------------------------------------------
-     * Build database record
-     * ------------------------------------------------------------
-     */
-
-    const vehicleRecord = {
-      name: lead.name,
-      email: lead.email,
-      phone: lead.phone,
-
-      postal_code:
-        lead.postal_code,
-
-      year: Number(
-        lead.year
-      ),
-
-      make: lead.make,
-      model: lead.model,
-
-      trim:
-        lead.trim || null,
-
-      mileage,
-
-      vin:
-        lead.vin || null,
-
-      condition:
-        lead.condition || null,
-
-      selling_timeline:
-        lead.selling_timeline ||
-        null,
-
-      accident_history:
-        lead.accident_history ||
-        null,
-
-      description:
-        lead.description ||
-        null,
-
-      asking_price:
-        askingPrice,
-
-      source:
-        lead.source || null,
-
-      campaign:
-        lead.campaign || null,
-
-      status: "new",
-    };
-
-    /*
-     * ------------------------------------------------------------
-     * Insert vehicle lead
-     * ------------------------------------------------------------
-     */
-
-    const {
-      data,
-      error,
-    } = await supabase
-      .from("vehicle_leads")
-      .insert(
-        vehicleRecord
-      )
-      .select(PUBLIC_FIELDS)
-      .single();
-
-    if (error) {
-      console.error(
-        "Vehicle lead insert failed:",
-        error
-      );
-
-      return errorResponse(
-        "We could not submit your vehicle right now. Please try again."
-      );
-    }
-
-    /*
-     * ------------------------------------------------------------
-     * Build dealer opportunity URL
-     * ------------------------------------------------------------
-     */
-
-    const opportunityUrl =
-      `${SITE_URL}/dealer/leads/${data.id}`;
-
-    /*
-     * ------------------------------------------------------------
-     * Telegram notification
-     * ------------------------------------------------------------
-     */
-
-    let telegramResult = {
-      success: false,
-      skipped: true,
-    };
-
-    try {
-      telegramResult =
-        await sendTelegramMessage({
-          message:
-            buildTelegramMessage(
-              data
-            ),
-
-          buttonText:
-            "🏪 View Dealer Opportunity",
-
-          buttonUrl:
-            opportunityUrl,
-        });
-    } catch (telegramError) {
-      console.error(
-        "Telegram notification error:",
-        telegramError
-      );
-
-      telegramResult = {
-        success: false,
-        skipped: false,
-        error:
-          telegramError?.message ||
-          "Telegram notification failed.",
-      };
-    }
-
-    if (
-      !telegramResult?.success &&
-      !telegramResult?.skipped
-    ) {
-      console.error(
-        "Telegram notification failed:",
-        telegramResult?.error
-      );
-    }
-
-    /*
-     * ------------------------------------------------------------
-     * Success response
-     * ------------------------------------------------------------
-     */
-
-    return NextResponse.json(
-      {
-        success: true,
-
-        message:
-          "Your vehicle has been submitted successfully.",
-
-        leadId:
-          data?.id || null,
-
-        telegramNotified:
-          telegramResult?.success === true,
-      },
-      {
-        status: 201,
-      }
-    );
-  } catch (error) {
-    console.error(
-      "Vehicle lead POST error:",
-      error
-    );
-
-    return errorResponse(
-      "Unable to process your vehicle submission."
-    );
-  }
-}
+    <main className="min-h-screen bg-white text-slate-950">
+      {/* =========================================================
+          HERO
+      ========================================================= */}
+      <section className="relative overflow-hidden bg-slate-950 text-white">
+        {/* Background effects */}
+        <div className="absolute inset-0">
+          <div className="absolute -right-40 -top-40 h-[500px] w-[500px] rounded-full bg-blue-600/20 blur-3xl" />
+          <div className="absolute -bottom-40 -left-40 h-[500px] w-[500px] rounded-full bg-cyan-500/10 blur-3xl" />
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:64px_64px]" />
+        </div>
+
+        <div className="relative mx-auto max-w-7xl px-6 pb-24 pt-10 lg:px-8 lg:pb-32">
+          {/* Top badge */}
+          <div className="flex items-center justify-between">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300 backdrop-blur">
+              <span className="h-2 w-2 rounded-full bg-blue-400" />
+              Canada's Vehicle Acquisition Marketplace
+            </div>
+          </div>
+
+          <div className="grid items-center gap-16 pt-20 lg:grid-cols-[1.1fr_0.9fr] lg:pt-28">
+            {/* Hero copy */}
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400">
+                SELL SMARTER
+              </p>
+
+              <h1 className="mt-5 max-w-4xl text-5xl font-black tracking-tight sm:text-6xl lg:text-7xl">
+                Put your vehicle in front of{" "}
+                <span className="text-blue-400">
+                  dealer opportunities.
+                </span>
+              </h1>
+
+              <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
+                NorthSky Auto connects vehicle sellers with automotive
+                dealers across Canada. Submit your vehicle once and create
+                an opportunity for participating dealers to discover it.
+              </p>
+
+              <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+                <Link
+                  href="/sell"
+                  className="rounded-xl bg-blue-600 px-8 py-4 text-center font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500 hover:shadow-blue-500/30"
+                >
+                  Submit Your Vehicle →
+                </Link>
+
+                <Link
+                  href="/inventory"
+                  className="rounded-xl border border-white/15 bg-white/5 px-8 py-4 text-center font-bold text-white backdrop-blur transition hover:bg-white/10"
+                >
+                  Browse Opportunities
+                </Link>
+              </div>
+
+              <div className="mt-8 flex flex-wrap gap-x-7 gap-y-3 text-sm text-slate-400">
+                <span>✓ Free submission</span>
+                <span>✓ Built for Canada</span>
+                <span>✓ Dealer marketplace</span>
+              </div>
+            </div>
+
+            {/* Hero marketplace card */}
+            <div className="relative">
+              <div className="absolute -inset-4 rounded-[2rem] bg-blue-600/10 blur-2xl" />
+
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-5 shadow-2xl backdrop-blur-xl">
+                <div className="rounded-2xl bg-white p-6 text-slate-950">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+                        NorthSky Marketplace
+                      </p>
+
+                      <h2 className="mt-2 text-xl font-black">
+                        Vehicle Opportunity
+                      </h2>
+                    </div>
+
+                    <div className="rounded-full bg-green-50 px-3 py-1 text-xs font-bold text-green-700">
+                      NEW
+                    </div>
+                  </div>
+
+                  <div className="mt-6 rounded-2xl bg-slate-100 p-5">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-2xl font-black">
+                          2022 Ford F-150
+                        </p>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                          XLT • 85,000 km
+                        </p>
+                      </div>
+
+                      <p className="text-lg font-black text-blue-600">
+                        $35,000
+                      </p>
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-2 gap-3">
+                      <div className="rounded-xl bg-white p-3">
+                        <p className="text-xs text-slate-400">
+                          Location
+                        </p>
+                        <p className="mt-1 text-sm font-bold">
+                          Alberta, Canada
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-white p-3">
+                        <p className="text-xs text-slate-400">
+                          Condition
+                        </p>
+                        <p className="mt-1 text-sm font-bold">
+                          Good
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-black text-blue-600">
+                      NS
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-bold">
+                        Dealer Network
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        Reviewing acquisition opportunities
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="mt-20 grid max-w-3xl gap-4 sm:grid-cols-3">
+            {stats.map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"
+              >
+                <p className="text-2xl font-black text-white">
+                  {stat.value}
+                </p>
+
+                <p className="mt-1 text-sm text-slate-400">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          VALUE PROPOSITION
+      ========================================================= */}
+      <section className="bg-slate-50 py-24">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-600">
+              HOW IT WORKS
+            </p>
+
+            <h2 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
+              One submission.
+              <br />
+              More potential opportunities.
+            </h2>
+
+            <p className="mt-6 text-lg leading-8 text-slate-600">
+              NorthSky Auto is designed to simplify the connection between
+              vehicle sellers and automotive dealers. Instead of reaching
+              out to dealerships one at a time, submit your vehicle through
+              one centralized marketplace.
+            </p>
+          </div>
+
+          <div className="mt-16 grid gap-6 md:grid-cols-3">
+            {benefits.map((benefit) => (
+              <div
+                key={benefit.number}
+                className="group rounded-3xl border border-slate-200 bg-white p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 font-black text-blue-600">
+                  {benefit.number}
+                </div>
+
+                <h3 className="mt-7 text-xl font-black">
+                  {benefit.title}
+                </h3>
+
+                <p className="mt-4 leading-7 text-slate-600">
+                  {benefit.text}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          SELLER CTA
+      ========================================================= */}
+      <section className="py-24">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-[2rem] bg-blue-600 px-8 py-14 text-white sm:px-14 lg:px-16 lg:py-16">
+            <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+
+            <div className="relative grid gap-10 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div className="max-w-3xl">
+                <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-100">
+                  SELL YOUR VEHICLE
+                </p>
+
+                <h2 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
+                  Your next buyer could be a dealer.
+                </h2>
+
+                <p className="mt-5 max-w-2xl text-lg leading-8 text-blue-100">
+                  Submit your vehicle details and let NorthSky Auto create
+                  a potential acquisition opportunity for participating
+                  automotive dealers.
+                </p>
+              </div>
+
+              <Link
+                href="/sell"
+                className="inline-flex items-center justify-center rounded-xl bg-white px-7 py-4 font-black text-blue-700 shadow-lg transition hover:bg-blue-50"
+              >
+                Submit My Vehicle →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          FOR DEALERS
+      ========================================================= */}
+      <section className="border-y border-slate-200 bg-white py-24">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-600">
+                FOR DEALERS
+              </p>
+
+              <h2 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
+                Find inventory without chasing it.
+              </h2>
+
+              <p className="mt-6 text-lg leading-8 text-slate-600">
+                NorthSky Auto gives participating automotive dealers access
+                to vehicle acquisition opportunities in one centralized
+                environment.
+              </p>
+
+              <div className="mt-9 flex flex-col gap-4 sm:flex-row">
+                <Link
+                  href="/dealer"
+                  className="rounded-xl bg-slate-950 px-7 py-4 text-center font-bold text-white transition hover:bg-slate-800"
+                >
+                  Dealer Portal →
+                </Link>
+
+                <Link
+                  href="/pricing"
+                  className="rounded-xl border border-slate-300 px-7 py-4 text-center font-bold text-slate-900 transition hover:bg-slate-50"
+                >
+                  View Dealer Plans
+                </Link>
+              </div>
+            </div>
+
+            {/* Dealer dashboard preview */}
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+              <div className="rounded-2xl bg-slate-950 p-6 text-white shadow-xl">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                      Dealer Portal
+                    </p>
+
+                    <h3 className="mt-2 text-xl font-black">
+                      Acquisition Pipeline
+                    </h3>
+                  </div>
+
+                  <div className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold">
+                    LIVE
+                  </div>
+                </div>
+
+                <div className="mt-7 grid grid-cols-3 gap-3">
+                  <div className="rounded-xl bg-white/5 p-4">
+                    <p className="text-xs text-slate-500">
+                      New
+                    </p>
+                    <p className="mt-2 text-2xl font-black">
+                      24
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl bg-white/5 p-4">
+                    <p className="text-xs text-slate-500">
+                      Saved
+                    </p>
+                    <p className="mt-2 text-2xl font-black">
+                      12
