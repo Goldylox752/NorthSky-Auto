@@ -1,728 +1,505 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { trackSellerSubmission } from "./SellerTracking";
 
-const initialForm = {
-  name: "",
-  email: "",
-  phone: "",
-  postal_code: "",
-  year: "",
-  make: "",
-  model: "",
-  trim: "",
-  mileage: "",
-  vin: "",
-  condition: "",
-  selling_timeline: "",
-  accident_history: "",
-  description: "",
-  asking_price: "",
+export const metadata = {
+  title: "NorthSky Auto | Sell Your Vehicle & Connect With Dealers",
+  description:
+    "NorthSky Auto connects vehicle sellers with automotive dealers across Canada. Submit your vehicle, connect with dealers, and discover your next automotive opportunity.",
 };
 
-function getAttribution() {
-  if (typeof window === "undefined") {
-    return {
-      source: "direct",
-      campaign: "organic",
-    };
-  }
+const benefits = [
+  {
+    number: "01",
+    title: "Submit Your Vehicle",
+    text: "Tell us about your vehicle once. Our streamlined submission process collects the details dealers need.",
+  },
+  {
+    number: "02",
+    title: "Reach Dealers",
+    text: "Your vehicle becomes an opportunity for participating automotive dealers looking for inventory.",
+  },
+  {
+    number: "03",
+    title: "Explore Opportunities",
+    text: "Interested dealers can review vehicle information and pursue opportunities that fit their inventory needs.",
+  },
+];
 
-  try {
-    const params = new URLSearchParams(
-      window.location.search
-    );
+const dealerFeatures = [
+  "Vehicle acquisition opportunities",
+  "Lead management",
+  "Saved opportunities",
+  "Dealer analytics",
+];
 
-    const source =
-      params.get("source") ||
-      sessionStorage.getItem("northsky_source") ||
-      "direct";
+const faqs = [
+  {
+    question: "What is NorthSky Auto?",
+    answer:
+      "NorthSky Auto is a Canadian automotive marketplace designed to connect vehicle sellers with participating automotive dealers.",
+  },
+  {
+    question: "How do I submit my vehicle?",
+    answer:
+      "Click Submit Your Vehicle and provide the basic information about your vehicle, including its year, make, model, condition, and location.",
+  },
+  {
+    question: "Does NorthSky Auto buy my vehicle?",
+    answer:
+      "NorthSky Auto is designed to facilitate connections between sellers and participating dealers. Any purchase or offer is determined directly by the participating dealer.",
+  },
+  {
+    question: "Can automotive dealers join NorthSky?",
+    answer:
+      "Yes. Automotive dealers can access the dealer platform and explore available dealer plans and opportunities.",
+  },
+];
 
-    const campaign =
-      params.get("campaign") ||
-      sessionStorage.getItem("northsky_campaign") ||
-      "organic";
-
-    sessionStorage.setItem(
-      "northsky_source",
-      source
-    );
-
-    sessionStorage.setItem(
-      "northsky_campaign",
-      campaign
-    );
-
-    return {
-      source,
-      campaign,
-    };
-  } catch {
-    return {
-      source: "direct",
-      campaign: "organic",
-    };
-  }
-}
-
-function normalizePostalCode(value) {
-  return value
-    .toUpperCase()
-    .replace(/\s+/g, "")
-    .slice(0, 6);
-}
-
-function normalizeVin(value) {
-  return value
-    .toUpperCase()
-    .replace(/\s+/g, "")
-    .slice(0, 17);
-}
-
-export default function SellPage() {
-  const [form, setForm] = useState(initialForm);
-
-  const [loading, setLoading] = useState(false);
-
-  const [message, setMessage] = useState("");
-
-  const [success, setSuccess] = useState(false);
-
-  const [attribution, setAttribution] = useState({
-    source: "direct",
-    campaign: "organic",
-  });
-
-  useEffect(() => {
-    setAttribution(getAttribution());
-  }, []);
-
-  function handleChange(e) {
-    const { name, value } = e.target;
-
-    let nextValue = value;
-
-    if (name === "vin") {
-      nextValue = normalizeVin(value);
-    }
-
-    if (name === "postal_code") {
-      nextValue = normalizePostalCode(value);
-    }
-
-    setForm((current) => ({
-      ...current,
-      [name]: nextValue,
-    }));
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-
-    if (loading) return;
-
-    setLoading(true);
-    setMessage("");
-    setSuccess(false);
-
-    try {
-      const trimmedForm = {
-        ...form,
-        name: form.name.trim(),
-        email: form.email.trim().toLowerCase(),
-        phone: form.phone.trim(),
-        postal_code: form.postal_code.trim().toUpperCase(),
-        year: form.year.trim(),
-        make: form.make.trim(),
-        model: form.model.trim(),
-        trim: form.trim.trim(),
-        mileage: form.mileage.trim(),
-        vin: form.vin.trim().toUpperCase(),
-        condition: form.condition.trim(),
-        selling_timeline:
-          form.selling_timeline.trim(),
-        accident_history:
-          form.accident_history.trim(),
-        description: form.description.trim(),
-        asking_price: form.asking_price.trim(),
-      };
-
-      if (!trimmedForm.name) {
-        throw new Error(
-          "Please enter your full name."
-        );
-      }
-
-      if (!trimmedForm.email) {
-        throw new Error(
-          "Please enter your email address."
-        );
-      }
-
-      if (!trimmedForm.phone) {
-        throw new Error(
-          "Please enter your phone number."
-        );
-      }
-
-      if (!trimmedForm.postal_code) {
-        throw new Error(
-          "Please enter your postal code."
-        );
-      }
-
-      if (
-        trimmedForm.vin &&
-        trimmedForm.vin.length !== 17
-      ) {
-        throw new Error(
-          "If provided, the VIN must contain 17 characters."
-        );
-      }
-
-      /*
-       * Submit vehicle lead.
-       */
-      const response = await fetch(
-        "/api/leads",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...trimmedForm,
-            source: attribution.source,
-            campaign: attribution.campaign,
-          }),
-        }
-      );
-
-      let data = {};
-
-      try {
-        data = await response.json();
-      } catch {
-        data = {};
-      }
-
-      if (!response.ok || !data?.success) {
-        throw new Error(
-          data?.error ||
-            "Unable to submit your vehicle. Please try again."
-        );
-      }
-
-      /*
-       * Tracking is secondary.
-       *
-       * If tracking fails, the vehicle submission
-       * should still remain successful.
-       */
-      try {
-        await trackSellerSubmission({
-          source: attribution.source,
-          campaign: attribution.campaign,
-          metadata: {
-            vehicle_year: trimmedForm.year,
-            vehicle_make: trimmedForm.make,
-            vehicle_model: trimmedForm.model,
-            selling_timeline:
-              trimmedForm.selling_timeline || null,
-          },
-        });
-      } catch (trackingError) {
-        console.error(
-          "Seller tracking error:",
-          trackingError
-        );
-      }
-
-      setSuccess(true);
-
-      setMessage(
-        "Your vehicle has been submitted successfully. NorthSky Auto will review your submission for potential dealership acquisition opportunities."
-      );
-
-      setForm(initialForm);
-    } catch (error) {
-      console.error(
-        "Vehicle submission error:",
-        error
-      );
-
-      setSuccess(false);
-
-      setMessage(
-        error?.message ||
-          "Something went wrong while submitting your vehicle. Please try again."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
-
+export default function HomePage() {
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-900">
-      {/* HERO */}
-      <section className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white">
-        <div className="mx-auto max-w-5xl px-6 py-16 text-center md:py-20">
-          <span className="inline-flex rounded-full bg-blue-600/20 px-4 py-2 text-sm font-bold text-blue-300 ring-1 ring-blue-500/30">
-            FREE VEHICLE SUBMISSION
-          </span>
+    <main className="min-h-screen bg-white text-slate-950">
 
-          <h1 className="mt-6 text-4xl font-black tracking-tight md:text-5xl">
-            Submit Your Vehicle to NorthSky Auto
-          </h1>
+      {/* ================= HERO ================= */}
+      <section className="relative overflow-hidden bg-slate-950 text-white">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_20%,rgba(37,99,235,0.28),transparent_38%),radial-gradient(circle_at_15%_90%,rgba(14,165,233,0.12),transparent_35%)]" />
 
-          <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-            Tell us about your vehicle and create a potential
-            acquisition opportunity for participating
-            dealerships across Canada.
-          </p>
+        <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:60px_60px]" />
 
-          <div className="mt-7 flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm text-slate-300">
-            <span>✓ Free to submit</span>
-            <span>✓ Canadian marketplace</span>
-            <span>
-              ✓ Cars, trucks, SUVs & commercial vehicles
-            </span>
+        <div className="relative mx-auto max-w-7xl px-6 py-20 sm:py-24 lg:px-8 lg:py-32">
+          <div className="grid items-center gap-16 lg:grid-cols-[1.1fr_.9fr]">
+
+            <div className="max-w-3xl">
+
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-medium text-slate-300 backdrop-blur">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                Built for the Canadian automotive market
+              </div>
+
+              <h1 className="mt-7 text-5xl font-bold leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
+                Your vehicle.
+                <br />
+                <span className="text-blue-400">
+                  More opportunities.
+                </span>
+              </h1>
+
+              <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
+                NorthSky Auto connects vehicle sellers with automotive
+                dealers across Canada. Submit your vehicle and put your
+                opportunity in front of businesses looking for their next
+                acquisition.
+              </p>
+
+              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href="/sell"
+                  className="rounded-xl bg-blue-600 px-7 py-4 text-center font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-500"
+                >
+                  Submit Your Vehicle →
+                </Link>
+
+                <Link
+                  href="/dealer"
+                  className="rounded-xl border border-white/15 bg-white/[0.06] px-7 py-4 text-center font-semibold text-white backdrop-blur transition hover:bg-white/[0.1]"
+                >
+                  I'm a Dealer
+                </Link>
+              </div>
+
+              <div className="mt-8 flex flex-wrap gap-x-7 gap-y-3 text-sm text-slate-400">
+                <span>✓ Simple submission</span>
+                <span>✓ Dealer opportunities</span>
+                <span>✓ Canada-wide marketplace</span>
+              </div>
+            </div>
+
+            {/* HERO CARD */}
+            <div className="relative hidden lg:block">
+              <div className="absolute -inset-6 rounded-[2rem] bg-blue-500/10 blur-3xl" />
+
+              <div className="relative rounded-3xl border border-white/10 bg-white/[0.07] p-5 shadow-2xl backdrop-blur-xl">
+
+                <div className="rounded-2xl border border-white/10 bg-slate-900/90 p-6">
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        NorthSky Marketplace
+                      </p>
+                      <p className="mt-1 font-semibold">
+                        Vehicle Opportunity
+                      </p>
+                    </div>
+
+                    <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-400">
+                      New
+                    </span>
+                  </div>
+
+                  <div className="mt-6 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-950 p-6">
+                    <div className="text-6xl">🚙</div>
+
+                    <p className="mt-5 text-xl font-bold">
+                      Your Vehicle
+                    </p>
+
+                    <p className="mt-1 text-sm text-slate-400">
+                      Submitted to the NorthSky network
+                    </p>
+
+                    <div className="mt-6 grid grid-cols-2 gap-3">
+                      <div className="rounded-xl bg-white/[0.05] p-3">
+                        <p className="text-xs text-slate-500">Location</p>
+                        <p className="mt-1 text-sm font-medium">
+                          Canada
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-white/[0.05] p-3">
+                        <p className="text-xs text-slate-500">Status</p>
+                        <p className="mt-1 text-sm font-medium text-emerald-400">
+                          Available
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-slate-500">
+                        Dealer Network
+                      </p>
+                      <p className="mt-1 font-semibold">
+                        Acquisition Opportunity
+                      </p>
+                    </div>
+
+                    <span className="text-2xl text-blue-400">→</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
 
-      {/* FORM */}
-      <section className="px-6 py-12 md:py-16">
-        <div className="mx-auto max-w-5xl">
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-8"
-          >
-            {/* SELLER */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
-              <SectionHeading
-                step="01"
-                title="Your Information"
-                description="Provide your contact information so NorthSky Auto can communicate with you about your vehicle submission."
-              />
+      {/* ================= INTRO ================= */}
+      <section className="border-b border-slate-200 bg-white py-16">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
 
-              <div className="grid gap-5 md:grid-cols-2">
-                <Field
-                  label="Full Name"
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  placeholder="John Smith"
-                  required
-                />
+          <div className="grid gap-10 lg:grid-cols-[1fr_1.5fr] lg:items-center">
 
-                <Field
-                  label="Phone Number"
-                  name="phone"
-                  type="tel"
-                  value={form.phone}
-                  onChange={handleChange}
-                  placeholder="780-555-1234"
-                  required
-                />
-
-                <Field
-                  label="Email Address"
-                  name="email"
-                  type="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="john@example.com"
-                  required
-                />
-
-                <Field
-                  label="Postal Code"
-                  name="postal_code"
-                  value={form.postal_code}
-                  onChange={handleChange}
-                  placeholder="T9E 0A1"
-                  required
-                  maxLength={7}
-                />
-              </div>
-            </div>
-
-            {/* VEHICLE */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
-              <SectionHeading
-                step="02"
-                title="Vehicle Information"
-                description="Give dealerships the information they need to evaluate your vehicle."
-              />
-
-              <div className="grid gap-5 md:grid-cols-2">
-                <Field
-                  label="Year"
-                  name="year"
-                  type="number"
-                  min="1900"
-                  max="2035"
-                  value={form.year}
-                  onChange={handleChange}
-                  placeholder="2022"
-                  required
-                />
-
-                <Field
-                  label="Make"
-                  name="make"
-                  value={form.make}
-                  onChange={handleChange}
-                  placeholder="Ford"
-                  required
-                />
-
-                <Field
-                  label="Model"
-                  name="model"
-                  value={form.model}
-                  onChange={handleChange}
-                  placeholder="F-150"
-                  required
-                />
-
-                <Field
-                  label="Trim"
-                  name="trim"
-                  value={form.trim}
-                  onChange={handleChange}
-                  placeholder="XLT"
-                />
-
-                <Field
-                  label="Mileage (km)"
-                  name="mileage"
-                  type="number"
-                  min="0"
-                  value={form.mileage}
-                  onChange={handleChange}
-                  placeholder="85000"
-                  required
-                />
-
-                <Field
-                  label="Asking Price (CAD)"
-                  name="asking_price"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={form.asking_price}
-                  onChange={handleChange}
-                  placeholder="35000"
-                  required
-                />
-              </div>
-
-              <div className="mt-5">
-                <Field
-                  label="VIN"
-                  name="vin"
-                  value={form.vin}
-                  onChange={handleChange}
-                  placeholder="17-character VIN (optional)"
-                  maxLength={17}
-                />
-
-                <p className="mt-2 text-xs text-slate-400">
-                  VINs are normally 17 characters. Do not
-                  include spaces.
-                </p>
-              </div>
-            </div>
-
-            {/* CONDITION */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
-              <SectionHeading
-                step="03"
-                title="Vehicle Condition"
-                description="Provide additional information that can help dealerships evaluate the vehicle."
-              />
-
-              <div className="grid gap-5 md:grid-cols-3">
-                <SelectField
-                  label="Overall Condition"
-                  name="condition"
-                  value={form.condition}
-                  onChange={handleChange}
-                  options={[
-                    "Excellent",
-                    "Good",
-                    "Fair",
-                    "Needs Work",
-                  ]}
-                />
-
-                <SelectField
-                  label="Selling Timeline"
-                  name="selling_timeline"
-                  value={form.selling_timeline}
-                  onChange={handleChange}
-                  options={[
-                    "Immediately",
-                    "Within 30 Days",
-                    "Within 60 Days",
-                    "Just Exploring",
-                  ]}
-                />
-
-                <SelectField
-                  label="Accident History"
-                  name="accident_history"
-                  value={form.accident_history}
-                  onChange={handleChange}
-                  options={[
-                    "No Accidents",
-                    "Minor Accident",
-                    "Major Accident",
-                    "Unknown",
-                  ]}
-                />
-              </div>
-
-              <div className="mt-5">
-                <label
-                  htmlFor="description"
-                  className="mb-2 block text-sm font-bold text-slate-700"
-                >
-                  Vehicle Details
-                </label>
-
-                <textarea
-                  id="description"
-                  name="description"
-                  value={form.description}
-                  onChange={handleChange}
-                  rows={6}
-                  maxLength={5000}
-                  placeholder="Tell us about maintenance, upgrades, options, damage, tires, mechanical issues, recent repairs, ownership history, or anything else a dealership should know."
-                  className="w-full rounded-xl border border-slate-300 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-                />
-
-                <p className="mt-2 text-right text-xs text-slate-400">
-                  {form.description.length}/5000
-                </p>
-              </div>
-            </div>
-
-            {/* SUBMISSION */}
-            <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 md:p-8">
-              <div className="rounded-2xl bg-blue-50 p-6 ring-1 ring-blue-100">
-                <h3 className="font-black text-slate-900">
-                  What happens after you submit?
-                </h3>
-
-                <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-                  <li className="flex gap-3">
-                    <span className="font-black text-blue-600">
-                      ✓
-                    </span>
-                    <span>
-                      Your vehicle information is securely
-                      submitted to NorthSky Auto.
-                    </span>
-                  </li>
-
-                  <li className="flex gap-3">
-                    <span className="font-black text-blue-600">
-                      ✓
-                    </span>
-                    <span>
-                      NorthSky Auto can review your submission
-                      for potential acquisition opportunities.
-                    </span>
-                  </li>
-
-                  <li className="flex gap-3">
-                    <span className="font-black text-blue-600">
-                      ✓
-                    </span>
-                    <span>
-                      We may contact you regarding your
-                      submission.
-                    </span>
-                  </li>
-
-                  <li className="flex gap-3">
-                    <span className="font-black text-blue-600">
-                      ✓
-                    </span>
-                    <span>
-                      Submission does not guarantee an offer,
-                      buyer, or sale.
-                    </span>
-                  </li>
-                </ul>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="mt-6 w-full rounded-xl bg-blue-600 py-4 text-lg font-black text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {loading
-                  ? "Submitting Vehicle..."
-                  : "Submit My Vehicle →"}
-              </button>
-
-              {message && (
-                <div
-                  role="status"
-                  aria-live="polite"
-                  className={`mt-5 rounded-xl p-4 text-center text-sm font-bold ${
-                    success
-                      ? "bg-green-50 text-green-700 ring-1 ring-green-200"
-                      : "bg-red-50 text-red-700 ring-1 ring-red-200"
-                  }`}
-                >
-                  {message}
-                </div>
-              )}
-
-              <p className="mt-5 text-center text-xs leading-5 text-slate-400">
-                By submitting this form, you agree that
-                NorthSky Auto may contact you regarding your
-                vehicle submission. See our{" "}
-                <Link
-                  href="/privacy"
-                  className="font-semibold text-blue-600 hover:underline"
-                >
-                  Privacy Policy
-                </Link>{" "}
-                and{" "}
-                <Link
-                  href="/terms"
-                  className="font-semibold text-blue-600 hover:underline"
-                >
-                  Terms of Use
-                </Link>
-                .
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wider text-blue-600">
+                The NorthSky difference
               </p>
+
+              <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+                One connection can create a better opportunity.
+              </h2>
             </div>
-          </form>
+
+            <p className="text-lg leading-8 text-slate-600">
+              Selling a vehicle shouldn't mean calling dealership after
+              dealership. NorthSky Auto creates a streamlined marketplace
+              where vehicle information can reach participating automotive
+              businesses looking for inventory.
+            </p>
+
+          </div>
         </div>
       </section>
+
+      {/* ================= BENEFITS ================= */}
+      <section className="bg-slate-50 py-24">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+
+          <div className="max-w-2xl">
+            <p className="text-sm font-bold uppercase tracking-wider text-blue-600">
+              How it works
+            </p>
+
+            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+              Simple for sellers.
+              <br />
+              Valuable for dealers.
+            </h2>
+          </div>
+
+          <div className="mt-14 grid gap-6 md:grid-cols-3">
+
+            {benefits.map((benefit) => (
+              <div
+                key={benefit.number}
+                className="group rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+              >
+                <span className="text-sm font-bold text-blue-600">
+                  {benefit.number}
+                </span>
+
+                <h3 className="mt-7 text-xl font-bold">
+                  {benefit.title}
+                </h3>
+
+                <p className="mt-3 leading-7 text-slate-600">
+                  {benefit.text}
+                </p>
+
+                <div className="mt-8 h-1 w-10 rounded-full bg-blue-600 transition-all group-hover:w-20" />
+              </div>
+            ))}
+
+          </div>
+        </div>
+      </section>
+
+      {/* ================= SELLER CTA ================= */}
+      <section className="py-24">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+
+          <div className="relative overflow-hidden rounded-[2rem] bg-blue-600 px-8 py-14 text-white sm:px-14 lg:px-16 lg:py-16">
+
+            <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+
+            <div className="relative grid gap-10 lg:grid-cols-[1fr_auto] lg:items-center">
+
+              <div className="max-w-2xl">
+                <p className="text-sm font-bold uppercase tracking-wider text-blue-100">
+                  Sell your vehicle
+                </p>
+
+                <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
+                  Put your vehicle in front of the right opportunity.
+                </h2>
+
+                <p className="mt-5 text-lg leading-8 text-blue-100">
+                  Submit your vehicle details through NorthSky Auto and
+                  connect with participating automotive dealers.
+                </p>
+              </div>
+
+              <Link
+                href="/sell"
+                className="rounded-xl bg-white px-7 py-4 text-center font-bold text-blue-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-50"
+              >
+                Start My Submission →
+              </Link>
+
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= PROCESS ================= */}
+      <section className="bg-slate-950 py-24 text-white">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+
+          <div className="max-w-2xl">
+            <p className="text-sm font-bold uppercase tracking-wider text-blue-400">
+              The process
+            </p>
+
+            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
+              From submission to opportunity.
+            </h2>
+
+            <p className="mt-5 text-lg leading-8 text-slate-400">
+              NorthSky keeps the process simple so sellers can submit
+              information and dealers can discover potential inventory.
+            </p>
+          </div>
+
+          <div className="mt-16 grid gap-10 md:grid-cols-3">
+
+            {[
+              ["01", "Submit", "Tell us about your vehicle."],
+              ["02", "Connect", "Your vehicle becomes a dealer opportunity."],
+              ["03", "Explore", "Interested dealers review the opportunity."],
+            ].map(([number, title, text]) => (
+              <div
+                key={number}
+                className="border-t border-white/10 pt-8"
+              >
+                <span className="text-sm font-bold text-blue-400">
+                  {number}
+                </span>
+
+                <h3 className="mt-5 text-2xl font-bold">
+                  {title}
+                </h3>
+
+                <p className="mt-3 leading-7 text-slate-400">
+                  {text}
+                </p>
+              </div>
+            ))}
+
+          </div>
+        </div>
+      </section>
+
+      {/* ================= DEALERS ================= */}
+      <section className="py-24">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+
+          <div className="grid gap-14 lg:grid-cols-2 lg:items-center">
+
+            <div>
+
+              <p className="text-sm font-bold uppercase tracking-wider text-blue-600">
+                For automotive dealers
+              </p>
+
+              <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+                Build your inventory pipeline with NorthSky.
+              </h2>
+
+              <p className="mt-5 text-lg leading-8 text-slate-600">
+                Discover vehicle acquisition opportunities and manage your
+                dealer pipeline through one centralized platform.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href="/dealer"
+                  className="rounded-xl bg-slate-950 px-6 py-3.5 text-center font-semibold text-white transition hover:bg-slate-800"
+                >
+                  Dealer Portal →
+                </Link>
+
+                <Link
+                  href="/pricing"
+                  className="rounded-xl border border-slate-300 px-6 py-3.5 text-center font-semibold transition hover:bg-slate-50"
+                >
+                  View Plans
+                </Link>
+              </div>
+
+            </div>
+
+            <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6 sm:p-8">
+
+              <div className="rounded-2xl bg-white p-7 shadow-sm">
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      Dealer Platform
+                    </p>
+
+                    <h3 className="mt-1 text-xl font-bold">
+                      NorthSky Network
+                    </h3>
+                  </div>
+
+                  <div className="rounded-xl bg-blue-50 px-3 py-2 text-sm font-bold text-blue-600">
+                    LIVE
+                  </div>
+                </div>
+
+                <div className="mt-7 space-y-3">
+
+                  {dealerFeatures.map((feature) => (
+                    <div
+                      key={feature}
+                      className="flex items-center justify-between rounded-xl bg-slate-50 p-4"
+                    >
+                      <span className="font-medium">
+                        {feature}
+                      </span>
+
+                      <span className="text-blue-600">
+                        →
+                      </span>
+                    </div>
+                  ))}
+
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ================= FAQ ================= */}
+      <section className="border-t border-slate-200 bg-slate-50 py-24">
+        <div className="mx-auto max-w-4xl px-6 lg:px-8">
+
+          <div className="text-center">
+            <p className="text-sm font-bold uppercase tracking-wider text-blue-600">
+              Frequently asked questions
+            </p>
+
+            <h2 className="mt-3 text-3xl font-bold sm:text-4xl">
+              Questions, answered.
+            </h2>
+          </div>
+
+          <div className="mt-12 space-y-4">
+
+            {faqs.map((faq) => (
+              <details
+                key={faq.question}
+                className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+              >
+                <summary className="cursor-pointer list-none pr-8 font-bold">
+                  <div className="flex items-center justify-between">
+                    <span>{faq.question}</span>
+                    <span className="text-xl text-blue-600 transition group-open:rotate-45">
+                      +
+                    </span>
+                  </div>
+                </summary>
+
+                <p className="mt-4 max-w-3xl leading-7 text-slate-600">
+                  {faq.answer}
+                </p>
+              </details>
+            ))}
+
+          </div>
+        </div>
+      </section>
+
+      {/* ================= FINAL CTA ================= */}
+      <section className="bg-white py-24">
+        <div className="mx-auto max-w-4xl px-6 text-center">
+
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-2xl text-white shadow-lg shadow-blue-600/20">
+            🚗
+          </div>
+
+          <h2 className="mt-7 text-3xl font-bold tracking-tight sm:text-5xl">
+            Your next automotive opportunity starts here.
+          </h2>
+
+          <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">
+            Whether you're selling a vehicle or looking for your next
+            acquisition, NorthSky Auto is building a simpler way to connect.
+          </p>
+
+          <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+
+            <Link
+              href="/sell"
+              className="rounded-xl bg-blue-600 px-7 py-4 font-bold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-500"
+            >
+              Submit Your Vehicle
+            </Link>
+
+            <Link
+              href="/dealer"
+              className="rounded-xl bg-slate-950 px-7 py-4 font-bold text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
+            >
+              Join as a Dealer
+            </Link>
+
+          </div>
+        </div>
+      </section>
+
     </main>
-  );
-}
-
-function SectionHeading({
-  step,
-  title,
-  description,
-}) {
-  return (
-    <div className="mb-7">
-      <p className="text-sm font-black uppercase tracking-widest text-blue-600">
-        Step {step}
-      </p>
-
-      <h2 className="mt-2 text-2xl font-black text-slate-900">
-        {title}
-      </h2>
-
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-        {description}
-      </p>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  name,
-  type = "text",
-  value,
-  onChange,
-  placeholder,
-  required = false,
-  min,
-  max,
-  step,
-  maxLength,
-}) {
-  return (
-    <div>
-      <label
-        htmlFor={name}
-        className="mb-2 block text-sm font-bold text-slate-700"
-      >
-        {label}
-
-        {required && (
-          <span className="ml-1 text-red-500">
-            *
-          </span>
-        )}
-      </label>
-
-      <input
-        id={name}
-        name={name}
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-        min={min}
-        max={max}
-        step={step}
-        maxLength={maxLength}
-        autoComplete={
-          name === "email"
-            ? "email"
-            : name === "phone"
-            ? "tel"
-            : name === "name"
-            ? "name"
-            : name === "postal_code"
-            ? "postal-code"
-            : "off"
-        }
-        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-      />
-    </div>
-  );
-}
-
-function SelectField({
-  label,
-  name,
-  value,
-  onChange,
-  options,
-}) {
-  return (
-    <div>
-      <label
-        htmlFor={name}
-        className="mb-2 block text-sm font-bold text-slate-700"
-      >
-        {label}
-      </label>
-
-      <select
-        id={name}
-        name={name}
-        value={value}
-        onChange={onChange}
-        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-      >
-        <option value="">Select...</option>
-
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-    </div>
   );
 }
