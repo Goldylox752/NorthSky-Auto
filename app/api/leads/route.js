@@ -1,3 +1,4 @@
+```jsx
 import Link from "next/link";
 
 export const metadata = {
@@ -42,11 +43,8 @@ const stats = [
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-white text-slate-950">
-      {/* =========================================================
-          HERO
-      ========================================================= */}
+      {/* HERO */}
       <section className="relative overflow-hidden bg-slate-950 text-white">
-        {/* Background effects */}
         <div className="absolute inset-0">
           <div className="absolute -right-40 -top-40 h-[500px] w-[500px] rounded-full bg-blue-600/20 blur-3xl" />
           <div className="absolute -bottom-40 -left-40 h-[500px] w-[500px] rounded-full bg-cyan-500/10 blur-3xl" />
@@ -54,7 +52,6 @@ export default function HomePage() {
         </div>
 
         <div className="relative mx-auto max-w-7xl px-6 pb-24 pt-10 lg:px-8 lg:pb-32">
-          {/* Top badge */}
           <div className="flex items-center justify-between">
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-300 backdrop-blur">
               <span className="h-2 w-2 rounded-full bg-blue-400" />
@@ -63,7 +60,6 @@ export default function HomePage() {
           </div>
 
           <div className="grid items-center gap-16 pt-20 lg:grid-cols-[1.1fr_0.9fr] lg:pt-28">
-            {/* Hero copy */}
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400">
                 SELL SMARTER
@@ -85,7 +81,7 @@ export default function HomePage() {
               <div className="mt-10 flex flex-col gap-4 sm:flex-row">
                 <Link
                   href="/sell"
-                  className="rounded-xl bg-blue-600 px-8 py-4 text-center font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500 hover:shadow-blue-500/30"
+                  className="rounded-xl bg-blue-600 px-8 py-4 text-center font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-500"
                 >
                   Submit Your Vehicle →
                 </Link>
@@ -105,7 +101,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Hero marketplace card */}
             <div className="relative">
               <div className="absolute -inset-4 rounded-[2rem] bg-blue-600/10 blur-2xl" />
 
@@ -149,6 +144,7 @@ export default function HomePage() {
                         <p className="text-xs text-slate-400">
                           Location
                         </p>
+
                         <p className="mt-1 text-sm font-bold">
                           Alberta, Canada
                         </p>
@@ -158,6 +154,7 @@ export default function HomePage() {
                         <p className="text-xs text-slate-400">
                           Condition
                         </p>
+
                         <p className="mt-1 text-sm font-bold">
                           Good
                         </p>
@@ -174,6 +171,7 @@ export default function HomePage() {
                       <p className="text-sm font-bold">
                         Dealer Network
                       </p>
+
                       <p className="text-xs text-slate-400">
                         Reviewing acquisition opportunities
                       </p>
@@ -184,7 +182,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Stats */}
           <div className="mt-20 grid max-w-3xl gap-4 sm:grid-cols-3">
             {stats.map((stat) => (
               <div
@@ -204,9 +201,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* =========================================================
-          VALUE PROPOSITION
-      ========================================================= */}
+      {/* HOW IT WORKS */}
       <section className="bg-slate-50 py-24">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="max-w-3xl">
@@ -251,9 +246,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* =========================================================
-          SELLER CTA
-      ========================================================= */}
+      {/* SELLER CTA */}
       <section className="py-24">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-[2rem] bg-blue-600 px-8 py-14 text-white sm:px-14 lg:px-16 lg:py-16">
@@ -287,9 +280,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* =========================================================
-          FOR DEALERS
-      ========================================================= */}
+      {/* FOR DEALERS */}
       <section className="border-y border-slate-200 bg-white py-24">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
@@ -325,7 +316,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Dealer dashboard preview */}
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
               <div className="rounded-2xl bg-slate-950 p-6 text-white shadow-xl">
                 <div className="flex items-center justify-between">
@@ -349,6 +339,7 @@ export default function HomePage() {
                     <p className="text-xs text-slate-500">
                       New
                     </p>
+
                     <p className="mt-2 text-2xl font-black">
                       24
                     </p>
@@ -358,5 +349,134 @@ export default function HomePage() {
                     <p className="text-xs text-slate-500">
                       Saved
                     </p>
+
                     <p className="mt-2 text-2xl font-black">
                       12
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl bg-white/5 p-4">
+                    <p className="text-xs text-slate-500">
+                      Qualified
+                    </p>
+
+                    <p className="mt-2 text-2xl font-black">
+                      8
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 space-y-3">
+                  {[
+                    ["2022 Ford F-150", "$35,000", "Alberta"],
+                    ["2021 Toyota Tacoma", "$38,500", "British Columbia"],
+                    ["2023 Chevrolet Silverado", "$42,000", "Ontario"],
+                  ].map(([vehicle, price, location]) => (
+                    <div
+                      key={vehicle}
+                      className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4"
+                    >
+                      <div>
+                        <p className="text-sm font-bold">
+                          {vehicle}
+                        </p>
+
+                        <p className="mt-1 text-xs text-slate-500">
+                          {location}
+                        </p>
+                      </div>
+
+                      <p className="text-sm font-black text-blue-400">
+                        {price}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="bg-slate-950 py-24 text-white">
+        <div className="mx-auto max-w-4xl px-6 text-center lg:px-8">
+          <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400">
+            NORTHSKY AUTO
+          </p>
+
+          <h2 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+            Turn your vehicle into a dealer opportunity.
+          </h2>
+
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-400">
+            Submit your vehicle today and make it discoverable to
+            participating automotive dealers across Canada.
+          </p>
+
+          <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
+            <Link
+              href="/sell"
+              className="rounded-xl bg-blue-600 px-8 py-4 font-black text-white transition hover:bg-blue-500"
+            >
+              Submit Your Vehicle →
+            </Link>
+
+            <Link
+              href="/inventory"
+              className="rounded-xl border border-white/10 bg-white/5 px-8 py-4 font-black text-white transition hover:bg-white/10"
+            >
+              Explore Marketplace
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="border-t border-slate-800 bg-slate-950 px-6 py-10 text-slate-400">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-black text-white">
+              NorthSky Auto
+            </p>
+
+            <p className="mt-1 text-sm">
+              Canadian vehicle acquisition marketplace.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-5 text-sm">
+            <Link
+              href="/sell"
+              className="transition hover:text-white"
+            >
+              Sell
+            </Link>
+
+            <Link
+              href="/inventory"
+              className="transition hover:text-white"
+            >
+              Inventory
+            </Link>
+
+            <Link
+              href="/dealer"
+              className="transition hover:text-white"
+            >
+              Dealers
+            </Link>
+
+            <Link
+              href="/pricing"
+              className="transition hover:text-white"
+            >
+              Pricing
+            </Link>
+          </div>
+        </div>
+      </footer>
+    </main>
+  );
+}
+```
