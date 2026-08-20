@@ -1,34 +1,71 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "NorthSky Auto | Sell Your Vehicle & Connect With Dealers",
+  title: "NorthSky Auto | Connect Vehicle Sellers With Dealers",
   description:
-    "NorthSky Auto connects vehicle sellers with automotive dealers across Canada. Submit your vehicle and create a dealer acquisition opportunity.",
+    "NorthSky Auto connects vehicle sellers with automotive dealers across Canada. Submit your vehicle, create a marketplace opportunity, and connect with participating dealers.",
+  keywords: [
+    "NorthSky Auto",
+    "sell vehicle Canada",
+    "sell car to dealer Canada",
+    "vehicle marketplace Canada",
+    "dealer vehicle leads",
+    "automotive dealer leads",
+    "vehicle acquisition Canada",
+  ],
+  alternates: {
+    canonical: "https://north-sky-auto-gold.vercel.app",
+  },
+  openGraph: {
+    title: "NorthSky Auto | Vehicle Marketplace & Dealer Leads",
+    description:
+      "Submit your vehicle and connect with automotive dealers across Canada.",
+    url: "https://north-sky-auto-gold.vercel.app",
+    siteName: "NorthSky Auto",
+    type: "website",
+    locale: "en_CA",
+  },
 };
 
-const benefits = [
+const sellerSteps = [
   {
     number: "01",
-    title: "Submit Your Vehicle",
-    text: "Tell us about your vehicle once through a simple online submission.",
+    title: "Submit your vehicle",
+    text: "Tell us about your vehicle, including its year, make, model, condition and location.",
   },
   {
     number: "02",
-    title: "Reach Dealer Opportunities",
-    text: "Your vehicle can be presented to participating automotive dealers looking for inventory.",
+    title: "Create an opportunity",
+    text: "Your submission becomes a structured vehicle opportunity within the NorthSky platform.",
   },
   {
     number: "03",
-    title: "Move the Opportunity Forward",
-    text: "Interested dealers can review the vehicle and determine whether it fits their acquisition needs.",
+    title: "Connect with dealers",
+    text: "Participating dealers can discover opportunities that match their acquisition needs.",
   },
 ];
 
 const dealerFeatures = [
-  "Vehicle acquisition opportunities",
-  "Lead management",
-  "Saved opportunities",
-  "Dealer analytics",
+  {
+    number: "01",
+    title: "Vehicle Opportunities",
+    text: "Discover vehicles submitted by sellers across the Canadian market.",
+  },
+  {
+    number: "02",
+    title: "Lead Management",
+    text: "Organize, review and manage vehicle acquisition opportunities.",
+  },
+  {
+    number: "03",
+    title: "Saved Opportunities",
+    text: "Keep promising vehicle opportunities organized for follow-up.",
+  },
+  {
+    number: "04",
+    title: "Dealer Analytics",
+    text: "Track activity and understand how your acquisition pipeline is performing.",
+  },
 ];
 
 const faqs = [
@@ -38,19 +75,24 @@ const faqs = [
       "NorthSky Auto is a Canadian automotive marketplace designed to connect vehicle sellers with participating automotive dealers.",
   },
   {
-    question: "How do I submit my vehicle?",
+    question: "How do I sell my vehicle through NorthSky Auto?",
     answer:
-      "Click Submit Your Vehicle and provide the basic information about your vehicle. The process is designed to take only a few minutes.",
+      "Start by submitting your vehicle through the online seller form. Provide the vehicle details, location and other requested information so your opportunity can be reviewed.",
   },
   {
-    question: "Does NorthSky Auto buy vehicles directly?",
+    question: "Does NorthSky Auto purchase vehicles?",
     answer:
-      "NorthSky Auto facilitates connections between sellers and participating dealers. Any purchase decision or offer is determined by the participating dealer.",
+      "NorthSky Auto facilitates connections between sellers and participating dealers. NorthSky Auto is not the purchasing dealer. Any offer or purchase decision is made by the participating dealer.",
   },
   {
-    question: "Can dealerships join NorthSky Auto?",
+    question: "Can I join NorthSky Auto as a dealer?",
     answer:
-      "Yes. Automotive dealers can access the dealer platform and explore available plans and vehicle opportunities.",
+      "Yes. Automotive dealers can create an account, access the dealer platform and explore available vehicle acquisition opportunities.",
+  },
+  {
+    question: "Is submitting a vehicle free?",
+    answer:
+      "Vehicle sellers can submit their vehicle through the NorthSky Auto platform without paying a submission fee.",
   },
 ];
 
@@ -58,38 +100,38 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-white text-slate-950">
 
-      {/* =====================================================
-          HERO
-      ===================================================== */}
+      {/* HERO */}
 
       <section className="relative overflow-hidden bg-slate-950 text-white">
 
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_15%,rgba(37,99,235,0.30),transparent_40%),radial-gradient(circle_at_10%_90%,rgba(14,165,233,0.12),transparent_35%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(37,99,235,0.28),transparent_40%),radial-gradient(circle_at_15%_85%,rgba(14,165,233,0.12),transparent_35%)]" />
 
         <div className="absolute inset-0 opacity-[0.035] [background-image:linear-gradient(rgba(255,255,255,.8)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.8)_1px,transparent_1px)] [background-size:60px_60px]" />
 
         <div className="relative mx-auto max-w-7xl px-6 py-20 lg:px-8 lg:py-32">
 
-          <div className="grid items-center gap-16 lg:grid-cols-[1.1fr_.9fr]">
+          <div className="grid items-center gap-16 lg:grid-cols-[1.08fr_.92fr]">
 
             <div className="max-w-3xl">
 
-              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-slate-300 backdrop-blur">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-slate-300">
                 <span className="h-2 w-2 rounded-full bg-emerald-400" />
                 Canadian automotive marketplace
               </div>
 
               <h1 className="mt-7 text-5xl font-black leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl">
-                Sell your vehicle.
+                Turn your vehicle
                 <br />
+                into a{" "}
                 <span className="text-blue-400">
-                  Connect with dealers.
+                  dealer opportunity.
                 </span>
               </h1>
 
               <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
-                NorthSky Auto creates a simpler connection between vehicle
-                sellers and automotive dealers across Canada.
+                NorthSky Auto connects vehicle sellers with automotive
+                dealers across Canada through a dedicated vehicle marketplace
+                and lead platform.
               </p>
 
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -98,12 +140,12 @@ export default function HomePage() {
                   href="/sell"
                   className="rounded-xl bg-blue-600 px-7 py-4 text-center font-bold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-500"
                 >
-                  Submit Your Vehicle →
+                  Sell My Vehicle →
                 </Link>
 
                 <Link
                   href="/dealer"
-                  className="rounded-xl border border-white/15 bg-white/[0.06] px-7 py-4 text-center font-bold text-white backdrop-blur transition hover:bg-white/[0.1]"
+                  className="rounded-xl border border-white/15 bg-white/[0.06] px-7 py-4 text-center font-bold text-white transition hover:bg-white/[0.1]"
                 >
                   I'm a Dealer
                 </Link>
@@ -111,14 +153,16 @@ export default function HomePage() {
               </div>
 
               <div className="mt-8 flex flex-wrap gap-x-7 gap-y-3 text-sm text-slate-400">
-                <span>✓ Free vehicle submission</span>
+
                 <span>✓ Canadian marketplace</span>
+                <span>✓ Simple vehicle submission</span>
                 <span>✓ Dealer opportunities</span>
+
               </div>
 
             </div>
 
-            {/* HERO MARKETPLACE CARD */}
+            {/* PLATFORM PREVIEW */}
 
             <div className="hidden lg:block">
 
@@ -126,7 +170,7 @@ export default function HomePage() {
 
                 <div className="absolute -inset-8 rounded-[3rem] bg-blue-500/10 blur-3xl" />
 
-                <div className="relative rounded-3xl border border-white/10 bg-white/[0.07] p-5 shadow-2xl backdrop-blur-xl">
+                <div className="relative rounded-3xl border border-white/10 bg-white/[0.06] p-5 shadow-2xl backdrop-blur-xl">
 
                   <div className="rounded-2xl border border-white/10 bg-slate-900 p-6">
 
@@ -134,7 +178,7 @@ export default function HomePage() {
 
                       <div>
                         <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
-                          NorthSky Marketplace
+                          NorthSky Auto
                         </p>
 
                         <p className="mt-1 font-bold">
@@ -142,46 +186,54 @@ export default function HomePage() {
                         </p>
                       </div>
 
-                      <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-400">
-                        NEW
+                      <span className="rounded-full bg-blue-400/10 px-3 py-1 text-xs font-bold text-blue-400">
+                        MARKETPLACE
                       </span>
 
                     </div>
 
                     <div className="mt-6 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-950 p-6">
 
-                      <div className="flex h-32 items-center justify-center rounded-xl border border-white/5 bg-white/[0.03] text-7xl">
+                      <div className="flex h-36 items-center justify-center rounded-xl border border-white/5 bg-white/[0.03] text-7xl">
                         🚙
                       </div>
 
-                      <p className="mt-5 text-xl font-black">
-                        Vehicle Submission
-                      </p>
+                      <div className="mt-5">
 
-                      <p className="mt-1 text-sm text-slate-400">
-                        Available for dealer review
-                      </p>
+                        <p className="text-xl font-black">
+                          2022 Toyota RAV4
+                        </p>
+
+                        <p className="mt-1 text-sm text-slate-400">
+                          Vehicle submitted by seller
+                        </p>
+
+                      </div>
 
                       <div className="mt-6 grid grid-cols-2 gap-3">
 
                         <div className="rounded-xl bg-white/[0.05] p-3">
+
                           <p className="text-xs text-slate-500">
-                            Marketplace
+                            Location
                           </p>
 
                           <p className="mt-1 text-sm font-bold">
-                            Canada
+                            Alberta, Canada
                           </p>
+
                         </div>
 
                         <div className="rounded-xl bg-white/[0.05] p-3">
+
                           <p className="text-xs text-slate-500">
-                            Status
+                            Opportunity
                           </p>
 
                           <p className="mt-1 text-sm font-bold text-emerald-400">
-                            Available
+                            Open
                           </p>
+
                         </div>
 
                       </div>
@@ -191,13 +243,15 @@ export default function HomePage() {
                     <div className="mt-5 flex items-center justify-between">
 
                       <div>
+
                         <p className="text-xs text-slate-500">
-                          Dealer Network
+                          Dealer Platform
                         </p>
 
                         <p className="mt-1 font-bold">
-                          Acquisition Opportunity
+                          Acquisition Lead
                         </p>
+
                       </div>
 
                       <span className="text-2xl text-blue-400">
@@ -207,18 +261,20 @@ export default function HomePage() {
                     </div>
 
                   </div>
+
                 </div>
+
               </div>
 
             </div>
 
           </div>
+
         </div>
+
       </section>
 
-      {/* =====================================================
-          VALUE PROPOSITION
-      ===================================================== */}
+      {/* VALUE PROPOSITION */}
 
       <section className="border-b border-slate-200 bg-white py-16">
 
@@ -229,29 +285,29 @@ export default function HomePage() {
             <div>
 
               <p className="text-sm font-black uppercase tracking-widest text-blue-600">
-                The NorthSky difference
+                One platform
               </p>
 
               <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-                A better connection between sellers and dealers.
+                Built for both sides of the automotive transaction.
               </h2>
 
             </div>
 
             <p className="text-lg leading-8 text-slate-600">
-              Instead of contacting dealerships one at a time, NorthSky gives
-              vehicle sellers a streamlined way to submit their vehicle and
-              create an opportunity for participating automotive businesses.
+              Sellers get a simpler way to submit their vehicle. Dealers get
+              a structured pipeline of potential vehicle acquisition
+              opportunities. NorthSky Auto is designed to bring both sides
+              together in one platform.
             </p>
 
           </div>
 
         </div>
+
       </section>
 
-      {/* =====================================================
-          HOW IT WORKS
-      ===================================================== */}
+      {/* SELLER FLOW */}
 
       <section className="bg-slate-50 py-24">
 
@@ -260,40 +316,38 @@ export default function HomePage() {
           <div className="max-w-2xl">
 
             <p className="text-sm font-black uppercase tracking-widest text-blue-600">
-              How it works
+              For sellers
             </p>
 
             <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-              Simple for sellers.
-              <br />
-              Useful for dealers.
+              Sell your vehicle without the usual runaround.
             </h2>
 
             <p className="mt-5 text-lg leading-8 text-slate-600">
-              NorthSky is designed to make vehicle acquisition and vehicle
-              submission more straightforward.
+              Submit your vehicle once and create a structured opportunity
+              that can be discovered by participating dealers.
             </p>
 
           </div>
 
           <div className="mt-14 grid gap-6 md:grid-cols-3">
 
-            {benefits.map((benefit) => (
+            {sellerSteps.map((step) => (
               <div
-                key={benefit.number}
+                key={step.number}
                 className="group rounded-2xl border border-slate-200 bg-white p-8 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
               >
 
                 <span className="text-sm font-black text-blue-600">
-                  {benefit.number}
+                  {step.number}
                 </span>
 
                 <h3 className="mt-7 text-xl font-black">
-                  {benefit.title}
+                  {step.title}
                 </h3>
 
                 <p className="mt-3 leading-7 text-slate-600">
-                  {benefit.text}
+                  {step.text}
                 </p>
 
                 <div className="mt-8 h-1 w-10 rounded-full bg-blue-600 transition-all duration-300 group-hover:w-20" />
@@ -303,12 +357,22 @@ export default function HomePage() {
 
           </div>
 
+          <div className="mt-10">
+
+            <Link
+              href="/sell"
+              className="inline-flex rounded-xl bg-blue-600 px-7 py-4 font-bold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-500"
+            >
+              Submit Your Vehicle →
+            </Link>
+
+          </div>
+
         </div>
+
       </section>
 
-      {/* =====================================================
-          SELLER CTA
-      ===================================================== */}
+      {/* SELLER CTA */}
 
       <section className="py-24">
 
@@ -323,16 +387,16 @@ export default function HomePage() {
               <div className="max-w-2xl">
 
                 <p className="text-sm font-black uppercase tracking-widest text-blue-100">
-                  For vehicle sellers
+                  Ready to sell?
                 </p>
 
                 <h2 className="mt-3 text-3xl font-black sm:text-4xl">
-                  Have a vehicle you're ready to sell?
+                  Tell NorthSky about your vehicle.
                 </h2>
 
                 <p className="mt-5 text-lg leading-8 text-blue-100">
-                  Submit your vehicle details and let NorthSky create a
-                  potential dealer acquisition opportunity.
+                  Provide your vehicle information and create your
+                  acquisition opportunity in just a few steps.
                 </p>
 
               </div>
@@ -349,82 +413,12 @@ export default function HomePage() {
           </div>
 
         </div>
+
       </section>
 
-      {/* =====================================================
-          PROCESS
-      ===================================================== */}
+      {/* DEALER PLATFORM */}
 
       <section className="bg-slate-950 py-24 text-white">
-
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-
-          <div className="max-w-2xl">
-
-            <p className="text-sm font-black uppercase tracking-widest text-blue-400">
-              The process
-            </p>
-
-            <h2 className="mt-3 text-3xl font-black sm:text-4xl">
-              From vehicle submission to dealer opportunity.
-            </h2>
-
-            <p className="mt-5 text-lg leading-8 text-slate-400">
-              A straightforward process built around connecting the right
-              vehicle information with the right automotive businesses.
-            </p>
-
-          </div>
-
-          <div className="mt-16 grid gap-10 md:grid-cols-3">
-
-            {[
-              {
-                number: "01",
-                title: "Submit",
-                text: "Tell us about your vehicle, condition, location and expectations.",
-              },
-              {
-                number: "02",
-                title: "Review",
-                text: "NorthSky receives and reviews the vehicle submission.",
-              },
-              {
-                number: "03",
-                title: "Connect",
-                text: "Participating dealers can evaluate opportunities that fit their needs.",
-              },
-            ].map((step) => (
-              <div
-                key={step.number}
-                className="border-t border-white/10 pt-8"
-              >
-
-                <span className="text-sm font-black text-blue-400">
-                  {step.number}
-                </span>
-
-                <h3 className="mt-5 text-2xl font-black">
-                  {step.title}
-                </h3>
-
-                <p className="mt-3 leading-7 text-slate-400">
-                  {step.text}
-                </p>
-
-              </div>
-            ))}
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* =====================================================
-          DEALER SECTION
-      ===================================================== */}
-
-      <section className="py-24">
 
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
 
@@ -432,32 +426,32 @@ export default function HomePage() {
 
             <div>
 
-              <p className="text-sm font-black uppercase tracking-widest text-blue-600">
-                For automotive dealers
+              <p className="text-sm font-black uppercase tracking-widest text-blue-400">
+                For dealers
               </p>
 
-              <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-                Find your next inventory opportunity.
+              <h2 className="mt-3 text-3xl font-black sm:text-4xl">
+                Build your vehicle acquisition pipeline.
               </h2>
 
-              <p className="mt-5 text-lg leading-8 text-slate-600">
-                NorthSky is building a dealer network designed to help
-                automotive businesses discover vehicle acquisition
-                opportunities and manage their pipeline in one place.
+              <p className="mt-5 text-lg leading-8 text-slate-400">
+                NorthSky Auto gives participating dealers a dedicated
+                platform for discovering, evaluating and managing vehicle
+                acquisition opportunities.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
 
                 <Link
                   href="/dealer"
-                  className="rounded-xl bg-slate-950 px-6 py-3.5 text-center font-bold text-white transition hover:bg-slate-800"
+                  className="rounded-xl bg-blue-600 px-6 py-3.5 text-center font-bold text-white transition hover:bg-blue-500"
                 >
                   Dealer Portal →
                 </Link>
 
                 <Link
                   href="/pricing"
-                  className="rounded-xl border border-slate-300 px-6 py-3.5 text-center font-bold transition hover:bg-slate-50"
+                  className="rounded-xl border border-white/15 px-6 py-3.5 text-center font-bold text-white transition hover:bg-white/5"
                 >
                   View Dealer Plans
                 </Link>
@@ -466,63 +460,112 @@ export default function HomePage() {
 
             </div>
 
-            <div className="rounded-[2rem] border border-slate-200 bg-slate-50 p-6 sm:p-8">
+            <div className="grid gap-4 sm:grid-cols-2">
 
-              <div className="rounded-2xl bg-white p-7 shadow-sm">
+              {dealerFeatures.map((feature) => (
+                <div
+                  key={feature.number}
+                  className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 transition hover:bg-white/[0.07]"
+                >
 
-                <div className="flex items-center justify-between">
+                  <span className="text-sm font-black text-blue-400">
+                    {feature.number}
+                  </span>
 
-                  <div>
+                  <h3 className="mt-5 text-lg font-black">
+                    {feature.title}
+                  </h3>
 
-                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">
-                      Dealer Platform
-                    </p>
-
-                    <h3 className="mt-1 text-xl font-black">
-                      NorthSky Network
-                    </h3>
-
-                  </div>
-
-                  <div className="rounded-xl bg-blue-50 px-3 py-2 text-sm font-black text-blue-600">
-                    PLATFORM
-                  </div>
+                  <p className="mt-3 text-sm leading-6 text-slate-400">
+                    {feature.text}
+                  </p>
 
                 </div>
-
-                <div className="mt-7 space-y-3">
-
-                  {dealerFeatures.map((feature) => (
-                    <div
-                      key={feature}
-                      className="flex items-center justify-between rounded-xl bg-slate-50 p-4"
-                    >
-
-                      <span className="font-semibold">
-                        {feature}
-                      </span>
-
-                      <span className="text-blue-600">
-                        →
-                      </span>
-
-                    </div>
-                  ))}
-
-                </div>
-
-              </div>
+              ))}
 
             </div>
 
           </div>
 
         </div>
+
       </section>
 
-      {/* =====================================================
-          FAQ
-      ===================================================== */}
+      {/* PLATFORM FLOW */}
+
+      <section className="py-24">
+
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+
+          <div className="mx-auto max-w-3xl text-center">
+
+            <p className="text-sm font-black uppercase tracking-widest text-blue-600">
+              The NorthSky platform
+            </p>
+
+            <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+              From seller submission to dealer lead.
+            </h2>
+
+            <p className="mt-5 text-lg leading-8 text-slate-600">
+              NorthSky is being built around one simple objective:
+              make vehicle acquisition opportunities easier to discover,
+              manage and act on.
+            </p>
+
+          </div>
+
+          <div className="mt-16 grid gap-6 md:grid-cols-4">
+
+            {[
+              {
+                number: "01",
+                title: "Seller",
+                text: "Vehicle owner submits a vehicle.",
+              },
+              {
+                number: "02",
+                title: "Marketplace",
+                text: "NorthSky structures the opportunity.",
+              },
+              {
+                number: "03",
+                title: "Dealer",
+                text: "Participating dealers discover the opportunity.",
+              },
+              {
+                number: "04",
+                title: "Lead",
+                text: "Dealer manages the acquisition opportunity.",
+              },
+            ].map((item) => (
+              <div
+                key={item.number}
+                className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"
+              >
+
+                <span className="text-sm font-black text-blue-600">
+                  {item.number}
+                </span>
+
+                <h3 className="mt-5 text-xl font-black">
+                  {item.title}
+                </h3>
+
+                <p className="mt-3 leading-7 text-slate-600">
+                  {item.text}
+                </p>
+
+              </div>
+            ))}
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* FAQ */}
 
       <section className="border-t border-slate-200 bg-slate-50 py-24">
 
@@ -531,7 +574,7 @@ export default function HomePage() {
           <div className="text-center">
 
             <p className="text-sm font-black uppercase tracking-widest text-blue-600">
-              Frequently asked questions
+              FAQ
             </p>
 
             <h2 className="mt-3 text-3xl font-black sm:text-4xl">
@@ -574,11 +617,10 @@ export default function HomePage() {
           </div>
 
         </div>
+
       </section>
 
-      {/* =====================================================
-          FINAL CTA
-      ===================================================== */}
+      {/* FINAL CTA */}
 
       <section className="bg-white py-24">
 
@@ -589,13 +631,13 @@ export default function HomePage() {
           </div>
 
           <h2 className="mt-7 text-3xl font-black tracking-tight sm:text-5xl">
-            Your next automotive opportunity starts here.
+            Ready to make your next move?
           </h2>
 
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-            Whether you're selling a vehicle or looking for your next
-            acquisition opportunity, NorthSky Auto is building a simpler way
-            to connect.
+            Sell a vehicle or join the dealer network. NorthSky Auto is
+            building the infrastructure that connects both sides of the
+            automotive marketplace.
           </p>
 
           <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
@@ -620,11 +662,9 @@ export default function HomePage() {
 
       </section>
 
-      {/* =====================================================
-          FOOTER
-      ===================================================== */}
+      {/* FOOTER */}
 
-      <footer className="border-t border-slate-200 bg-slate-950 py-10 text-white">
+      <footer className="border-t border-white/10 bg-slate-950 py-10 text-white">
 
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
 
@@ -637,12 +677,13 @@ export default function HomePage() {
               </p>
 
               <p className="mt-1 text-sm text-slate-500">
-                Connecting vehicles with opportunities across Canada.
+                Vehicle marketplace and dealer acquisition platform for
+                Canada.
               </p>
 
             </div>
 
-            <div className="flex flex-wrap gap-6 text-sm text-slate-400">
+            <nav className="flex flex-wrap gap-6 text-sm text-slate-400">
 
               <Link
                 href="/inventory"
@@ -673,6 +714,13 @@ export default function HomePage() {
               </Link>
 
               <Link
+                href="/contact"
+                className="transition hover:text-white"
+              >
+                Contact
+              </Link>
+
+              <Link
                 href="/privacy"
                 className="transition hover:text-white"
               >
@@ -686,7 +734,7 @@ export default function HomePage() {
                 Terms
               </Link>
 
-            </div>
+            </nav>
 
           </div>
 
