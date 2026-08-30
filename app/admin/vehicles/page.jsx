@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -6,6 +7,28 @@ export const metadata = {
   description:
     "Review and manage NorthSky Auto vehicle submissions.",
 };
+/*
+|--------------------------------------------------------------------------
+| Admin Check
+|--------------------------------------------------------------------------
+*/
+function isAdmin(user) {
+  if (!user?.email) {
+    return false;
+  }
+  const adminEmails = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+  return adminEmails.includes(
+    user.email.toLowerCase()
+  );
+}
+/*
+|--------------------------------------------------------------------------
+| Formatting
+|--------------------------------------------------------------------------
+*/
 function formatCurrency(value) {
   if (
     value === null ||
@@ -28,27 +51,34 @@ function formatDate(value) {
   if (!value) {
     return "Not provided";
   }
-  try {
-    return new Intl.DateTimeFormat("en-CA", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    }).format(new Date(value));
-  } catch {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
     return "Not provided";
   }
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
 }
 function vehicleTitle(vehicle) {
-  return [
-    vehicle.year,
-    vehicle.make,
-    vehicle.model,
-  ]
-    .filter(Boolean)
-    .join(" ") || "Vehicle Submission";
+  return (
+    [
+      vehicle.year,
+      vehicle.make,
+      vehicle.model,
+    ]
+      .filter(Boolean)
+      .join(" ") || "Vehicle Submission"
+  );
 }
+/*
+|--------------------------------------------------------------------------
+| Status Badge
+|--------------------------------------------------------------------------
+*/
 function StatusBadge({ status }) {
   const value = String(
     status || "pending"
@@ -73,8 +103,12 @@ function StatusBadge({ status }) {
     </span>
   );
 }
-async function getVehicles() {
-  const supabase = await createClient();
+/*
+|--------------------------------------------------------------------------
+| Database
+|--------------------------------------------------------------------------
+*/
+async function getVehicles(supabase) {
   const {
     data,
     error,
@@ -99,12 +133,17 @@ async function getVehicles() {
     error: null,
   };
 }
+/*
+|--------------------------------------------------------------------------
+| Vehicle Row
+|--------------------------------------------------------------------------
+*/
 function VehicleRow({ vehicle }) {
   const title = vehicleTitle(vehicle);
   return (
     <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-        {/* VEHICLE */}
+        {/* VEHICLE INFORMATION */}
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-xl font-black text-slate-950">
@@ -162,11 +201,13 @@ function VehicleRow({ vehicle }) {
               <p className="text-xs font-bold text-slate-400">
                 Mileage
               </p>
-              <p className="mt-1 text-sm font-black">
+              <p className="mt-1 text-sm font-black text-slate-800">
                 {vehicle.mileage
                   ? `${Number(
                       vehicle.mileage
-                    ).toLocaleString("en-CA")} km`
+                    ).toLocaleString(
+                      "en-CA"
+                    )} km`
                   : "Not provided"}
               </p>
             </div>
@@ -174,7 +215,7 @@ function VehicleRow({ vehicle }) {
               <p className="text-xs font-bold text-slate-400">
                 Condition
               </p>
-              <p className="mt-1 text-sm font-black">
+              <p className="mt-1 text-sm font-black text-slate-800">
                 {vehicle.condition ||
                   "Not provided"}
               </p>
@@ -183,7 +224,7 @@ function VehicleRow({ vehicle }) {
               <p className="text-xs font-bold text-slate-400">
                 Postal Code
               </p>
-              <p className="mt-1 text-sm font-black">
+              <p className="mt-1 text-sm font-black text-slate-800">
                 {vehicle.postal_code ||
                   "Not provided"}
               </p>
@@ -263,11 +304,47 @@ function VehicleRow({ vehicle }) {
     </div>
   );
 }
+/*
+|--------------------------------------------------------------------------
+| Admin Vehicle Page
+|--------------------------------------------------------------------------
+*/
 export default async function AdminVehiclesPage() {
+  const supabase = await createClient();
+  /*
+  |--------------------------------------------------------------------------
+  | Authentication
+  |--------------------------------------------------------------------------
+  */
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) {
+    redirect("/dealer/login");
+  }
+  /*
+  |--------------------------------------------------------------------------
+  | Admin Authorization
+  |--------------------------------------------------------------------------
+  */
+  if (!isAdmin(user)) {
+    redirect("/");
+  }
+  /*
+  |--------------------------------------------------------------------------
+  | Load Vehicles
+  |--------------------------------------------------------------------------
+  */
   const {
     vehicles,
     error,
-  } = await getVehicles();
+  } = await getVehicles(supabase);
+  /*
+  |--------------------------------------------------------------------------
+  | Counts
+  |--------------------------------------------------------------------------
+  */
   const pendingCount = vehicles.filter(
     (vehicle) =>
       vehicle.status === "pending"
@@ -280,6 +357,11 @@ export default async function AdminVehiclesPage() {
     (vehicle) =>
       vehicle.status === "rejected"
   ).length;
+  /*
+  |--------------------------------------------------------------------------
+  | Page
+  |--------------------------------------------------------------------------
+  */
   return (
     <main className="min-h-screen bg-slate-100">
       {/* HEADER */}
@@ -300,9 +382,9 @@ export default async function AdminVehiclesPage() {
                 Vehicle Leads
               </h1>
               <p className="mt-4 max-w-2xl text-slate-300">
-                Review seller submissions and control which
-                vehicles become visible to participating
-                dealerships.
+                Review seller submissions and control
+                which vehicles become visible to
+                participating dealerships.
               </p>
             </div>
             <Link
@@ -352,8 +434,8 @@ export default async function AdminVehiclesPage() {
             </p>
             <p className="mt-2 text-sm text-red-700">
               Unable to load vehicle submissions.
-              Check the Supabase vehicles table and
-              Row Level Security policies.
+              Check the Supabase vehicles table
+              and Row Level Security policies.
             </p>
           </div>
         )}
@@ -366,9 +448,9 @@ export default async function AdminVehiclesPage() {
               No vehicle submissions
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-500">
-              Seller vehicle submissions will appear here
-              once they are stored in the Supabase vehicles
-              table.
+              Seller vehicle submissions will appear
+              here once they are stored in the
+              Supabase vehicles table.
             </p>
             <Link
               href="/sell"
