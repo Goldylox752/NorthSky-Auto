@@ -7,89 +7,38 @@ export const dynamic = “force-dynamic”;
 export const metadata = {
 title: “Dealer Dashboard | NorthSky Auto”,
 description:
-“Manage your NorthSky Auto dealer account and vehicle acquisition opportunities.”,
+“NorthSky Auto dealer dashboard for vehicle acquisition opportunities.”,
 };
 
-function formatPlan(plan) {
+function getPlanName(plan) {
 if (!plan) return “No Active Plan”;
 
 const value = String(plan).toLowerCase();
 
 if (value === “starter”) return “Dealer Starter”;
-if (value === “pro” || value === “professional”) {
-return “Dealer Professional”;
-}
+if (value === “pro”) return “Dealer Professional”;
+if (value === “professional”) return “Dealer Professional”;
 
 return String(plan)
 .replace(/[-_]/g, “ “)
 .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function formatStatus(status) {
-if (!status) return “Inactive”;
+function getStatus(status) {
+if (!status) return “Pending”;
 
 return String(status)
 .replace(/[-_]/g, “ “)
 .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function isActiveStatus(status) {
+function isActive(status) {
 const value = String(status || “”).toLowerCase();
 
 return value === “active” || value === “trialing”;
 }
 
-function InfoRow({ label, value }) {
-return (
-{label}
-  <p className="mt-1 break-words text-sm font-bold text-slate-800">
-    {value || "Not provided"}
-  </p>
-</div>
-
-);
-}
-
-function StatCard({ icon, label, value, description }) {
-return (
-{label}
-      <p className="mt-3 text-3xl font-black text-slate-950">
-        {value}
-      </p>
-      <p className="mt-2 text-sm text-slate-500">
-        {description}
-      </p>
-    </div>
-    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl">
-      {icon}
-    </div>
-  </div>
-</div>
-
-);
-}
-
-function ActionCard({ href, icon, title, text }) {
-return (
-{icon}
-
-  <h3 className="mt-5 text-lg font-black text-slate-950">
-    {title}
-  </h3>
-  <p className="mt-2 text-sm leading-6 text-slate-500">
-    {text}
-  </p>
-  <div className="mt-5 text-sm font-black text-blue-600">
-    Open →
-  </div>
-</Link>
-
-);
-}
-
-async function getDealer(supabase, user) {
-if (!user?.id) return null;
-
+async function loadDealer(supabase, user) {
 const { data, error } = await supabase
 .from(“dealers”)
 .select(”*”)
@@ -100,29 +49,28 @@ if (!error && data) {
 return data;
 }
 
-/*
+return {
+id: user.id,
+dealership_name:
+user.user_metadata?.dealership_name ||
+“Dealer Account”,
+contact_name:
+user.user_metadata?.contact_name ||
+“”,
+email: user.email || “”,
+phone:
+user.user_metadata?.phone ||
+“”,
+plan:
+user.user_metadata?.plan ||
+null,
+subscription_status:
+user.user_metadata?.subscription_status ||
+null,
+};
+}
 
-* If a dealer record has not been created yet,
-* use the authenticated user’s metadata.
-    */
-    return {
-    id: user.id,
-    user_id: user.id,
-    dealership_name:
-    user.user_metadata?.dealership_name || “Dealer Account”,
-    contact_name:
-    user.user_metadata?.contact_name || “”,
-    email: user.email || “”,
-    phone:
-    user.user_metadata?.phone || “”,
-    plan:
-    user.user_metadata?.plan || null,
-    subscription_status:
-    user.user_metadata?.subscription_status || null,
-    };
-    }
-
-async function getAvailableVehicleCount(supabase) {
+async function countAvailableVehicles(supabase) {
 try {
 const { count, error } = await supabase
 .from(“vehicles”)
@@ -134,12 +82,12 @@ head: true,
 
 if (error) {
   console.error(
-    "Available vehicle count error:",
+    "Vehicle count error:",
     error
   );
   return 0;
 }
-return typeof count === "number" ? count : 0;
+return count || 0;
 
 } catch (error) {
 console.error(
@@ -152,7 +100,7 @@ return 0;
 }
 }
 
-async function getSavedVehicleCount(supabase, dealerId) {
+async function countSavedVehicles(supabase, dealerId) {
 if (!dealerId) return 0;
 
 try {
@@ -171,7 +119,7 @@ if (error) {
   );
   return 0;
 }
-return typeof count === "number" ? count : 0;
+return count || 0;
 
 } catch (error) {
 console.error(
@@ -184,27 +132,79 @@ return 0;
 }
 }
 
+function StatCard({
+icon,
+title,
+value,
+description,
+}) {
+return (
+{title}
+      <p className="mt-3 text-3xl font-black text-slate-950">
+        {value}
+      </p>
+      <p className="mt-2 text-xs text-slate-500">
+        {description}
+      </p>
+    </div>
+    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-xl">
+      {icon}
+    </div>
+  </div>
+</div>
+
+);
+}
+
+function InfoRow({ label, value }) {
+return (
+{label}
+  <p className="mt-1 break-words text-sm font-bold text-slate-800">
+    {value || "Not provided"}
+  </p>
+</div>
+
+);
+}
+
+function ActionCard({
+href,
+icon,
+title,
+description,
+}) {
+return (
+{icon}
+  <h3 className="mt-4 text-lg font-black text-slate-950">
+    {title}
+  </h3>
+  <p className="mt-2 text-sm leading-6 text-slate-500">
+    {description}
+  </p>
+  <p className="mt-4 text-sm font-black text-blue-600">
+    Open →
+  </p>
+</Link>
+
+);
+}
+
 export default async function DealerDashboardPage() {
 const supabase = await createClient();
 
-/*
-
-* Verify the authenticated user.
-    */
-    const {
-    data: { user },
-    error: authError,
-    } = await supabase.auth.getUser();
+const {
+data: { user },
+error: authError,
+} = await supabase.auth.getUser();
 
 if (authError || !user) {
 redirect(”/dealer/login”);
 }
 
-/*
-
-* Load dealer information.
-    */
-    const dealer = await getDealer(supabase, user);
+const dealer = await loadDealer(
+supabase,
+user
+);
 
 if (!dealer) {
 redirect(”/dealer/register”);
@@ -213,12 +213,10 @@ redirect(”/dealer/register”);
 const dealershipName =
 dealer.dealership_name ||
 dealer.company_name ||
-user.user_metadata?.dealership_name ||
 “Dealer Account”;
 
 const contactName =
 dealer.contact_name ||
-user.user_metadata?.contact_name ||
 “”;
 
 const email =
@@ -228,33 +226,29 @@ user.email ||
 
 const phone =
 dealer.phone ||
-user.user_metadata?.phone ||
 “”;
 
 const plan =
 dealer.plan ||
 dealer.subscription_plan ||
 dealer.plan_name ||
-user.user_metadata?.plan ||
 null;
 
 const subscriptionStatus =
 dealer.subscription_status ||
-user.user_metadata?.subscription_status ||
 null;
 
-const activeSubscription =
-isActiveStatus(subscriptionStatus);
+const active = isActive(
+subscriptionStatus
+);
 
-/*
+const availableVehicles =
+await countAvailableVehicles(
+supabase
+);
 
-* Load dashboard statistics.
-    */
-    const vehicleCount =
-    await getAvailableVehicleCount(supabase);
-
-const savedCount =
-await getSavedVehicleCount(
+const savedVehicles =
+await countSavedVehicles(
 supabase,
 dealer.id
 );
@@ -262,7 +256,7 @@ dealer.id
 return (
   {/* HEADER */}
   <header className="border-b border-slate-200 bg-white">
-    <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4">
+    <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
       <Link
         href="/"
         className="flex items-center gap-3"
@@ -271,12 +265,12 @@ return (
           N
         </div>
         <div>
-          <div className="font-black text-slate-950">
+          <p className="font-black text-slate-950">
             NorthSky Auto
-          </div>
-          <div className="text-xs font-semibold text-slate-500">
+          </p>
+          <p className="text-xs font-semibold text-slate-500">
             Dealer Portal
-          </div>
+          </p>
         </div>
       </Link>
       <nav className="hidden items-center gap-6 md:flex">
@@ -311,7 +305,7 @@ return (
       >
         <button
           type="submit"
-          className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+          className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-100"
         >
           Sign Out
         </button>
@@ -319,22 +313,21 @@ return (
     </div>
   </header>
   {/* MAIN */}
-  <section className="px-6 py-10 md:py-14">
+  <section className="px-6 py-10">
     <div className="mx-auto max-w-7xl">
-      {/* HERO */}
-      <div className="overflow-hidden rounded-3xl bg-slate-950 p-8 text-white md:p-10">
-        <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+      {/* WELCOME */}
+      <div className="rounded-3xl bg-slate-950 p-8 text-white md:p-10">
+        <div className="flex flex-col gap-7 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.2em] text-blue-400">
+            <p className="text-sm font-black uppercase tracking-widest text-blue-400">
               Dealer Dashboard
             </p>
-            <h1 className="mt-3 text-3xl font-black tracking-tight md:text-4xl">
+            <h1 className="mt-3 text-3xl font-black md:text-4xl">
               Welcome, {dealershipName}
             </h1>
             <p className="mt-4 max-w-2xl leading-7 text-slate-300">
-              Manage your dealership account and discover
-              vehicle acquisition opportunities through
-              NorthSky Auto.
+              Manage your dealership and discover vehicle
+              acquisition opportunities through NorthSky Auto.
             </p>
             {contactName && (
               <p className="mt-4 text-sm font-semibold text-blue-300">
@@ -344,7 +337,7 @@ return (
           </div>
           <Link
             href="/dealer/vehicles"
-            className="inline-flex shrink-0 rounded-xl bg-blue-600 px-6 py-4 font-black text-white transition hover:bg-blue-500"
+            className="rounded-xl bg-blue-600 px-6 py-4 text-center font-black text-white hover:bg-blue-500"
           >
             Browse Vehicles →
           </Link>
@@ -354,65 +347,65 @@ return (
       <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon="🚗"
-          label="Available Vehicles"
-          value={vehicleCount}
+          title="Available Vehicles"
+          value={availableVehicles}
           description="Current opportunities"
         />
         <StatCard
           icon="⭐"
-          label="Saved Vehicles"
-          value={savedCount}
-          description="Your saved opportunities"
+          title="Saved Vehicles"
+          value={savedVehicles}
+          description="Your saved vehicles"
         />
         <StatCard
           icon="💳"
-          label="Dealer Plan"
-          value={formatPlan(plan)}
+          title="Dealer Plan"
+          value={getPlanName(plan)}
           description="Current subscription"
         />
         <StatCard
           icon="✓"
-          label="Account Status"
+          title="Account Status"
           value={
-            activeSubscription
+            active
               ? "Active"
               : "Pending"
           }
           description="Dealer account"
         />
       </div>
-      {/* MAIN CONTENT */}
+      {/* CONTENT */}
       <div className="mt-8 grid gap-8 lg:grid-cols-3">
-        {/* VEHICLES */}
+        {/* VEHICLE MARKETPLACE */}
         <div className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
           <p className="text-sm font-black uppercase tracking-widest text-blue-600">
-            Acquisition Opportunities
+            Vehicle Marketplace
           </p>
           <h2 className="mt-2 text-2xl font-black">
             Find Your Next Vehicle
           </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-            Browse vehicle submissions that have been
-            approved for dealer opportunities.
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
+            Browse vehicles submitted by sellers and
+            approved for participating dealerships.
           </p>
           <div className="mt-8 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
             <div className="text-5xl">
               🚘
             </div>
             <h3 className="mt-5 text-xl font-black">
-              {vehicleCount > 0
-                ? `${vehicleCount} Vehicle Opportunities Available`
-                : "Vehicle Marketplace"}
+              {availableVehicles > 0
+                ? `${availableVehicles} Opportunities Available`
+                : "No Vehicles Available Yet"}
             </h3>
             <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500">
-              Approved seller submissions will appear
+              Approved vehicle submissions will appear
               in the dealer marketplace.
             </p>
             <Link
               href="/dealer/vehicles"
-              className="mt-6 inline-flex rounded-xl bg-blue-600 px-6 py-3 text-sm font-black text-white transition hover:bg-blue-700"
+              className="mt-6 inline-flex rounded-xl bg-blue-600 px-6 py-3 text-sm font-black text-white hover:bg-blue-700"
             >
-              Explore Vehicles →
+              View Vehicles →
             </Link>
           </div>
         </div>
@@ -444,7 +437,7 @@ return (
           </div>
           <Link
             href="/dealer/profile"
-            className="mt-7 block rounded-xl border border-slate-300 px-5 py-3 text-center text-sm font-black text-slate-700 transition hover:bg-slate-50"
+            className="mt-7 block rounded-xl border border-slate-300 px-5 py-3 text-center text-sm font-black text-slate-700 hover:bg-slate-50"
           >
             Manage Profile
           </Link>
@@ -455,35 +448,35 @@ return (
         <p className="text-sm font-black uppercase tracking-widest text-blue-600">
           Subscription
         </p>
-        <div className="mt-3 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <div className="mt-3 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="text-2xl font-black">
-              {formatPlan(plan)}
+              {getPlanName(plan)}
             </h2>
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <span
                 className={`rounded-full px-3 py-1 text-xs font-black ${
-                  activeSubscription
+                  active
                     ? "bg-green-100 text-green-700"
                     : "bg-yellow-100 text-yellow-700"
                 }`}
               >
-                {formatStatus(
+                {getStatus(
                   subscriptionStatus
                 )}
               </span>
               <span className="text-sm text-slate-500">
-                {activeSubscription
+                {active
                   ? "Your dealer subscription is active."
-                  : "Choose a plan to unlock dealer features."}
+                  : "Choose a dealer plan to unlock platform features."}
               </span>
             </div>
           </div>
           <Link
             href="/pricing"
-            className="rounded-xl bg-blue-600 px-6 py-3 text-center text-sm font-black text-white transition hover:bg-blue-700"
+            className="rounded-xl bg-blue-600 px-6 py-3 text-center text-sm font-black text-white hover:bg-blue-700"
           >
-            {activeSubscription
+            {active
               ? "Manage Plan"
               : "View Dealer Plans"}
           </Link>
@@ -502,23 +495,23 @@ return (
             href="/dealer/vehicles"
             icon="🚗"
             title="Browse Vehicles"
-            text="Review current vehicle acquisition opportunities."
+            description="Review current vehicle acquisition opportunities."
           />
           <ActionCard
             href="/dealer/profile"
             icon="🏢"
             title="Dealer Profile"
-            text="Update your dealership and contact information."
+            description="Update your dealership and contact information."
           />
           <ActionCard
             href="/pricing"
             icon="💳"
             title="Plans & Billing"
-            text="Review dealer plans and subscription options."
+            description="Review dealer plans and subscription options."
           />
         </div>
       </div>
-      {/* NOTICE */}
+      {/* FOOTER NOTICE */}
       <div className="mt-8 rounded-2xl border border-blue-100 bg-blue-50 p-6">
         <h3 className="font-black text-slate-950">
           NorthSky Auto Dealer Portal
