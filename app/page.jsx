@@ -1,54 +1,30 @@
 import Link from "next/link";
 
-export const metadata = {
-title: "NorthSky Auto",
-description:
-"NorthSky Auto connects vehicle sellers with automotive dealers across Canada.",
-};
-
 export default function HomePage() {
-return ( <main className="min-h-screen bg-white text-gray-900"> <header className="border-b"> <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5"> <Link href="/" className="text-xl font-bold">
-NorthSky Auto </Link>
+return ( <main className="min-h-screen flex items-center justify-center bg-white px-6"> <div className="text-center"> <h1 className="text-4xl font-bold text-gray-900">
+NorthSky Auto </h1>
 
 ```
-      <Link
-        href="/dealer/login"
-        className="text-sm font-medium hover:underline"
-      >
-        Dealer Login
-      </Link>
-    </div>
-  </header>
-
-  <section className="mx-auto max-w-4xl px-6 py-24 text-center">
-    <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-      NorthSky Auto
-    </h1>
-
-    <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600">
-      Connect with automotive dealers and move your vehicle forward.
+    <p className="mt-4 text-gray-600">
+      Buy. Sell. Connect.
     </p>
 
-    <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
+    <div className="mt-8 flex gap-4 justify-center">
       <Link
         href="/sell"
-        className="rounded-lg bg-black px-6 py-3 font-semibold text-white hover:bg-gray-800"
+        className="rounded-lg bg-black px-6 py-3 text-white"
       >
         Sell Your Vehicle
       </Link>
 
       <Link
         href="/dealer"
-        className="rounded-lg border border-gray-300 px-6 py-3 font-semibold hover:bg-gray-50"
+        className="rounded-lg border border-gray-300 px-6 py-3 text-gray-900"
       >
         Dealer Portal
       </Link>
     </div>
-  </section>
-
-  <footer className="border-t px-6 py-8 text-center text-sm text-gray-500">
-    © {new Date().getFullYear()} NorthSky Auto
-  </footer>
+  </div>
 </main>
 ```
 
