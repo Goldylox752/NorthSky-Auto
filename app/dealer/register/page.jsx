@@ -33,6 +33,36 @@ export default function DealerRegisterPage() {
     }));
   }
 
+  async function sendWelcomeEmail({
+    email,
+    dealershipName,
+    contactName,
+  }) {
+    try {
+      const response = await fetch("/api/dealer/welcome-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          dealershipName,
+          contactName,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("Dealer welcome email request failed.");
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Dealer welcome email error:", error);
+      return false;
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -48,9 +78,9 @@ export default function DealerRegisterPage() {
       const email = form.email.trim().toLowerCase();
       const phone = form.phone.trim();
 
-      // -----------------------------
+      // --------------------------------
       // VALIDATION
-      // -----------------------------
+      // --------------------------------
 
       if (
         !dealershipName ||
@@ -88,6 +118,12 @@ export default function DealerRegisterPage() {
         );
       }
 
+      if (form.password.length > 72) {
+        throw new Error(
+          "Password must be 72 characters or less."
+        );
+      }
+
       if (form.password !== form.confirm_password) {
         throw new Error("Passwords do not match.");
       }
@@ -96,13 +132,17 @@ export default function DealerRegisterPage() {
         throw new Error("Phone number is too long.");
       }
 
-      // -----------------------------
-      // SUPABASE REGISTRATION
-      // -----------------------------
+      // --------------------------------
+      // SUPABASE CALLBACK
+      // --------------------------------
 
       const callbackUrl =
         `${window.location.origin}` +
         "/auth/callback?next=/dealer/dashboard";
+
+      // --------------------------------
+      // CREATE SUPABASE ACCOUNT
+      // --------------------------------
 
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -120,9 +160,9 @@ export default function DealerRegisterPage() {
         },
       });
 
-      // -----------------------------
+      // --------------------------------
       // SUPABASE ERROR
-      // -----------------------------
+      // --------------------------------
 
       if (error) {
         console.error(
@@ -148,11 +188,21 @@ export default function DealerRegisterPage() {
         );
       }
 
-      // -----------------------------
-      // EMAIL CONFIRMATION
-      // -----------------------------
+      // --------------------------------
+      // NO USER RETURNED
+      // --------------------------------
 
-      if (!data?.session) {
+      if (!data?.user) {
+        throw new Error(
+          "Your account could not be created. Please try again."
+        );
+      }
+
+      // --------------------------------
+      // EMAIL CONFIRMATION REQUIRED
+      // --------------------------------
+
+      if (!data.session) {
         setSuccess(true);
 
         setMessage(
@@ -164,18 +214,26 @@ export default function DealerRegisterPage() {
         return;
       }
 
-      // -----------------------------
-      // LOGGED IN IMMEDIATELY
-      // -----------------------------
+      // --------------------------------
+      // ACTIVE SESSION
+      // --------------------------------
+
+      await sendWelcomeEmail({
+        email,
+        dealershipName,
+        contactName,
+      });
 
       setSuccess(true);
 
       setMessage(
-        "Dealer account created successfully. Redirecting..."
+        "Dealer account created successfully. Redirecting to your dashboard..."
       );
 
-      router.push("/dealer/dashboard");
-      router.refresh();
+      setTimeout(() => {
+        router.push("/dealer/dashboard");
+        router.refresh();
+      }, 1000);
     } catch (error) {
       console.error(
         "Dealer registration error:",
@@ -218,8 +276,8 @@ export default function DealerRegisterPage() {
             </h1>
 
             <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-              Join NorthSky Auto and create an account for
-              dealership vehicle acquisition opportunities.
+              Join NorthSky Auto and access dealership vehicle
+              acquisition opportunities across Canada.
             </p>
 
           </div>
@@ -249,8 +307,8 @@ export default function DealerRegisterPage() {
               </h2>
 
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Create your account using your dealership and
-                primary contact information.
+                Create your NorthSky Auto dealer account using
+                your dealership and primary contact information.
               </p>
 
             </div>
@@ -334,6 +392,7 @@ export default function DealerRegisterPage() {
                 placeholder="At least 8 characters"
                 autoComplete="new-password"
                 minLength={8}
+                maxLength={72}
                 required
                 disabled={loading}
               />
@@ -347,6 +406,7 @@ export default function DealerRegisterPage() {
                 placeholder="Re-enter your password"
                 autoComplete="new-password"
                 minLength={8}
+                maxLength={72}
                 required
                 disabled={loading}
               />
@@ -424,13 +484,13 @@ export default function DealerRegisterPage() {
               <Step
                 number="02"
                 title="Confirm Email"
-                text="Verify your email address."
+                text="Verify your business email."
               />
 
               <Step
                 number="03"
-                title="Source Vehicles"
-                text="Review acquisition opportunities."
+                title="Access Portal"
+                text="Review vehicle opportunities."
               />
 
             </div>
@@ -563,34 +623,6 @@ function Step({
       </h4>
 
       <p className="mt-1 text-xs leading-5 text-slate-500">
-        {text}
-      </p>
-
-    </div>
-  );
-}
-
-/* --------------------------------
-   BENEFIT
--------------------------------- */
-
-function Benefit({
-  icon,
-  title,
-  text,
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-
-      <div className="text-xs font-black text-blue-400">
-        {icon}
-      </div>
-
-      <div className="mt-2 text-sm font-black">
-        {title}
-      </div>
-
-      <p className="mt-1 text-xs leading-5 text-slate-400">
         {text}
       </p>
 
