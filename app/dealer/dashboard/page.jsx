@@ -1,140 +1,124 @@
+```jsx
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Dealer Dashboard | NorthSky Auto",
-  description: "NorthSky Auto dealer dashboard.",
+  description:
+    "NorthSky Auto dealer dashboard for vehicle opportunities and dealer activity.",
 };
-export default async function DealerDashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    redirect("/dealer/login");
-  }
-  const dealershipName =
-    user.user_metadata?.dealership_name ||
-    "Dealer Account";
-  const email = user.email || "";
+
+export default function DealerDashboardPage() {
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-900">
-      {/* Header */}
-      <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+    <main className="min-h-screen bg-slate-950 text-white">
+      <header className="border-b border-slate-800">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <Link
             href="/"
-            className="text-xl font-black text-slate-950"
+            className="text-2xl font-bold tracking-tight"
           >
             NorthSky Auto
           </Link>
-          <form
-            action="/api/auth/signout"
-            method="POST"
+
+          <Link
+            href="/"
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800"
           >
-            <button
-              type="submit"
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold hover:bg-slate-100"
-            >
-              Sign Out
-            </button>
-          </form>
+            Home
+          </Link>
         </div>
       </header>
-      {/* Dashboard */}
-      <section className="px-6 py-12">
-        <div className="mx-auto max-w-6xl">
-          {/* Welcome */}
-          <div className="rounded-2xl bg-slate-950 p-8 text-white">
-            <p className="text-sm font-bold uppercase tracking-wider text-blue-400">
-              Dealer Dashboard
-            </p>
-            <h1 className="mt-3 text-3xl font-black">
-              Welcome, {dealershipName}
-            </h1>
-            <p className="mt-3 text-slate-300">
-              Manage your NorthSky Auto dealer account.
-            </p>
-          </div>
-          {/* Navigation */}
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
-            <Link
-              href="/dealer/vehicles"
-              className="rounded-2xl bg-white p-7 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:ring-blue-400"
-            >
-              <div className="text-3xl">🚗</div>
-              <h2 className="mt-4 text-xl font-black">
-                Vehicles
-              </h2>
-              <p className="mt-2 text-sm text-slate-500">
-                Browse available vehicle opportunities.
-              </p>
-              <p className="mt-5 font-bold text-blue-600">
-                View Vehicles →
-              </p>
-            </Link>
-            <Link
-              href="/dealer/profile"
-              className="rounded-2xl bg-white p-7 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:ring-blue-400"
-            >
-              <div className="text-3xl">🏢</div>
-              <h2 className="mt-4 text-xl font-black">
-                Dealer Profile
-              </h2>
-              <p className="mt-2 text-sm text-slate-500">
-                Manage your dealership information.
-              </p>
-              <p className="mt-5 font-bold text-blue-600">
-                Open Profile →
-              </p>
-            </Link>
-            <Link
-              href="/pricing"
-              className="rounded-2xl bg-white p-7 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:ring-blue-400"
-            >
-              <div className="text-3xl">💳</div>
-              <h2 className="mt-4 text-xl font-black">
-                Plans & Billing
-              </h2>
-              <p className="mt-2 text-sm text-slate-500">
-                View dealer plans and subscription options.
-              </p>
-              <p className="mt-5 font-bold text-blue-600">
-                View Plans →
-              </p>
-            </Link>
-          </div>
-          {/* Account */}
-          <div className="mt-8 rounded-2xl bg-white p-7 shadow-sm ring-1 ring-slate-200">
-            <h2 className="text-xl font-black">
-              Account
+
+      <section className="mx-auto max-w-7xl px-6 py-16">
+        <div className="max-w-3xl">
+          <p className="text-sm font-semibold uppercase tracking-widest text-blue-400">
+            Dealer Portal
+          </p>
+
+          <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">
+            Dealer Dashboard
+          </h1>
+
+          <p className="mt-5 text-lg leading-8 text-slate-400">
+            Manage your dealership activity and explore vehicle acquisition
+            opportunities through NorthSky Auto.
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <Link
+            href="/dealer/vehicles"
+            className="rounded-2xl border border-slate-800 bg-slate-900 p-7 transition hover:border-blue-500 hover:bg-slate-800"
+          >
+            <div className="text-3xl">🚗</div>
+
+            <h2 className="mt-5 text-xl font-semibold">
+              Vehicle Opportunities
             </h2>
-            <div className="mt-5 space-y-4">
-              <div>
-                <p className="text-xs font-bold uppercase text-slate-400">
-                  Dealership
-                </p>
-                <p className="mt-1 font-bold">
-                  {dealershipName}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase text-slate-400">
-                  Email
-                </p>
-                <p className="mt-1 font-bold">
-                  {email}
-                </p>
-              </div>
-            </div>
+
+            <p className="mt-3 text-sm leading-6 text-slate-400">
+              Browse vehicles currently available through the NorthSky Auto
+              dealer network.
+            </p>
+
+            <span className="mt-6 inline-block text-sm font-semibold text-blue-400">
+              View Vehicles →
+            </span>
+          </Link>
+
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-7">
+            <div className="text-3xl">📋</div>
+
+            <h2 className="mt-5 text-xl font-semibold">
+              Dealer Activity
+            </h2>
+
+            <p className="mt-3 text-sm leading-6 text-slate-400">
+              Track your vehicle interests, acquisition activity, and dealer
+              opportunities.
+            </p>
+
+            <span className="mt-6 inline-block text-sm font-semibold text-slate-500">
+              Coming Soon
+            </span>
           </div>
-          {/* Footer */}
-          <div className="mt-8 text-center text-sm text-slate-500">
-            NorthSky Auto — Dealer Portal
+
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-7">
+            <div className="text-3xl">👤</div>
+
+            <h2 className="mt-5 text-xl font-semibold">
+              Dealer Account
+            </h2>
+
+            <p className="mt-3 text-sm leading-6 text-slate-400">
+              Manage your dealership profile, account information, and portal
+              settings.
+            </p>
+
+            <span className="mt-6 inline-block text-sm font-semibold text-slate-500">
+              Coming Soon
+            </span>
           </div>
+        </div>
+
+        <div className="mt-12 rounded-2xl border border-blue-900/50 bg-blue-950/30 p-8">
+          <h2 className="text-2xl font-bold">
+            NorthSky Auto Dealer Network
+          </h2>
+
+          <p className="mt-3 max-w-2xl text-slate-400">
+            Access vehicle opportunities and connect with the NorthSky Auto
+            marketplace built for Canadian automotive dealers.
+          </p>
+
+          <Link
+            href="/dealer/vehicles"
+            className="mt-6 inline-flex rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-500"
+          >
+            Browse Vehicles
+          </Link>
         </div>
       </section>
     </main>
   );
 }
+```
