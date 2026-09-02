@@ -11,28 +11,22 @@ return ( <main className="min-h-screen bg-white text-gray-900"> <header classNam
 NorthSky Auto </Link>
 
 ```
-      <nav className="flex items-center gap-4 text-sm">
-        <Link href="/sell" className="hover:underline">
-          Sell Your Vehicle
-        </Link>
-
-        <Link href="/dealer/login" className="hover:underline">
-          Dealer Login
-        </Link>
-      </nav>
+      <Link
+        href="/dealer/login"
+        className="text-sm font-medium hover:underline"
+      >
+        Dealer Login
+      </Link>
     </div>
   </header>
 
   <section className="mx-auto max-w-4xl px-6 py-24 text-center">
     <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
-      Your Vehicle.
-      <br />
-      The Right Buyer.
+      NorthSky Auto
     </h1>
 
     <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600">
-      NorthSky Auto connects vehicle sellers with automotive dealers
-      looking for quality vehicles across Canada.
+      Connect with automotive dealers and move your vehicle forward.
     </p>
 
     <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
@@ -52,33 +46,8 @@ NorthSky Auto </Link>
     </div>
   </section>
 
-  <section className="border-t bg-gray-50">
-    <div className="mx-auto grid max-w-5xl gap-8 px-6 py-16 text-center md:grid-cols-3">
-      <div>
-        <h2 className="font-semibold">Sell</h2>
-        <p className="mt-2 text-sm text-gray-600">
-          Submit your vehicle and connect with interested buyers.
-        </p>
-      </div>
-
-      <div>
-        <h2 className="font-semibold">Connect</h2>
-        <p className="mt-2 text-sm text-gray-600">
-          Get your vehicle in front of automotive dealers.
-        </p>
-      </div>
-
-      <div>
-        <h2 className="font-semibold">Move Forward</h2>
-        <p className="mt-2 text-sm text-gray-600">
-          Manage your vehicle opportunity through NorthSky Auto.
-        </p>
-      </div>
-    </div>
-  </section>
-
   <footer className="border-t px-6 py-8 text-center text-sm text-gray-500">
-    © {new Date().getFullYear()} NorthSky Auto. All rights reserved.
+    © {new Date().getFullYear()} NorthSky Auto
   </footer>
 </main>
 ```
