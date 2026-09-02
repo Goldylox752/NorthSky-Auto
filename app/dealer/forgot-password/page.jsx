@@ -1,10 +1,11 @@
+```javascript
 "use client";
 
 import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-export default function ForgotPasswordPage() {
+export default function DealerForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -23,30 +24,28 @@ export default function ForgotPasswordPage() {
       const cleanEmail = email.trim().toLowerCase();
 
       if (!cleanEmail) {
-        throw new Error("Please enter your email address.");
+        throw new Error(
+          "Please enter your email address."
+        );
       }
 
-      if (cleanEmail.length > 254) {
-        throw new Error("Please enter a valid email address.");
-      }
-
-      const validEmail =
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail);
-
-      if (!validEmail) {
-        throw new Error("Please enter a valid email address.");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        throw new Error(
+          "Please enter a valid email address."
+        );
       }
 
       const supabase = createClient();
 
-      const redirectUrl =
-        `${window.location.origin}/dealer/reset-password`;
+      const redirectTo =
+        `${window.location.origin}` +
+        "/auth/callback?next=/dealer/reset-password";
 
       const { error } =
         await supabase.auth.resetPasswordForEmail(
           cleanEmail,
           {
-            redirectTo: redirectUrl,
+            redirectTo,
           }
         );
 
@@ -58,20 +57,20 @@ export default function ForgotPasswordPage() {
 
         throw new Error(
           error.message ||
-            "Unable to send the password reset email."
+            "Unable to send password reset email."
         );
       }
 
       setSuccess(true);
 
       setMessage(
-        "If an account exists for this email address, a password reset link has been sent. Please check your inbox."
+        "If an account exists for that email address, we've sent a password reset link. Please check your inbox."
       );
 
       setEmail("");
     } catch (error) {
       console.error(
-        "Forgot password error:",
+        "Dealer password reset error:",
         error
       );
 
@@ -79,7 +78,7 @@ export default function ForgotPasswordPage() {
 
       setMessage(
         error?.message ||
-          "Unable to process your request. Please try again."
+          "Unable to send password reset email. Please try again."
       );
     } finally {
       setLoading(false);
@@ -89,20 +88,60 @@ export default function ForgotPasswordPage() {
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
 
-      {/* HERO */}
+      {/* --------------------------------
+          HEADER
+      -------------------------------- */}
 
-      <section className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white">
+      <header className="bg-slate-950 px-6 py-6 text-white">
 
-        <div className="mx-auto max-w-5xl px-6 py-16 text-center md:py-20">
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
 
           <Link
             href="/"
-            className="text-sm font-bold text-blue-300 transition hover:text-white"
+            className="flex items-center gap-3"
           >
-            ← NorthSky Auto
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 font-black">
+              N
+            </div>
+
+            <div>
+              <div className="font-black">
+                NorthSky Auto
+              </div>
+
+              <div className="text-xs text-slate-400">
+                Dealer Network
+              </div>
+            </div>
           </Link>
 
-          <p className="mt-8 text-sm font-black uppercase tracking-[0.2em] text-blue-300">
+          <Link
+            href="/dealer/login"
+            className="rounded-lg border border-white/10 px-4 py-2 text-sm font-bold text-slate-200 transition hover:border-blue-400 hover:text-white"
+          >
+            Dealer Login
+          </Link>
+
+        </div>
+
+      </header>
+
+      {/* --------------------------------
+          HERO
+      -------------------------------- */}
+
+      <section className="bg-slate-950 text-white">
+
+        <div className="mx-auto max-w-4xl px-6 py-14 text-center md:py-18">
+
+          <Link
+            href="/dealer/login"
+            className="text-sm font-bold text-blue-400 transition hover:text-blue-300"
+          >
+            ← Back to Dealer Login
+          </Link>
+
+          <p className="mt-8 text-sm font-black uppercase tracking-widest text-blue-400">
             Dealer Portal
           </p>
 
@@ -110,41 +149,65 @@ export default function ForgotPasswordPage() {
             Reset Your Password
           </h1>
 
-          <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-            Enter the email address associated with your
-            NorthSky Auto dealer account.
+          <p className="mx-auto mt-4 max-w-xl text-lg text-slate-300">
+            Enter your dealer account email and we'll send
+            you a secure password reset link.
           </p>
 
         </div>
 
       </section>
 
-
-      {/* FORM */}
+      {/* --------------------------------
+          RESET FORM
+      -------------------------------- */}
 
       <section className="px-6 py-12 md:py-16">
 
         <div className="mx-auto max-w-md">
 
-          <div className="rounded-3xl bg-white p-6 shadow-xl shadow-slate-200/50 ring-1 ring-slate-200 sm:p-8">
+          <div className="rounded-3xl bg-white p-8 shadow-xl ring-1 ring-slate-200">
 
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-xl font-black text-white">
-              N
+            {/* LOGO */}
+
+            <div className="text-center">
+
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-2xl font-black text-white shadow-lg shadow-blue-200">
+                N
+              </div>
+
+              <h2 className="mt-6 text-2xl font-black">
+                Forgot Your Password?
+              </h2>
+
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                We'll send instructions to the email
+                associated with your dealer account.
+              </p>
+
             </div>
 
-            <h2 className="mt-6 text-2xl font-black">
-              Forgot your password?
-            </h2>
+            {/* MESSAGE */}
 
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              We'll send instructions to reset your
-              dealer account password.
-            </p>
+            {message && (
+              <div
+                role={success ? "status" : "alert"}
+                aria-live="polite"
+                className={`mt-6 rounded-xl p-4 text-sm font-semibold ${
+                  success
+                    ? "bg-green-50 text-green-700 ring-1 ring-green-200"
+                    : "bg-red-50 text-red-700 ring-1 ring-red-200"
+                }`}
+              >
+                {message}
+              </div>
+            )}
 
+            {/* FORM */}
 
             <form
               onSubmit={handleSubmit}
-              className="mt-8 space-y-5"
+              className="mt-7 space-y-5"
             >
 
               <div>
@@ -153,11 +216,12 @@ export default function ForgotPasswordPage() {
                   htmlFor="email"
                   className="mb-2 block text-sm font-bold text-slate-700"
                 >
-                  Email Address
+                  Dealer Account Email
                 </label>
 
                 <input
                   id="email"
+                  name="email"
                   type="email"
                   value={email}
                   onChange={(event) =>
@@ -168,26 +232,10 @@ export default function ForgotPasswordPage() {
                   maxLength={254}
                   required
                   disabled={loading}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-50"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-3.5 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                 />
 
               </div>
-
-
-              {message && (
-                <div
-                  role="alert"
-                  aria-live="polite"
-                  className={`rounded-xl p-4 text-sm font-semibold ${
-                    success
-                      ? "bg-green-50 text-green-700 ring-1 ring-green-200"
-                      : "bg-red-50 text-red-700 ring-1 ring-red-200"
-                  }`}
-                >
-                  {message}
-                </div>
-              )}
-
 
               <button
                 type="submit"
@@ -201,6 +249,7 @@ export default function ForgotPasswordPage() {
 
             </form>
 
+            {/* LOGIN */}
 
             <div className="mt-8 border-t border-slate-200 pt-7 text-center">
 
@@ -210,23 +259,28 @@ export default function ForgotPasswordPage() {
 
               <Link
                 href="/dealer/login"
-                className="mt-2 inline-flex font-bold text-blue-600 hover:text-blue-700 hover:underline"
+                className="mt-2 inline-block font-bold text-blue-600 hover:underline"
               >
-                Back to Dealer Login →
+                Return to Dealer Login →
               </Link>
 
             </div>
 
           </div>
 
+          {/* CREATE ACCOUNT */}
 
           <div className="mt-6 text-center">
 
+            <p className="text-sm text-slate-500">
+              Don't have a dealer account?
+            </p>
+
             <Link
-              href="/"
-              className="text-sm font-semibold text-slate-500 hover:text-slate-900"
+              href="/dealer/register"
+              className="mt-2 inline-block text-sm font-bold text-blue-600 hover:underline"
             >
-              ← Back to NorthSky Auto
+              Create Dealer Account →
             </Link>
 
           </div>
@@ -238,3 +292,4 @@ export default function ForgotPasswordPage() {
     </main>
   );
 }
+```
