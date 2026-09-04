@@ -1,809 +1,565 @@
 "use client";
-
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-
-const EMPTY_FILTERS = {
-  search: "",
-  make: "",
-  model: "",
-  year: "",
-  condition: "",
-  maxMileage: "",
-};
-
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 export default function DealerLeadsPage() {
+  const router = useRouter();
+  const supabase = createClient();
+  const [user, setUser] = useState(null);
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
-
-  const loadLeads = useCallback(async (isRefresh = false) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-
-      setError("");
-
-      const response = await fetch("/api/leads?limit=100", {
-        method: "GET",
-        cache: "no-store",
-        headers: {
-          Accept: "application/json",
-        },
-      });
-
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(
-          data?.error ||
-            "Unable to load vehicle opportunities."
-        );
-      }
-
-      setLeads(
-        Array.isArray(data?.leads)
-          ? data.leads
-          : []
-      );
-    } catch (error) {
-      console.error("Dealer leads error:", error);
-
-      setError(
-        error?.message ||
-          "Unable to load vehicle opportunities."
-      );
-
-      if (!isRefresh) {
-        setLeads([]);
-      }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
   useEffect(() => {
     loadLeads();
-  }, [loadLeads]);
-
-  function handleFilterChange(event) {
-    const { name, value } = event.target;
-
-    setFilters((current) => ({
-      ...current,
-      [name]: value,
-    }));
-  }
-
-  function clearFilters() {
-    setFilters({ ...EMPTY_FILTERS });
-  }
-
-  const filteredLeads = useMemo(() => {
-    return leads.filter((lead) => {
-      const search = filters.search
-        .trim()
-        .toLowerCase();
-
-      const make = String(
-        lead.make || ""
-      ).toLowerCase();
-
-      const model = String(
-        lead.model || ""
-      ).toLowerCase();
-
-      const trim = String(
-        lead.trim || ""
-      ).toLowerCase();
-
-      const postalCode = String(
-        lead.postal_code || ""
-      ).toLowerCase();
-
-      const description = String(
-        lead.description || ""
-      ).toLowerCase();
-
-      const year = String(
-        lead.year || ""
-      );
-
-      const condition = String(
-        lead.condition || ""
-      ).toLowerCase();
-
-      const mileage =
-        lead.mileage !== null &&
-        lead.mileage !== undefined &&
-        lead.mileage !== ""
-          ? Number(lead.mileage)
-          : null;
-
-      /*
-       * GENERAL SEARCH
-       */
-      if (search) {
-        const searchableText = [
-          make,
-          model,
-          trim,
-          year,
-          postalCode,
+  }, []);
+  async function loadLeads() {
+    setLoading(true);
+    setError("");
+    try {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+      if (authError || !user) {
+        router.replace("/dealer/login");
+        return;
+      }
+      setUser(user);
+      const { data, error: leadsError } = await supabase
+        .from("leads")
+        .select(`
+          id,
+          seller_name,
+          seller_email,
+          seller_phone,
+          vehicle_make,
+          vehicle_model,
+          vehicle_year,
+          mileage,
+          asking_price,
           description,
-        ]
-          .join(" ")
-          .toLowerCase();
-
-        if (!searchableText.includes(search)) {
-          return false;
-        }
+          city,
+          province,
+          status,
+          created_at,
+          vehicle_id
+        `)
+        .eq("status", "available")
+        .order("created_at", { ascending: false });
+      if (leadsError) {
+        console.error(leadsError);
+        setError("Unable to load vehicle opportunities.");
+        return;
       }
-
-      /*
-       * MAKE
-       */
-      if (
-        filters.make &&
-        !make.includes(
-          filters.make.trim().toLowerCase()
-        )
-      ) {
-        return false;
-      }
-
-      /*
-       * MODEL
-       */
-      if (
-        filters.model &&
-        !model.includes(
-          filters.model.trim().toLowerCase()
-        )
-      ) {
-        return false;
-      }
-
-      /*
-       * YEAR
-       */
-      if (
-        filters.year &&
-        year !== filters.year
-      ) {
-        return false;
-      }
-
-      /*
-       * CONDITION
-       */
-      if (
-        filters.condition &&
-        condition !==
-          filters.condition.toLowerCase()
-      ) {
-        return false;
-      }
-
-      /*
-       * MAXIMUM MILEAGE
-       */
-      if (filters.maxMileage) {
-        const maxMileage = Number(
-          filters.maxMileage
-        );
-
-        if (
-          Number.isFinite(maxMileage) &&
-          mileage !== null &&
-          mileage > maxMileage
-        ) {
-          return false;
-        }
-      }
-
-      return true;
+      setLeads(data || []);
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong while loading leads.");
+    } finally {
+      setLoading(false);
+    }
+  }
+  async function signOut() {
+    await supabase.auth.signOut();
+    router.replace("/dealer/login");
+  }
+  function formatPrice(price) {
+    if (price === null || price === undefined || price === "") {
+      return "Price unavailable";
+    }
+    return new Intl.NumberFormat("en-CA", {
+      style: "currency",
+      currency: "CAD",
+      maximumFractionDigits: 0,
+    }).format(Number(price));
+  }
+  function formatMileage(mileage) {
+    if (mileage === null || mileage === undefined || mileage === "") {
+      return "Mileage unavailable";
+    }
+    return `${Number(mileage).toLocaleString("en-CA")} km`;
+  }
+  function formatDate(date) {
+    if (!date) return "Recently added";
+    return new Date(date).toLocaleDateString("en-CA", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
-  }, [leads, filters]);
-
-  const hasFilters = Object.values(
-    filters
-  ).some((value) => value !== "");
-
+  }
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      {/* HERO */}
-      <section className="overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 text-white">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 md:py-16">
-          <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
-            <div className="max-w-3xl">
-              <span className="inline-flex rounded-full bg-blue-500/15 px-4 py-2 text-xs font-black uppercase tracking-widest text-blue-300 ring-1 ring-blue-400/20">
-                Dealer Marketplace
-              </span>
-
-              <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl md:text-6xl">
-                Vehicle
-                <span className="block text-blue-400">
-                  Opportunities
-                </span>
-              </h1>
-
-              <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-                Browse seller-submitted vehicles and
-                discover potential inventory acquisition
-                opportunities for your dealership.
-              </p>
-
-              <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold text-slate-300">
-                <span>✓ Canadian submissions</span>
-                <span>✓ Vehicle details</span>
-                <span>✓ Dealer sourcing</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => loadLeads(true)}
-              disabled={loading || refreshing}
-              className="inline-flex shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-black text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+    <main style={styles.page}>
+      {/* HEADER */}
+      <header style={styles.header}>
+        <div style={styles.headerInner}>
+          <Link href="/dealer/dashboard" style={styles.logo}>
+            NorthSky <span>Auto</span>
+          </Link>
+          <nav style={styles.nav}>
+            <Link href="/dealer/dashboard" style={styles.navLink}>
+              Dashboard
+            </Link>
+            <Link
+              href="/dealer/leads"
+              style={{ ...styles.navLink, ...styles.activeNav }}
             >
-              {refreshing
-                ? "Refreshing..."
-                : "↻ Refresh Opportunities"}
+              Opportunities
+            </Link>
+            <Link href="/dealer/saved" style={styles.navLink}>
+              Saved
+            </Link>
+            <Link href="/dealer/analytics" style={styles.navLink}>
+              Analytics
+            </Link>
+            <Link href="/dealer/settings" style={styles.navLink}>
+              Settings
+            </Link>
+            <button onClick={signOut} style={styles.signOut}>
+              Sign out
             </button>
-          </div>
+          </nav>
         </div>
-      </section>
-
-      {/* SEARCH */}
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 md:py-10">
-        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-widest text-blue-600">
-                Marketplace Search
-              </p>
-
-              <h2 className="mt-2 text-2xl font-black text-slate-950">
-                Find Vehicles
-              </h2>
-
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                Search and filter available vehicle
-                submissions by make, model, year,
-                condition, and mileage.
-              </p>
-            </div>
-
-            {hasFilters && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="text-left text-sm font-black text-blue-600 transition hover:text-blue-800 sm:text-right"
-              >
-                Clear Filters
-              </button>
-            )}
-          </div>
-
-          {/* SEARCH BAR */}
-          <div className="mt-6">
-            <label
-              htmlFor="search"
-              className="mb-2 block text-sm font-bold text-slate-700"
-            >
-              Search Marketplace
-            </label>
-
-            <div className="relative">
-              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg">
-                🔎
-              </span>
-
-              <input
-                id="search"
-                name="search"
-                type="search"
-                value={filters.search}
-                onChange={handleFilterChange}
-                placeholder="Search make, model, trim, year, postal code..."
-                maxLength={100}
-                className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-              />
-            </div>
-          </div>
-
-          {/* FILTERS */}
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <FilterInput
-              label="Make"
-              name="make"
-              value={filters.make}
-              onChange={handleFilterChange}
-              placeholder="Ford"
-            />
-
-            <FilterInput
-              label="Model"
-              name="model"
-              value={filters.model}
-              onChange={handleFilterChange}
-              placeholder="F-150"
-            />
-
-            <FilterInput
-              label="Year"
-              name="year"
-              value={filters.year}
-              onChange={handleFilterChange}
-              placeholder="2022"
-              type="number"
-              min="1900"
-              max={new Date().getFullYear() + 1}
-            />
-
-            <div>
-              <label
-                htmlFor="condition"
-                className="mb-2 block text-sm font-bold text-slate-700"
-              >
-                Condition
-              </label>
-
-              <select
-                id="condition"
-                name="condition"
-                value={filters.condition}
-                onChange={handleFilterChange}
-                className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-              >
-                <option value="">
-                  All Conditions
-                </option>
-                <option value="Excellent">
-                  Excellent
-                </option>
-                <option value="Good">
-                  Good
-                </option>
-                <option value="Fair">
-                  Fair
-                </option>
-                <option value="Poor">
-                  Poor
-                </option>
-              </select>
-            </div>
-
-            <FilterInput
-              label="Maximum Mileage"
-              name="maxMileage"
-              value={filters.maxMileage}
-              onChange={handleFilterChange}
-              placeholder="100000"
-              type="number"
-              min="0"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* MARKETPLACE */}
-      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 md:pb-20">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      </header>
+      {/* MAIN */}
+      <section style={styles.container}>
+        <div style={styles.hero}>
           <div>
-            <p className="text-xs font-black uppercase tracking-widest text-blue-600">
-              Available Inventory
+            <div style={styles.eyebrow}>DEALER MARKETPLACE</div>
+            <h1 style={styles.title}>
+              Vehicle Opportunities
+            </h1>
+            <p style={styles.subtitle}>
+              Find vehicles available for dealer acquisition through
+              NorthSky Auto.
             </p>
-
-            <h2 className="mt-2 text-3xl font-black text-slate-950">
-              Vehicle Leads
-            </h2>
           </div>
-
-          <div className="inline-flex self-start rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-600 ring-1 ring-slate-200 sm:self-auto">
-            {loading
-              ? "Loading..."
-              : `${filteredLeads.length} ${
-                  filteredLeads.length === 1
-                    ? "Opportunity"
-                    : "Opportunities"
-                }`}
+          <div style={styles.heroBadge}>
+            <strong>{leads.length}</strong>
+            <span>Available</span>
           </div>
         </div>
-
         {/* ERROR */}
         {error && (
-          <div className="mt-7 rounded-2xl border border-red-200 bg-red-50 p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="font-black text-red-900">
-                  Unable to load opportunities
-                </h3>
-
-                <p className="mt-1 text-sm leading-6 text-red-700">
-                  {error}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => loadLeads()}
-                className="rounded-xl bg-red-600 px-5 py-3 text-sm font-black text-white transition hover:bg-red-700"
-              >
-                Try Again
-              </button>
-            </div>
+          <div style={styles.errorBox}>
+            <strong>Unable to load opportunities</strong>
+            <p>{error}</p>
+            <button onClick={loadLeads} style={styles.retryButton}>
+              Try again
+            </button>
           </div>
         )}
-
         {/* LOADING */}
-        {loading && (
-          <div className="mt-7 grid gap-6 lg:grid-cols-2">
-            {[1, 2, 3, 4].map((item) => (
-              <LeadSkeleton key={item} />
+        {loading ? (
+          <div style={styles.loadingGrid}>
+            {[1, 2, 3].map((item) => (
+              <div key={item} style={styles.loadingCard}>
+                <div style={styles.skeletonSmall}></div>
+                <div style={styles.skeletonLarge}></div>
+                <div style={styles.skeletonMedium}></div>
+                <div style={styles.skeletonButton}></div>
+              </div>
             ))}
           </div>
-        )}
-
-        {/* EMPTY */}
-        {!loading &&
-          !error &&
-          filteredLeads.length === 0 && (
-            <div className="mt-7 rounded-3xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-200 sm:p-14">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-blue-50 text-4xl">
-                🚘
-              </div>
-
-              <h3 className="mt-6 text-2xl font-black text-slate-950">
-                {hasFilters
-                  ? "No matching vehicles"
-                  : "No vehicle opportunities yet"}
-              </h3>
-
-              <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-600">
-                {hasFilters
-                  ? "Try adjusting your filters or clearing your search to see more vehicle opportunities."
-                  : "New seller submissions will appear here as vehicle opportunities become available."}
-              </p>
-
-              {hasFilters && (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="mt-6 rounded-xl bg-blue-600 px-6 py-3 font-black text-white transition hover:bg-blue-700"
-                >
-                  Clear Filters
-                </button>
-              )}
-            </div>
-          )}
-
-        {/* LEADS */}
-        {!loading &&
-          !error &&
-          filteredLeads.length > 0 && (
-            <div className="mt-7 grid gap-6 lg:grid-cols-2">
-              {filteredLeads.map((lead) => (
-                <LeadCard
-                  key={lead.id}
-                  lead={lead}
-                />
-              ))}
-            </div>
-          )}
-      </section>
-
-      {/* CTA */}
-      <section className="border-t border-slate-200 bg-white px-4 py-16 sm:px-6">
-        <div className="mx-auto max-w-5xl overflow-hidden rounded-3xl bg-slate-950 p-8 text-center text-white shadow-xl sm:p-12 md:p-14">
-          <span className="inline-flex rounded-full bg-blue-500/15 px-4 py-2 text-xs font-black uppercase tracking-widest text-blue-300">
-            NorthSky Auto Dealer Portal
-          </span>
-
-          <h2 className="mt-5 text-3xl font-black sm:text-4xl md:text-5xl">
-            Build Your Acquisition Pipeline
-          </h2>
-
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-            Review vehicle opportunities, manage your
-            dealership account, and build a more organized
-            sourcing pipeline.
-          </p>
-
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link
-              href="/dealer/dashboard"
-              className="rounded-xl bg-blue-600 px-7 py-3.5 font-black text-white transition hover:bg-blue-500"
-            >
-              Dealer Dashboard →
-            </Link>
-
-            <Link
-              href="/dealer/subscriptions"
-              className="rounded-xl border border-white/15 bg-white/5 px-7 py-3.5 font-black text-white transition hover:bg-white/10"
-            >
-              Manage Membership
+        ) : leads.length === 0 ? (
+          /* EMPTY STATE */
+          <div style={styles.emptyState}>
+            <div style={styles.emptyIcon}>🚗</div>
+            <h2>No vehicle opportunities yet</h2>
+            <p>
+              New vehicle acquisition opportunities will appear here when
+              they become available.
+            </p>
+            <Link href="/dealer/dashboard" style={styles.primaryButton}>
+              Back to Dashboard
             </Link>
           </div>
+        ) : (
+          /* LEADS */
+          <div style={styles.grid}>
+            {leads.map((lead) => {
+              const vehicleName = [
+                lead.vehicle_year,
+                lead.vehicle_make,
+                lead.vehicle_model,
+              ]
+                .filter(Boolean)
+                .join(" ");
+              return (
+                <article key={lead.id} style={styles.card}>
+                  <div style={styles.cardTop}>
+                    <span style={styles.status}>
+                      Available
+                    </span>
+                    <span style={styles.date}>
+                      {formatDate(lead.created_at)}
+                    </span>
+                  </div>
+                  <div style={styles.vehicleIcon}>
+                    🚙
+                  </div>
+                  <h2 style={styles.vehicleTitle}>
+                    {vehicleName || "Vehicle Opportunity"}
+                  </h2>
+                  <p style={styles.location}>
+                    📍{" "}
+                    {lead.city || lead.province
+                      ? `${lead.city || ""}${
+                          lead.city && lead.province ? ", " : ""
+                        }${lead.province || ""}`
+                      : "Location unavailable"}
+                  </p>
+                  <div style={styles.details}>
+                    <div>
+                      <span style={styles.detailLabel}>
+                        Asking Price
+                      </span>
+                      <strong style={styles.price}>
+                        {formatPrice(lead.asking_price)}
+                      </strong>
+                    </div>
+                    <div>
+                      <span style={styles.detailLabel}>
+                        Mileage
+                      </span>
+                      <strong style={styles.detailValue}>
+                        {formatMileage(lead.mileage)}
+                      </strong>
+                    </div>
+                  </div>
+                  {lead.description && (
+                    <p style={styles.description}>
+                      {lead.description.length > 120
+                        ? `${lead.description.slice(0, 120)}...`
+                        : lead.description}
+                    </p>
+                  )}
+                  <Link
+                    href={`/dealer/leads/${lead.id}`}
+                    style={styles.viewButton}
+                  >
+                    View Opportunity →
+                  </Link>
+                </article>
+              );
+            })}
+          </div>
+        )}
+        {/* FOOTER LINKS */}
+        <div style={styles.bottomNav}>
+          <Link href="/dealer/dashboard">
+            ← Dealer Dashboard
+          </Link>
+          <Link href="/dealer/subscriptions">
+            Membership Plans
+          </Link>
+          <Link href="/dealer/settings">
+            Account Settings
+          </Link>
         </div>
       </section>
+      <footer style={styles.footer}>
+        <strong>NorthSky Auto</strong>
+        <span>
+          Dealer vehicle acquisition marketplace
+        </span>
+      </footer>
     </main>
   );
 }
-
-/*
-|--------------------------------------------------------------------------
-| LEAD CARD
-|--------------------------------------------------------------------------
-*/
-
-function LeadCard({ lead }) {
-  const vehicleName = [
-    lead.year,
-    lead.make,
-    lead.model,
-    lead.trim,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  const location =
-    lead.postal_code || "Canada";
-
-  const mileage =
-    lead.mileage !== null &&
-    lead.mileage !== undefined &&
-    lead.mileage !== ""
-      ? `${Number(
-          lead.mileage
-        ).toLocaleString("en-CA")} km`
-      : "Not provided";
-
-  const askingPrice =
-    lead.asking_price !== null &&
-    lead.asking_price !== undefined &&
-    lead.asking_price !== ""
-      ? new Intl.NumberFormat("en-CA", {
-          style: "currency",
-          currency: "CAD",
-          maximumFractionDigits: 0,
-        }).format(Number(lead.asking_price))
-      : "Not provided";
-
-  const condition =
-    lead.condition || "Not provided";
-
-  const timeline =
-    lead.selling_timeline ||
-    "Not provided";
-
-  return (
-    <article className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-xl">
-      {/* VEHICLE HEADER */}
-      <div className="relative flex h-44 items-center justify-center overflow-hidden bg-gradient-to-br from-slate-200 via-slate-300 to-slate-400">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.5),transparent_60%)]" />
-
-        <div className="relative text-center">
-          <div className="text-5xl">
-            🚘
-          </div>
-
-          <p className="mt-2 text-xs font-black uppercase tracking-widest text-slate-600">
-            Vehicle Opportunity
-          </p>
-        </div>
-
-        {lead.status && (
-          <span className="absolute right-4 top-4 rounded-full bg-green-600 px-3 py-1.5 text-xs font-black text-white shadow-sm">
-            Available
-          </span>
-        )}
-      </div>
-
-      <div className="p-6 sm:p-7">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs font-black uppercase tracking-widest text-blue-600">
-              Seller Submission
-            </p>
-
-            <h3 className="mt-2 break-words text-2xl font-black leading-tight text-slate-950">
-              {vehicleName ||
-                "Vehicle Opportunity"}
-            </h3>
-          </div>
-
-          {lead.id && (
-            <span className="shrink-0 rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-400">
-              #{lead.id}
-            </span>
-          )}
-        </div>
-
-        {/* KEY DETAILS */}
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <Info
-            icon="📍"
-            label="Location"
-            value={location}
-          />
-
-          <Info
-            icon="🛣️"
-            label="Mileage"
-            value={mileage}
-          />
-
-          <Info
-            icon="🔧"
-            label="Condition"
-            value={condition}
-          />
-
-          <Info
-            icon="💰"
-            label="Asking Price"
-            value={askingPrice}
-            highlight
-          />
-        </div>
-
-        {/* TIMELINE */}
-        <div className="mt-3">
-          <Info
-            icon="⏱️"
-            label="Selling Timeline"
-            value={timeline}
-          />
-        </div>
-
-        {/* DESCRIPTION */}
-        {lead.description && (
-          <div className="mt-5 rounded-2xl bg-slate-50 p-4">
-            <p className="text-xs font-black uppercase tracking-widest text-slate-400">
-              Description
-            </p>
-
-            <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
-              {lead.description}
-            </p>
-          </div>
-        )}
-
-        {/* ACTION */}
-        <Link
-          href={`/dealer/leads/${encodeURIComponent(
-            lead.id
-          )}`}
-          className="mt-6 flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-black text-white transition hover:bg-blue-700"
-        >
-          View Opportunity Details →
-        </Link>
-
-        <p className="mt-3 text-center text-xs text-slate-400">
-          Seller contact information is protected.
-        </p>
-      </div>
-    </article>
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| INFO
-|--------------------------------------------------------------------------
-*/
-
-function Info({
-  icon,
-  label,
-  value,
-  highlight = false,
-}) {
-  return (
-    <div className="rounded-xl bg-slate-50 p-3.5 ring-1 ring-slate-100">
-      <div className="flex items-center gap-2">
-        <span className="text-sm">
-          {icon}
-        </span>
-
-        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
-          {label}
-        </p>
-      </div>
-
-      <p
-        className={`mt-1 break-words text-sm font-black ${
-          highlight
-            ? "text-blue-700"
-            : "text-slate-700"
-        }`}
-      >
-        {value || "Not provided"}
-      </p>
-    </div>
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| FILTER INPUT
-|--------------------------------------------------------------------------
-*/
-
-function FilterInput({
-  label,
-  name,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  min,
-  max,
-}) {
-  return (
-    <div>
-      <label
-        htmlFor={name}
-        className="mb-2 block text-sm font-bold text-slate-700"
-      >
-        {label}
-      </label>
-
-      <input
-        id={name}
-        name={name}
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        min={min}
-        max={max}
-        inputMode={
-          type === "number"
-            ? "numeric"
-            : undefined
-        }
-        className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
-      />
-    </div>
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| LOADING SKELETON
-|--------------------------------------------------------------------------
-*/
-
-function LeadSkeleton() {
-  return (
-    <div className="animate-pulse overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-200">
-      <div className="h-44 bg-slate-200" />
-
-      <div className="p-6 sm:p-7">
-        <div className="h-3 w-32 rounded bg-slate-200" />
-
-        <div className="mt-3 h-7 w-2/3 rounded bg-slate-200" />
-
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <div className="h-16 rounded-xl bg-slate-200" />
-          <div className="h-16 rounded-xl bg-slate-200" />
-          <div className="h-16 rounded-xl bg-slate-200" />
-          <div className="h-16 rounded-xl bg-slate-200" />
-        </div>
-
-        <div className="mt-3 h-16 rounded-xl bg-slate-200" />
-
-        <div className="mt-6 h-12 rounded-xl bg-slate-200" />
-      </div>
-    </div>
-  );
-}
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "#f5f7fb",
+    color: "#0f172a",
+    fontFamily:
+      "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+  },
+  header: {
+    background: "#071426",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+  },
+  headerInner: {
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "18px 24px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "24px",
+  },
+  logo: {
+    color: "#ffffff",
+    textDecoration: "none",
+    fontSize: "22px",
+    fontWeight: 800,
+    letterSpacing: "-0.5px",
+  },
+  logoSpan: {
+    color: "#38bdf8",
+  },
+  nav: {
+    display: "flex",
+    alignItems: "center",
+    gap: "18px",
+    flexWrap: "wrap",
+  },
+  navLink: {
+    color: "#cbd5e1",
+    textDecoration: "none",
+    fontSize: "14px",
+    fontWeight: 600,
+  },
+  activeNav: {
+    color: "#ffffff",
+  },
+  signOut: {
+    border: "1px solid rgba(255,255,255,0.18)",
+    background: "transparent",
+    color: "#ffffff",
+    padding: "9px 14px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: 600,
+  },
+  container: {
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "52px 24px 70px",
+  },
+  hero: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "30px",
+    marginBottom: "36px",
+  },
+  eyebrow: {
+    fontSize: "12px",
+    fontWeight: 800,
+    letterSpacing: "1.5px",
+    color: "#0284c7",
+    marginBottom: "10px",
+  },
+  title: {
+    fontSize: "42px",
+    lineHeight: 1.05,
+    letterSpacing: "-1.5px",
+    margin: 0,
+  },
+  subtitle: {
+    marginTop: "14px",
+    marginBottom: 0,
+    maxWidth: "650px",
+    color: "#64748b",
+    fontSize: "17px",
+    lineHeight: 1.6,
+  },
+  heroBadge: {
+    minWidth: "130px",
+    padding: "20px",
+    borderRadius: "16px",
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    textAlign: "center",
+    boxShadow: "0 10px 30px rgba(15,23,42,0.05)",
+  },
+  heroBadgeStrong: {
+    display: "block",
+    fontSize: "30px",
+    fontWeight: 800,
+  },
+  heroBadgeSpan: {
+    display: "block",
+    color: "#64748b",
+    fontSize: "13px",
+    marginTop: "3px",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))",
+    gap: "22px",
+  },
+  card: {
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "18px",
+    padding: "22px",
+    boxShadow: "0 10px 30px rgba(15,23,42,0.05)",
+  },
+  cardTop: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "10px",
+  },
+  status: {
+    display: "inline-flex",
+    padding: "6px 10px",
+    borderRadius: "999px",
+    background: "#dcfce7",
+    color: "#166534",
+    fontSize: "12px",
+    fontWeight: 800,
+  },
+  date: {
+    color: "#94a3b8",
+    fontSize: "12px",
+  },
+  vehicleIcon: {
+    marginTop: "22px",
+    width: "54px",
+    height: "54px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "14px",
+    background: "#e0f2fe",
+    fontSize: "27px",
+  },
+  vehicleTitle: {
+    fontSize: "22px",
+    lineHeight: 1.2,
+    margin: "18px 0 8px",
+  },
+  location: {
+    margin: 0,
+    color: "#64748b",
+    fontSize: "14px",
+  },
+  details: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "12px",
+    marginTop: "22px",
+    paddingTop: "18px",
+    borderTop: "1px solid #e2e8f0",
+  },
+  detailLabel: {
+    display: "block",
+    color: "#94a3b8",
+    fontSize: "11px",
+    textTransform: "uppercase",
+    letterSpacing: "0.8px",
+    marginBottom: "5px",
+  },
+  price: {
+    fontSize: "18px",
+  },
+  detailValue: {
+    fontSize: "16px",
+  },
+  description: {
+    color: "#64748b",
+    fontSize: "14px",
+    lineHeight: 1.55,
+    marginTop: "18px",
+  },
+  viewButton: {
+    display: "block",
+    textAlign: "center",
+    marginTop: "20px",
+    padding: "12px 16px",
+    borderRadius: "10px",
+    background: "#0f172a",
+    color: "#ffffff",
+    textDecoration: "none",
+    fontWeight: 700,
+    fontSize: "14px",
+  },
+  emptyState: {
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "18px",
+    padding: "70px 30px",
+    textAlign: "center",
+  },
+  emptyIcon: {
+    fontSize: "48px",
+    marginBottom: "14px",
+  },
+  primaryButton: {
+    display: "inline-block",
+    marginTop: "18px",
+    padding: "12px 18px",
+    background: "#0f172a",
+    color: "#ffffff",
+    borderRadius: "9px",
+    textDecoration: "none",
+    fontWeight: 700,
+  },
+  errorBox: {
+    background: "#fff1f2",
+    border: "1px solid #fecdd3",
+    color: "#9f1239",
+    borderRadius: "14px",
+    padding: "18px",
+    marginBottom: "24px",
+  },
+  retryButton: {
+    marginTop: "10px",
+    border: "none",
+    background: "#9f1239",
+    color: "#ffffff",
+    padding: "9px 14px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: 700,
+  },
+  loadingGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))",
+    gap: "22px",
+  },
+  loadingCard: {
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "18px",
+    padding: "22px",
+  },
+  skeletonSmall: {
+    width: "90px",
+    height: "18px",
+    background: "#e2e8f0",
+    borderRadius: "6px",
+  },
+  skeletonLarge: {
+    width: "70%",
+    height: "26px",
+    background: "#e2e8f0",
+    borderRadius: "6px",
+    marginTop: "24px",
+  },
+  skeletonMedium: {
+    width: "45%",
+    height: "18px",
+    background: "#e2e8f0",
+    borderRadius: "6px",
+    marginTop: "15px",
+  },
+  skeletonButton: {
+    width: "100%",
+    height: "44px",
+    background: "#e2e8f0",
+    borderRadius: "9px",
+    marginTop: "28px",
+  },
+  bottomNav: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "25px",
+    flexWrap: "wrap",
+    marginTop: "45px",
+    fontSize: "14px",
+  },
+  footer: {
+    borderTop: "1px solid #e2e8f0",
+    padding: "25px 24px",
+    display: "flex",
+    justifyContent: "center",
+    gap: "10px",
+    flexWrap: "wrap",
+    color: "#64748b",
+    fontSize: "13px",
+  },
+};
