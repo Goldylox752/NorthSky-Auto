@@ -1,459 +1,518 @@
+"use client";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
-export const metadata = {
-  title: "Dealer Subscription | NorthSky Auto",
-  description:
-    "Manage your NorthSky Auto dealer membership, subscription plan, and billing status.",
-};
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase =
-  supabaseUrl && supabaseServiceKey
-    ? createClient(supabaseUrl, supabaseServiceKey)
-    : null;
-const PLANS = {
-  starter: {
-    name: "Dealer Starter",
+const plans = [
+  {
+    name: "Starter",
     price: "$99",
     period: "/month",
-    description:
-      "Essential access to NorthSky Auto vehicle acquisition opportunities.",
+    description: "For dealers getting started with NorthSky Auto.",
     features: [
-      "Vehicle opportunities",
       "Dealer account",
-      "Seller lead information",
-      "Vehicle submission notifications",
-      "Marketplace access",
+      "Vehicle opportunities",
+      "Lead marketplace access",
+      "Saved opportunities",
+      "Dealer dashboard",
+      "Email support",
     ],
+    button: "Get Started",
+    featured: false,
   },
-  professional: {
+  {
     name: "Dealer Pro",
     price: "$299",
     period: "/month",
-    description:
-      "Expanded vehicle acquisition tools for growing dealerships.",
+    description: "For active dealers who want more opportunities and tools.",
     features: [
-      "Everything in Dealer Starter",
+      "Everything in Starter",
       "Priority vehicle opportunities",
-      "Advanced lead access",
-      "Dealer dashboard",
-      "Saved vehicle opportunities",
+      "Advanced lead management",
       "Dealer analytics",
+      "Saved opportunities",
+      "Priority support",
+      "Early access to new features",
     ],
+    button: "Choose Dealer Pro",
+    featured: true,
   },
-  enterprise: {
-    name: "Dealer Enterprise",
+  {
+    name: "Enterprise",
     price: "Custom",
     period: "",
-    description:
-      "Custom solutions for high-volume dealerships and dealer groups.",
+    description: "For dealer groups and larger automotive organizations.",
     features: [
-      "High-volume dealer support",
-      "Custom dealership solutions",
-      "Expanded vehicle acquisition",
-      "Priority support",
-      "Custom account configuration",
-      "Dealer group options",
+      "Everything in Dealer Pro",
+      "Multiple dealer locations",
+      "Custom onboarding",
+      "Dedicated support",
+      "Custom integrations",
+      "Volume pricing",
+      "Enterprise solutions",
     ],
+    button: "Contact NorthSky",
+    featured: false,
   },
-};
-function normalizePlan(plan) {
-  if (!plan) return null;
-  const value = String(plan).toLowerCase().trim();
-  if (
-    value === "starter" ||
-    value === "dealer starter"
-  ) {
-    return "starter";
-  }
-  if (
-    value === "professional" ||
-    value === "pro" ||
-    value === "dealer pro"
-  ) {
-    return "professional";
-  }
-  if (
-    value === "enterprise" ||
-    value === "dealer enterprise"
-  ) {
-    return "enterprise";
-  }
-  return null;
-}
-function getStatusLabel(status) {
-  if (!status) return "No subscription";
-  const labels = {
-    active: "Active",
-    trialing: "Trial",
-    past_due: "Past Due",
-    canceled: "Canceled",
-    incomplete: "Incomplete",
-    incomplete_expired: "Expired",
-    unpaid: "Unpaid",
-  };
+];
+export default function DealerSubscriptionsPage() {
   return (
-    labels[status] ||
-    String(status).replaceAll("_", " ")
-  );
-}
-function getStatusClasses(status) {
-  if (status === "active" || status === "trialing") {
-    return "bg-green-100 text-green-700";
-  }
-  if (
-    status === "past_due" ||
-    status === "incomplete"
-  ) {
-    return "bg-amber-100 text-amber-700";
-  }
-  if (
-    status === "canceled" ||
-    status === "incomplete_expired" ||
-    status === "unpaid"
-  ) {
-    return "bg-red-100 text-red-700";
-  }
-  return "bg-slate-100 text-slate-700";
-}
-async function getDealer() {
-  if (!supabase) {
-    console.error(
-      "Supabase is not configured for the dealer subscription page."
-    );
-    return null;
-  }
-  try {
-    /*
-     * Temporary lookup until Supabase Auth is connected
-     * directly to the dealer portal.
-     *
-     * IMPORTANT:
-     * Replace this lookup with the authenticated dealer ID
-     * once dealer authentication is enabled.
-     */
-    const { data, error } = await supabase
-      .from("dealers")
-      .select(`
-        id,
-        business_name,
-        dealership_name,
-        email,
-        subscription_plan,
-        subscription_status,
-        stripe_customer_id,
-        stripe_subscription_id
-      `)
-      .order("created_at", {
-        ascending: true,
-      })
-      .limit(1)
-      .maybeSingle();
-    if (error) {
-      console.error(
-        "Dealer subscription lookup failed:",
-        error
-      );
-      return null;
-    }
-    return data;
-  } catch (error) {
-    console.error(
-      "Dealer subscription page error:",
-      error
-    );
-    return null;
-  }
-}
-export default async function DealerSubscriptionsPage() {
-  const dealer = await getDealer();
-  const planKey = normalizePlan(
-    dealer?.subscription_plan
-  );
-  const plan =
-    PLANS[planKey] || {
-      name: "No Active Plan",
-      price: "$0",
-      period: "",
-      description:
-        "Choose a NorthSky Auto dealer membership to access vehicle acquisition opportunities.",
-      features: [],
-    };
-  const status =
-    dealer?.subscription_status || null;
-  const statusLabel =
-    getStatusLabel(status);
-  const statusClasses =
-    getStatusClasses(status);
-  const dealershipName =
-    dealer?.dealership_name ||
-    dealer?.business_name ||
-    "Your Dealership";
-  const hasSubscription =
-    Boolean(dealer?.stripe_subscription_id);
-  return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main style={styles.page}>
       {/* HEADER */}
-      <section className="bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-800 px-6 py-16 text-white">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <div>
-              <span className="inline-flex rounded-full bg-blue-500/20 px-4 py-2 text-xs font-black tracking-wide text-blue-300">
-                DEALER ACCOUNT
-              </span>
-              <h1 className="mt-5 text-4xl font-black md:text-5xl">
-                Subscription
-              </h1>
-              <p className="mt-4 max-w-2xl text-slate-300">
-                Manage your NorthSky Auto dealer membership,
-                subscription status, and plan.
-              </p>
-            </div>
-            <Link
-              href="/dealer/dashboard"
-              className="inline-flex w-fit rounded-xl border border-white/20 px-6 py-3 font-black text-white transition hover:bg-white/10"
-            >
-              ← Dealer Dashboard
+      <header style={styles.header}>
+        <div style={styles.headerInner}>
+          <Link href="/dealer/dashboard" style={styles.logo}>
+            NorthSky <span>Auto</span>
+          </Link>
+          <nav style={styles.nav}>
+            <Link href="/dealer/dashboard" style={styles.navLink}>
+              Dashboard
             </Link>
-          </div>
+            <Link href="/dealer/leads" style={styles.navLink}>
+              Opportunities
+            </Link>
+            <Link href="/dealer/saved" style={styles.navLink}>
+              Saved
+            </Link>
+            <Link href="/dealer/analytics" style={styles.navLink}>
+              Analytics
+            </Link>
+            <Link href="/dealer/settings" style={styles.navLink}>
+              Settings
+            </Link>
+          </nav>
         </div>
+      </header>
+      {/* HERO */}
+      <section style={styles.hero}>
+        <div style={styles.eyebrow}>DEALER MEMBERSHIP</div>
+        <h1 style={styles.title}>
+          Choose the right plan for your dealership.
+        </h1>
+        <p style={styles.subtitle}>
+          Get access to NorthSky Auto's dealer marketplace and vehicle
+          acquisition opportunities.
+        </p>
       </section>
-      {/* CONTENT */}
-      <section className="px-6 py-12">
-        <div className="mx-auto max-w-7xl">
-          {/* ACCOUNT NOT FOUND */}
-          {!dealer && (
-            <div className="mb-8 rounded-3xl border border-amber-200 bg-amber-50 p-6">
-              <div className="flex gap-4">
-                <div className="text-2xl">
-                  ⚠️
+      {/* PLANS */}
+      <section style={styles.plansSection}>
+        <div style={styles.plansGrid}>
+          {plans.map((plan) => (
+            <div
+              key={plan.name}
+              style={{
+                ...styles.plan,
+                ...(plan.featured ? styles.featuredPlan : {}),
+              }}
+            >
+              {plan.featured && (
+                <div style={styles.popular}>
+                  MOST POPULAR
                 </div>
-                <div>
-                  <h2 className="font-black text-amber-900">
-                    Dealer account not connected
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-amber-800">
-                    We could not find a dealer account associated
-                    with this portal yet. Complete your dealer
-                    registration or contact NorthSky Auto if you
-                    have already subscribed.
-                  </p>
-                  <div className="mt-5 flex flex-wrap gap-3">
-                    <Link
-                      href="/buyers"
-                      className="rounded-xl bg-amber-600 px-5 py-3 text-sm font-black text-white transition hover:bg-amber-700"
-                    >
-                      View Dealer Plans
-                    </Link>
-                    <Link
-                      href="/contact"
-                      className="rounded-xl border border-amber-300 px-5 py-3 text-sm font-black text-amber-800 transition hover:bg-amber-100"
-                    >
-                      Contact Support
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          {/* CURRENT PLAN */}
-          <div className="grid gap-8 lg:grid-cols-3">
-            <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
-              <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <p className="text-sm font-bold uppercase tracking-wide text-slate-500">
-                    Current Plan
-                  </p>
-                  <h2 className="mt-2 text-3xl font-black">
-                    {plan.name}
-                  </h2>
-                  <p className="mt-3 max-w-xl leading-7 text-slate-600">
-                    {plan.description}
-                  </p>
-                </div>
-                <span
-                  className={`inline-flex w-fit rounded-full px-4 py-2 text-sm font-black ${statusClasses}`}
-                >
-                  {statusLabel}
-                </span>
-              </div>
-              {/* PRICE */}
-              <div className="mt-8 flex items-end gap-2">
-                <span className="text-5xl font-black">
-                  {plan.price}
-                </span>
-                {plan.period && (
-                  <span className="mb-2 font-semibold text-slate-500">
-                    {plan.period}
+              )}
+              <div style={styles.planContent}>
+                <h2 style={styles.planName}>{plan.name}</h2>
+                <p style={styles.planDescription}>
+                  {plan.description}
+                </p>
+                <div style={styles.priceRow}>
+                  <span
+                    style={{
+                      ...styles.price,
+                      ...(plan.featured ? styles.featuredPrice : {}),
+                    }}
+                  >
+                    {plan.price}
                   </span>
-                )}
-              </div>
-              <div className="my-8 h-px bg-slate-200" />
-              {/* FEATURES */}
-              <h3 className="text-lg font-black">
-                Included Features
-              </h3>
-              {plan.features.length > 0 ? (
-                <ul className="mt-5 grid gap-4 md:grid-cols-2">
+                  {plan.period && (
+                    <span style={styles.period}>
+                      {plan.period}
+                    </span>
+                  )}
+                </div>
+                <Link
+                  href={
+                    plan.name === "Enterprise"
+                      ? "/contact"
+                      : "/dealer/register"
+                  }
+                  style={{
+                    ...styles.planButton,
+                    ...(plan.featured
+                      ? styles.featuredButton
+                      : {}),
+                  }}
+                >
+                  {plan.button}
+                </Link>
+                <div style={styles.divider}></div>
+                <div style={styles.includes}>
+                  <strong>Includes:</strong>
+                </div>
+                <ul style={styles.features}>
                   {plan.features.map((feature) => (
-                    <li
-                      key={feature}
-                      className="flex gap-3 text-sm font-semibold text-slate-700"
-                    >
-                      <span className="font-black text-blue-600">
-                        ✓
-                      </span>
-                      <span>
-                        {feature}
-                      </span>
+                    <li key={feature} style={styles.feature}>
+                      <span style={styles.check}>✓</span>
+                      <span>{feature}</span>
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <p className="mt-5 text-sm text-slate-500">
-                  No active membership features are currently
-                  assigned to this dealer account.
-                </p>
-              )}
-            </div>
-            {/* STATUS CARD */}
-            <div className="rounded-3xl bg-slate-950 p-8 text-white">
-              <div className="text-3xl">
-                💳
-              </div>
-              <h2 className="mt-5 text-2xl font-black">
-                Billing Status
-              </h2>
-              <div className="mt-6 space-y-4">
-                <div className="rounded-2xl bg-white/10 p-5">
-                  <p className="text-sm text-slate-400">
-                    Status
-                  </p>
-                  <p className="mt-2 text-xl font-black capitalize">
-                    {statusLabel}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-white/10 p-5">
-                  <p className="text-sm text-slate-400">
-                    Dealership
-                  </p>
-                  <p className="mt-2 font-black">
-                    {dealershipName}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-white/10 p-5">
-                  <p className="text-sm text-slate-400">
-                    Payment Provider
-                  </p>
-                  <p className="mt-2 font-black">
-                    Stripe
-                  </p>
-                </div>
               </div>
             </div>
-          </div>
-          {/* SUBSCRIPTION DETAILS */}
-          <div className="mt-8 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
-            <h2 className="text-2xl font-black">
-              Subscription Details
-            </h2>
-            <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl bg-slate-50 p-5">
-                <p className="text-xs font-bold uppercase text-slate-500">
-                  Plan
-                </p>
-                <p className="mt-2 font-black">
-                  {plan.name}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-slate-50 p-5">
-                <p className="text-xs font-bold uppercase text-slate-500">
-                  Billing
-                </p>
-                <p className="mt-2 font-black">
-                  {plan.period
-                    ? `${plan.price} ${plan.period}`
-                    : "Custom"}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-slate-50 p-5">
-                <p className="text-xs font-bold uppercase text-slate-500">
-                  Status
-                </p>
-                <p className="mt-2 font-black capitalize">
-                  {statusLabel}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-slate-50 p-5">
-                <p className="text-xs font-bold uppercase text-slate-500">
-                  Billing Provider
-                </p>
-                <p className="mt-2 font-black">
-                  Stripe
-                </p>
-              </div>
-            </div>
-          </div>
-          {/* ACTIONS */}
-          <div className="mt-8 grid gap-6 md:grid-cols-3">
-            <Link
-              href="/buyers"
-              className="rounded-3xl bg-blue-600 p-7 text-white transition hover:-translate-y-1 hover:bg-blue-700"
-            >
-              <div className="text-3xl">
-                💳
-              </div>
-              <h3 className="mt-5 text-xl font-black">
-                Change Plan
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-blue-100">
-                Review NorthSky Auto dealer membership options.
-              </p>
-            </Link>
-            <Link
-              href="/dealer/profile"
-              className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-lg"
-            >
-              <div className="text-3xl">
-                🏢
-              </div>
-              <h3 className="mt-5 text-xl font-black">
-                Dealer Profile
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Manage your dealership information.
-              </p>
-            </Link>
-            <Link
-              href="/contact"
-              className="rounded-3xl bg-white p-7 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-1 hover:shadow-lg"
-            >
-              <div className="text-3xl">
-                💬
-              </div>
-              <h3 className="mt-5 text-xl font-black">
-                Need Help?
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                Contact NorthSky Auto about your membership.
-              </p>
-            </Link>
-          </div>
-          {/* STRIPE NOTICE */}
-          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 text-center">
-            <p className="text-sm leading-6 text-slate-500">
-              NorthSky Auto dealer memberships are securely
-              processed through Stripe. Subscription status is
-              synchronized automatically through Stripe webhooks.
+          ))}
+        </div>
+      </section>
+      {/* WHY NORTHSKY */}
+      <section style={styles.whySection}>
+        <div style={styles.sectionHeader}>
+          <div style={styles.eyebrow}>WHY NORTHSKY AUTO</div>
+          <h2 style={styles.sectionTitle}>
+            Built for modern vehicle acquisition.
+          </h2>
+          <p style={styles.sectionText}>
+            NorthSky Auto connects dealerships with vehicle opportunities
+            through one centralized dealer marketplace.
+          </p>
+        </div>
+        <div style={styles.benefitGrid}>
+          <div style={styles.benefit}>
+            <div style={styles.benefitIcon}>🚗</div>
+            <h3>Vehicle Opportunities</h3>
+            <p>
+              Discover vehicles available for dealer acquisition.
             </p>
-            {hasSubscription && (
-              <p className="mt-2 text-xs font-semibold text-green-600">
-                Stripe subscription connected
-              </p>
-            )}
+          </div>
+          <div style={styles.benefit}>
+            <div style={styles.benefitIcon}>📊</div>
+            <h3>Dealer Analytics</h3>
+            <p>
+              Track your activity and opportunities from one dashboard.
+            </p>
+          </div>
+          <div style={styles.benefit}>
+            <div style={styles.benefitIcon}>⚡</div>
+            <h3>Faster Acquisition</h3>
+            <p>
+              Spend less time searching and more time evaluating
+              opportunities.
+            </p>
           </div>
         </div>
       </section>
+      {/* CTA */}
+      <section style={styles.ctaSection}>
+        <div style={styles.cta}>
+          <h2>Ready to grow your inventory?</h2>
+          <p>
+            Start using NorthSky Auto to discover new vehicle
+            opportunities.
+          </p>
+          <div style={styles.ctaButtons}>
+            <Link
+              href="/dealer/register"
+              style={styles.ctaPrimary}
+            >
+              Create Dealer Account
+            </Link>
+            <Link
+              href="/dealer/dashboard"
+              style={styles.ctaSecondary}
+            >
+              Back to Dashboard
+            </Link>
+          </div>
+        </div>
+      </section>
+      {/* FOOTER */}
+      <footer style={styles.footer}>
+        <div>
+          <strong>NorthSky Auto</strong>
+          <span>Dealer vehicle acquisition marketplace</span>
+        </div>
+        <div style={styles.footerLinks}>
+          <Link href="/dealer/dashboard">Dashboard</Link>
+          <Link href="/dealer/leads">Opportunities</Link>
+          <Link href="/dealer/settings">Settings</Link>
+        </div>
+      </footer>
     </main>
   );
 }
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "#f6f8fb",
+    color: "#0f172a",
+    fontFamily:
+      "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+  },
+  header: {
+    background: "#071426",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+  },
+  headerInner: {
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "18px 24px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "25px",
+  },
+  logo: {
+    color: "#ffffff",
+    textDecoration: "none",
+    fontSize: "22px",
+    fontWeight: 800,
+    letterSpacing: "-0.5px",
+  },
+  nav: {
+    display: "flex",
+    alignItems: "center",
+    gap: "20px",
+    flexWrap: "wrap",
+  },
+  navLink: {
+    color: "#cbd5e1",
+    textDecoration: "none",
+    fontSize: "14px",
+    fontWeight: 600,
+  },
+  hero: {
+    maxWidth: "850px",
+    margin: "0 auto",
+    padding: "75px 24px 50px",
+    textAlign: "center",
+  },
+  eyebrow: {
+    color: "#0284c7",
+    fontSize: "12px",
+    fontWeight: 800,
+    letterSpacing: "1.7px",
+    marginBottom: "13px",
+  },
+  title: {
+    margin: 0,
+    fontSize: "clamp(36px, 6vw, 58px)",
+    lineHeight: 1.04,
+    letterSpacing: "-2px",
+    fontWeight: 850,
+  },
+  subtitle: {
+    maxWidth: "650px",
+    margin: "20px auto 0",
+    color: "#64748b",
+    fontSize: "17px",
+    lineHeight: 1.65,
+  },
+  plansSection: {
+    maxWidth: "1180px",
+    margin: "0 auto",
+    padding: "0 24px 80px",
+  },
+  plansGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(285px, 1fr))",
+    gap: "22px",
+    alignItems: "stretch",
+  },
+  plan: {
+    position: "relative",
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "20px",
+    overflow: "hidden",
+    boxShadow: "0 15px 40px rgba(15,23,42,0.06)",
+  },
+  featuredPlan: {
+    border: "2px solid #0284c7",
+    transform: "translateY(-7px)",
+    boxShadow: "0 20px 50px rgba(2,132,199,0.14)",
+  },
+  popular: {
+    background: "#0284c7",
+    color: "#ffffff",
+    textAlign: "center",
+    fontSize: "11px",
+    fontWeight: 900,
+    letterSpacing: "1px",
+    padding: "9px",
+  },
+  planContent: {
+    padding: "30px",
+  },
+  planName: {
+    margin: 0,
+    fontSize: "25px",
+    fontWeight: 800,
+  },
+  planDescription: {
+    color: "#64748b",
+    minHeight: "68px",
+    lineHeight: 1.5,
+    fontSize: "14px",
+    margin: "10px 0 0",
+  },
+  priceRow: {
+    display: "flex",
+    alignItems: "baseline",
+    marginTop: "25px",
+    marginBottom: "25px",
+  },
+  price: {
+    fontSize: "42px",
+    fontWeight: 850,
+    letterSpacing: "-1.5px",
+  },
+  featuredPrice: {
+    color: "#0284c7",
+  },
+  period: {
+    color: "#64748b",
+    fontSize: "14px",
+    marginLeft: "5px",
+  },
+  planButton: {
+    display: "block",
+    textAlign: "center",
+    padding: "13px 16px",
+    borderRadius: "10px",
+    background: "#0f172a",
+    color: "#ffffff",
+    textDecoration: "none",
+    fontWeight: 750,
+    fontSize: "14px",
+  },
+  featuredButton: {
+    background: "#0284c7",
+  },
+  divider: {
+    height: "1px",
+    background: "#e2e8f0",
+    margin: "28px 0 20px",
+  },
+  includes: {
+    fontSize: "13px",
+    marginBottom: "14px",
+  },
+  features: {
+    listStyle: "none",
+    padding: 0,
+    margin: 0,
+  },
+  feature: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: "10px",
+    marginBottom: "13px",
+    color: "#475569",
+    fontSize: "14px",
+    lineHeight: 1.45,
+  },
+  check: {
+    color: "#16a34a",
+    fontWeight: 900,
+  },
+  whySection: {
+    background: "#ffffff",
+    borderTop: "1px solid #e2e8f0",
+    borderBottom: "1px solid #e2e8f0",
+    padding: "80px 24px",
+  },
+  sectionHeader: {
+    maxWidth: "700px",
+    margin: "0 auto 45px",
+    textAlign: "center",
+  },
+  sectionTitle: {
+    margin: 0,
+    fontSize: "36px",
+    letterSpacing: "-1px",
+  },
+  sectionText: {
+    color: "#64748b",
+    lineHeight: 1.6,
+    fontSize: "16px",
+  },
+  benefitGrid: {
+    maxWidth: "1050px",
+    margin: "0 auto",
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
+    gap: "24px",
+  },
+  benefit: {
+    padding: "25px",
+    border: "1px solid #e2e8f0",
+    borderRadius: "16px",
+  },
+  benefitIcon: {
+    fontSize: "28px",
+    marginBottom: "15px",
+  },
+  benefit h3: {
+    margin: 0,
+    fontSize: "18px",
+  },
+  benefit p: {
+    color: "#64748b",
+    fontSize: "14px",
+    lineHeight: 1.55,
+  },
+  ctaSection: {
+    maxWidth: "1050px",
+    margin: "0 auto",
+    padding: "70px 24px",
+  },
+  cta: {
+    background: "#071426",
+    color: "#ffffff",
+    borderRadius: "22px",
+    padding: "55px 30px",
+    textAlign: "center",
+  },
+  cta h2: {
+    margin: 0,
+    fontSize: "34px",
+    letterSpacing: "-1px",
+  },
+  cta p: {
+    color: "#cbd5e1",
+    margin: "14px 0 25px",
+  },
+  ctaButtons: {
+    display: "flex",
+    justifyContent: "center",
+    gap: "12px",
+    flexWrap: "wrap",
+  },
+  ctaPrimary: {
+    background: "#0284c7",
+    color: "#ffffff",
+    padding: "13px 20px",
+    borderRadius: "10px",
+    textDecoration: "none",
+    fontWeight: 800,
+  },
+  ctaSecondary: {
+    background: "#ffffff",
+    color: "#0f172a",
+    padding: "13px 20px",
+    borderRadius: "10px",
+    textDecoration: "none",
+    fontWeight: 800,
+  },
+  footer: {
+    borderTop: "1px solid #e2e8f0",
+    padding: "28px 24px",
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "20px",
+    flexWrap: "wrap",
+    maxWidth: "1200px",
+    margin: "0 auto",
+    color: "#64748b",
+    fontSize: "13px",
+  },
+  footerLinks: {
+    display: "flex",
+    gap: "18px",
+  },
+};
