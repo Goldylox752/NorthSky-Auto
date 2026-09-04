@@ -1,26 +1,21 @@
-```json
 {
   "name": "northsky-auto",
   "version": "1.0.0",
   "private": true,
-  "engines": {
-    "node": "24.x"
-  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "dependencies": {
-    "@supabase/ssr": "0.7.0",
-    "@supabase/supabase-js": "2.57.0",
-    "@tailwindcss/postcss": "4.1.11",
-    "next": "15.5.20",
-    "react": "19.1.1",
-    "react-dom": "19.1.1",
-    "resend": "6.18.1",
-    "stripe": "18.4.0",
-    "tailwindcss": "4.1.11"
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.57.0",
+    "next": "^15.5.20",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
   }
 }
-```
