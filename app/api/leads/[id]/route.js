@@ -1,47 +1,70 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-
 export const dynamic = "force-dynamic";
-
+const MARKETPLACE_STATUSES = [
+  "new",
+  "available",
+  "active",
+];
 function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url || !serviceRoleKey) {
+  if (!supabaseUrl) {
     throw new Error(
-      "Missing Supabase server environment variables."
+      "NEXT_PUBLIC_SUPABASE_URL is not configured."
     );
   }
-
-  return createClient(url, serviceRoleKey);
+  if (!serviceRoleKey) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY is not configured."
+    );
+  }
+  return createClient(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
 }
-
-export async function GET(request, { params }) {
+export async function GET(
+  request,
+  { params }
+) {
   try {
     const { id } = await params;
-
     if (!id) {
       return NextResponse.json(
         {
           success: false,
-          error: "Vehicle lead ID is required.",
+          error:
+            "Vehicle lead ID is required.",
         },
         { status: 400 }
       );
     }
-
-    const supabase = getSupabaseAdmin();
-
+    const supabase =
+      getSupabaseAdmin();
     /*
      * ---------------------------------------------------------
-     * LOAD VEHICLE LEAD
+     * LOAD LEAD
      * ---------------------------------------------------------
+     *
+     * This route intentionally uses the same
+     * "leads" table as /api/leads.
      */
-
-    const { data, error } = await supabase
-      .from("vehicle_leads")
-      .select(`
+    const {
+      data,
+      error,
+    } = await supabase
+      .from("leads")
+      .select(
+        `
         id,
         year,
         make,
@@ -57,37 +80,37 @@ export async function GET(request, { params }) {
         accident_history,
         status,
         created_at
-      `)
+        `
+      )
       .eq("id", id)
-      .in("status", [
-        "new",
-        "available",
-        "active",
-      ])
+      .in(
+        "status",
+        MARKETPLACE_STATUSES
+      )
       .maybeSingle();
-
     if (error) {
       console.error(
-        "Vehicle lead detail query failed:",
+        "Lead detail query failed:",
         error
       );
-
       return NextResponse.json(
         {
           success: false,
           error:
             "Unable to load this vehicle opportunity.",
+          details:
+            process.env.NODE_ENV === "development"
+              ? error.message
+              : undefined,
         },
         { status: 500 }
       );
     }
-
     /*
      * ---------------------------------------------------------
      * NOT FOUND
      * ---------------------------------------------------------
      */
-
     if (!data) {
       return NextResponse.json(
         {
@@ -98,73 +121,68 @@ export async function GET(request, { params }) {
         { status: 404 }
       );
     }
-
     /*
      * ---------------------------------------------------------
-     * DEALER MARKETPLACE RESPONSE
-     *
-     * Do NOT expose seller name, email, phone number,
-     * or the actual VIN to dealers at this stage.
-     *
-     * We only expose whether a VIN exists.
+     * DEALER-SAFE RESPONSE
      * ---------------------------------------------------------
+     *
+     * Never expose seller contact information
+     * or the actual VIN through this public
+     * marketplace endpoint.
      */
-
     const lead = {
       id: data.id,
-
-      year: data.year ?? null,
-      make: data.make ?? null,
-      model: data.model ?? null,
-      trim: data.trim ?? null,
-
-      mileage: data.mileage ?? null,
-
+      year:
+        data.year ?? null,
+      make:
+        data.make ?? null,
+      model:
+        data.model ?? null,
+      trim:
+        data.trim ?? null,
+      mileage:
+        data.mileage ?? null,
       condition:
         data.condition ?? null,
-
       asking_price:
         data.asking_price ?? null,
-
       postal_code:
         data.postal_code ?? null,
-
       location:
-        data.postal_code || "Canada",
-
+        data.postal_code ||
+        "Canada",
       description:
         data.description ?? null,
-
       selling_timeline:
         data.selling_timeline ?? null,
-
       accident_history:
         data.accident_history ?? null,
-
       status:
         data.status || "new",
-
       created_at:
         data.created_at ?? null,
-
       /*
-       * Never send the actual VIN.
+       * Only tell the dealer whether
+       * a VIN exists.
+       *
+       * The actual VIN is never returned.
        */
-      vin: Boolean(data.vin),
-
+      has_vin:
+        Boolean(data.vin),
       /*
-       * Vehicle type is not currently stored
-       * in the selected vehicle_leads fields.
+       * Keep this for compatibility with
+       * the existing dealer detail UI.
        */
-      vehicle_type: null,
+      vin:
+        Boolean(data.vin),
+      vehicle_type:
+        null,
     };
-
     /*
      * ---------------------------------------------------------
      * SUCCESS
      * ---------------------------------------------------------
      */
-
     return NextResponse.json(
       {
         success: true,
@@ -180,15 +198,18 @@ export async function GET(request, { params }) {
     );
   } catch (error) {
     console.error(
-      "Vehicle lead detail API error:",
+      "GET /api/leads/[id] error:",
       error
     );
-
     return NextResponse.json(
       {
         success: false,
         error:
           "An unexpected error occurred while loading this vehicle.",
+        details:
+          process.env.NODE_ENV === "development"
+            ? error.message
+            : undefined,
       },
       { status: 500 }
     );
