@@ -1,70 +1,76 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 export const dynamic = "force-dynamic";
+function getSupabaseAdmin() {
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl) {
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_URL is not configured."
+    );
+  }
+  if (!serviceRoleKey) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY is not configured."
+    );
+  }
+  return createClient(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
+}
 export async function GET(request) {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!supabaseUrl) {
-      console.error(
-        "Missing NEXT_PUBLIC_SUPABASE_URL"
-      );
-      return NextResponse.json(
-        {
-          error:
-            "Supabase URL is not configured.",
-        },
-        { status: 500 }
-      );
-    }
-    if (!supabaseServiceKey) {
-      console.error(
-        "Missing SUPABASE_SERVICE_ROLE_KEY"
-      );
-      return NextResponse.json(
-        {
-          error:
-            "Supabase service role key is not configured.",
-        },
-        { status: 500 }
-      );
-    }
-    const supabase = createClient(
-      supabaseUrl,
-      supabaseServiceKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
+    const supabase = getSupabaseAdmin();
     const { searchParams } =
       new URL(request.url);
+    /*
+     * Limit results.
+     */
     const requestedLimit = Number(
       searchParams.get("limit") || 100
     );
     const limit = Math.min(
       Math.max(
         Number.isFinite(requestedLimit)
-          ? requestedLimit
+          ? Math.floor(requestedLimit)
           : 100,
         1
       ),
       100
     );
     /*
-     * Only return active vehicle opportunities.
+     * Optional status filter.
      *
-     * If your leads table does not have a status
-     * column, remove the .eq("status", "available")
-     * line below.
+     * Default:
+     * new, available, active
      */
-    const {
-      data,
-      error,
-    } = await supabase
+    const requestedStatus =
+      searchParams.get("status");
+    const allowedStatuses = [
+      "new",
+      "available",
+      "active",
+    ];
+    const statuses =
+      requestedStatus &&
+      allowedStatuses.includes(
+        requestedStatus.toLowerCase()
+      )
+        ? [requestedStatus.toLowerCase()]
+        : allowedStatuses;
+    /*
+     * Query leads.
+     */
+    let query = supabase
       .from("leads")
       .select(
         `
@@ -74,6 +80,7 @@ export async function GET(request) {
         model,
         trim,
         mileage,
+        vin,
         condition,
         asking_price,
         selling_timeline,
@@ -83,11 +90,15 @@ export async function GET(request) {
         created_at
         `
       )
-      .eq("status", "available")
+      .in("status", statuses)
       .order("created_at", {
         ascending: false,
       })
       .limit(limit);
+    const {
+      data,
+      error,
+    } = await query;
     if (error) {
       console.error(
         "Supabase leads query error:",
@@ -102,13 +113,16 @@ export async function GET(request) {
               ? error.message
               : undefined,
         },
-        { status: 500 }
+        {
+          status: 500,
+        }
       );
     }
+    const leads = data || [];
     return NextResponse.json(
       {
-        leads: data || [],
-        count: data?.length || 0,
+        leads,
+        count: leads.length,
       },
       {
         status: 200,
@@ -126,9 +140,12 @@ export async function GET(request) {
     return NextResponse.json(
       {
         error:
+          error?.message ||
           "An unexpected error occurred while loading vehicle opportunities.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }
