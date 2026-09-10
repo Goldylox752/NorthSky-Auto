@@ -1,189 +1,198 @@
 import Stripe from "stripe";
 import { headers } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
-
 export const runtime = "nodejs";
-
 /*
 |--------------------------------------------------------------------------
-| Runtime Clients
+| NorthSky Auto — Stripe Webhook
 |--------------------------------------------------------------------------
 |
-| IMPORTANT:
-| Do not initialize Stripe or Supabase at module load time.
-| Next.js may evaluate this file during build/collection.
+| Handles:
 |
+| checkout.session.completed
+| customer.subscription.created
+| customer.subscription.updated
+| customer.subscription.deleted
+| invoice.paid
+| invoice.payment_failed
+|
+| Stripe remains the source of truth for subscription status.
+|--------------------------------------------------------------------------
 */
-
-function getStripe() {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-
-  if (!secretKey) {
-    throw new Error("STRIPE_SECRET_KEY is not configured.");
+const PLAN_NAMES = {
+  starter: "Dealer Starter",
+  professional: "Dealer Professional",
+};
+function normalizePlan(value) {
+  if (!value) return null;
+  const plan = String(value)
+    .trim()
+    .toLowerCase();
+  if (
+    plan === "starter" ||
+    plan === "dealer starter"
+  ) {
+    return "starter";
   }
-
-  return new Stripe(secretKey, {
+  if (
+    plan === "professional" ||
+    plan === "pro" ||
+    plan === "dealer pro" ||
+    plan === "dealer professional"
+  ) {
+    return "professional";
+  }
+  return null;
+}
+function getCustomerId(customer) {
+  if (!customer) return null;
+  if (typeof customer === "string") {
+    return customer;
+  }
+  return customer.id || null;
+}
+function getStripe() {
+  const key =
+    process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error(
+      "STRIPE_SECRET_KEY is not configured."
+    );
+  }
+  return new Stripe(key, {
     apiVersion: "2025-03-31.basil",
   });
 }
-
 function getSupabase() {
-  const supabaseUrl =
+  const url =
     process.env.NEXT_PUBLIC_SUPABASE_URL;
-
   const serviceRoleKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl) {
+  if (!url) {
     throw new Error(
       "NEXT_PUBLIC_SUPABASE_URL is not configured."
     );
   }
-
   if (!serviceRoleKey) {
     throw new Error(
       "SUPABASE_SERVICE_ROLE_KEY is not configured."
     );
   }
-
   return createClient(
-    supabaseUrl,
+    url,
     serviceRoleKey
   );
 }
-
 /*
 |--------------------------------------------------------------------------
-| Dealer Plans
+| Plan Detection
 |--------------------------------------------------------------------------
 */
-
-const PLAN_NAMES = {
-  starter: "Dealer Starter",
-  professional: "Dealer Professional",
-};
-
-function normalizePlan(plan) {
-  if (!plan) {
-    return null;
-  }
-
-  const value = String(plan)
-    .toLowerCase()
-    .trim();
-
-  if (
-    value === "starter" ||
-    value === "dealer starter"
-  ) {
-    return "starter";
-  }
-
-  if (
-    value === "professional" ||
-    value === "pro" ||
-    value === "dealer pro" ||
-    value === "dealer professional"
-  ) {
-    return "professional";
-  }
-
-  return null;
-}
-
 function getPlanFromPriceId(priceId) {
+  if (!priceId) return null;
   if (
-    priceId &&
     priceId ===
-      process.env.STRIPE_STARTER_PRICE_ID
+    process.env.STRIPE_STARTER_PRICE_ID
   ) {
     return "starter";
   }
-
   if (
-    priceId &&
     priceId ===
-      process.env.STRIPE_PROFESSIONAL_PRICE_ID
+    process.env.STRIPE_PROFESSIONAL_PRICE_ID
   ) {
     return "professional";
   }
-
   return null;
 }
-
-/*
-|--------------------------------------------------------------------------
-| Stripe Helpers
-|--------------------------------------------------------------------------
-*/
-
-function getCustomerId(customer) {
-  if (!customer) {
-    return null;
+function getSubscriptionPlan(subscription) {
+  const priceId =
+    subscription?.items?.data?.[0]?.price?.id ||
+    null;
+  /*
+   * Price ID is authoritative.
+   */
+  const pricePlan =
+    getPlanFromPriceId(priceId);
+  if (pricePlan) {
+    return {
+      plan: pricePlan,
+      priceId,
+    };
   }
-
-  if (typeof customer === "string") {
-    return customer;
-  }
-
-  return customer.id || null;
+  /*
+   * Metadata fallback.
+   */
+  const metadataPlan =
+    normalizePlan(
+      subscription?.metadata?.plan
+    );
+  return {
+    plan: metadataPlan,
+    priceId,
+  };
 }
-
 /*
 |--------------------------------------------------------------------------
 | Marketing Attribution
 |--------------------------------------------------------------------------
 */
-
-function getMarketingAttribution(metadata) {
-  if (!metadata) {
-    return {
-      source: null,
-      campaign: null,
-      sessionId: null,
-    };
-  }
-
+function getMarketingMetadata(metadata) {
   return {
     source:
-      metadata.source
+      metadata?.source
         ?.toString()
         .trim()
         .slice(0, 100) || null,
-
     campaign:
-      metadata.campaign
+      metadata?.campaign
         ?.toString()
         .trim()
         .slice(0, 100) || null,
-
     sessionId:
-      metadata.marketing_session_id
+      metadata?.marketing_session_id
         ?.toString()
         .trim()
         .slice(0, 200) || null,
   };
 }
-
 /*
 |--------------------------------------------------------------------------
-| Supabase Dealer Helpers
+| Dealer Lookup
 |--------------------------------------------------------------------------
 */
-
-async function findDealer({
+async function findDealer(
   supabase,
-  customerId,
-  email,
-}) {
-  if (!customerId && !email) {
-    return null;
-  }
-
+  {
+    customerId = null,
+    email = null,
+    subscriptionId = null,
+  } = {}
+) {
   /*
-   * First try Stripe customer ID.
+   * Subscription ID is the strongest lookup
+   * for an existing subscription.
    */
-
+  if (subscriptionId) {
+    const { data, error } =
+      await supabase
+        .from("dealers")
+        .select("*")
+        .eq(
+          "stripe_subscription_id",
+          subscriptionId
+        )
+        .maybeSingle();
+    if (error) {
+      console.error(
+        "Dealer lookup by subscription failed:",
+        error
+      );
+    }
+    if (data) return data;
+  }
+  /*
+   * Then Stripe customer ID.
+   */
   if (customerId) {
     const { data, error } =
       await supabase
@@ -194,23 +203,17 @@ async function findDealer({
           customerId
         )
         .maybeSingle();
-
     if (error) {
       console.error(
         "Dealer lookup by Stripe customer failed:",
         error
       );
     }
-
-    if (data) {
-      return data;
-    }
+    if (data) return data;
   }
-
   /*
-   * Then try email.
+   * Finally email.
    */
-
   if (email) {
     const { data, error } =
       await supabase
@@ -218,205 +221,51 @@ async function findDealer({
         .select("*")
         .ilike("email", email)
         .maybeSingle();
-
     if (error) {
       console.error(
         "Dealer lookup by email failed:",
         error
       );
     }
-
-    if (data) {
-      return data;
-    }
+    if (data) return data;
   }
-
   return null;
 }
-
-async function createDealer({
-  supabase,
-  email,
-  customerId,
-  subscriptionId,
-  plan,
-  status,
-  source,
-  campaign,
-  sessionId,
-  name,
-}) {
-  if (!email && !customerId) {
-    console.warn(
-      "Unable to create dealer: no email or Stripe customer ID."
-    );
-
-    return null;
-  }
-
-  const dealerData = {
-    email: email || null,
-
-    stripe_customer_id:
-      customerId || null,
-
-    stripe_subscription_id:
-      subscriptionId || null,
-
-    subscription_plan:
-      plan || null,
-
-    subscription_status:
-      status || "active",
-
-    marketing_source:
-      source || null,
-
-    marketing_campaign:
-      campaign || null,
-
-    marketing_session_id:
-      sessionId || null,
-
-    name: name || null,
-  };
-
-  const { data, error } =
-    await supabase
-      .from("dealers")
-      .insert(dealerData)
-      .select("*")
-      .single();
-
-  if (error) {
-    console.error(
-      "Failed to create dealer:",
-      error
-    );
-
-    throw error;
-  }
-
-  console.log(
-    "Dealer created:",
-    {
-      dealerId: data.id,
-      email: data.email,
-      plan: data.subscription_plan,
-      source: data.marketing_source,
-      campaign:
-        data.marketing_campaign,
-    }
-  );
-
-  return data;
-}
-
+/*
+|--------------------------------------------------------------------------
+| Dealer Update
+|--------------------------------------------------------------------------
+*/
 async function updateDealer(
   supabase,
   dealerId,
   updates
 ) {
-  if (!dealerId) {
-    return;
-  }
-
-  const { error } =
+  if (!dealerId) return null;
+  const { data, error } =
     await supabase
       .from("dealers")
       .update(updates)
-      .eq("id", dealerId);
-
+      .eq("id", dealerId)
+      .select("*")
+      .maybeSingle();
   if (error) {
     console.error(
-      "Supabase dealer update failed:",
+      "Dealer update failed:",
       error
     );
-
     throw error;
   }
+  return data;
 }
-
-async function findOrCreateDealer({
+/*
+|--------------------------------------------------------------------------
+| Dealer Creation
+|--------------------------------------------------------------------------
+*/
+async function createDealer(
   supabase,
-  customerId,
-  email,
-  subscriptionId,
-  plan,
-  status,
-  source,
-  campaign,
-  sessionId,
-  name,
-}) {
-  const dealer =
-    await findDealer({
-      supabase,
-      customerId,
-      email,
-    });
-
-  /*
-   * Existing dealer.
-   */
-
-  if (dealer) {
-    const updates = {
-      subscription_status:
-        status || "active",
-
-      subscription_plan:
-        plan ||
-        dealer.subscription_plan,
-    };
-
-    if (customerId) {
-      updates.stripe_customer_id =
-        customerId;
-    }
-
-    if (subscriptionId) {
-      updates.stripe_subscription_id =
-        subscriptionId;
-    }
-
-    if (source) {
-      updates.marketing_source =
-        source;
-    }
-
-    if (campaign) {
-      updates.marketing_campaign =
-        campaign;
-    }
-
-    if (sessionId) {
-      updates.marketing_session_id =
-        sessionId;
-    }
-
-    if (name && !dealer.name) {
-      updates.name = name;
-    }
-
-    await updateDealer(
-      supabase,
-      dealer.id,
-      updates
-    );
-
-    return {
-      ...dealer,
-      ...updates,
-    };
-  }
-
-  /*
-   * Create dealer.
-   */
-
-  return createDealer({
-    supabase,
+  {
     email,
     customerId,
     subscriptionId,
@@ -426,293 +275,299 @@ async function findOrCreateDealer({
     campaign,
     sessionId,
     name,
-  });
+  }
+) {
+  if (!email && !customerId) {
+    throw new Error(
+      "Cannot create dealer without email or Stripe customer ID."
+    );
+  }
+  const dealerData = {
+    email: email || null,
+    stripe_customer_id:
+      customerId || null,
+    stripe_subscription_id:
+      subscriptionId || null,
+    subscription_plan:
+      plan || null,
+    subscription_status:
+      status || "active",
+    marketing_source:
+      source || null,
+    marketing_campaign:
+      campaign || null,
+    marketing_session_id:
+      sessionId || null,
+    name:
+      name || null,
+  };
+  const { data, error } =
+    await supabase
+      .from("dealers")
+      .insert(dealerData)
+      .select("*")
+      .single();
+  if (error) {
+    /*
+     * A duplicate can occur when Stripe retries
+     * an event or two related events arrive close
+     * together. Try to find the existing dealer.
+     */
+    console.error(
+      "Dealer insert failed:",
+      error
+    );
+    const existing =
+      await findDealer(
+        supabase,
+        {
+          customerId,
+          email,
+          subscriptionId,
+        }
+      );
+    if (existing) {
+      return existing;
+    }
+    throw error;
+  }
+  console.log(
+    "Dealer created:",
+    {
+      dealerId: data.id,
+      email: data.email,
+      plan: data.subscription_plan,
+      status: data.subscription_status,
+    }
+  );
+  return data;
 }
-
 /*
 |--------------------------------------------------------------------------
-| Subscription Helpers
+| Find Or Create Dealer
 |--------------------------------------------------------------------------
 */
-
-function getSubscriptionDetails(
-  subscription
+async function findOrCreateDealer(
+  supabase,
+  data
 ) {
-  const priceId =
-    subscription?.items?.data?.[0]
-      ?.price?.id || null;
-
-  const metadataPlan =
-    normalizePlan(
-      subscription?.metadata?.plan
+  const existing =
+    await findDealer(
+      supabase,
+      {
+        customerId:
+          data.customerId,
+        email: data.email,
+        subscriptionId:
+          data.subscriptionId,
+      }
     );
-
-  const pricePlan =
-    getPlanFromPriceId(priceId);
-
-  /*
-   * Stripe price ID is authoritative.
-   */
-
-  const plan =
-    pricePlan ||
-    metadataPlan ||
-    null;
-
-  return {
-    plan,
-    priceId,
-  };
+  if (existing) {
+    const updates = {};
+    if (data.customerId) {
+      updates.stripe_customer_id =
+        data.customerId;
+    }
+    if (data.subscriptionId) {
+      updates.stripe_subscription_id =
+        data.subscriptionId;
+    }
+    if (data.plan) {
+      updates.subscription_plan =
+        data.plan;
+    }
+    if (data.status) {
+      updates.subscription_status =
+        data.status;
+    }
+    if (data.source) {
+      updates.marketing_source =
+        data.source;
+    }
+    if (data.campaign) {
+      updates.marketing_campaign =
+        data.campaign;
+    }
+    if (data.sessionId) {
+      updates.marketing_session_id =
+        data.sessionId;
+    }
+    if (data.name && !existing.name) {
+      updates.name = data.name;
+    }
+    if (
+      data.email &&
+      !existing.email
+    ) {
+      updates.email = data.email;
+    }
+    if (Object.keys(updates).length) {
+      return updateDealer(
+        supabase,
+        existing.id,
+        updates
+      );
+    }
+    return existing;
+  }
+  return createDealer(
+    supabase,
+    data
+  );
 }
-
 /*
 |--------------------------------------------------------------------------
 | POST /api/stripe/webhook
 |--------------------------------------------------------------------------
 */
-
 export async function POST(request) {
-  /*
-   * Validate configuration at request time.
-   *
-   * This is intentionally NOT done at module scope
-   * so `next build` can complete without production
-   * environment variables being present.
-   */
-
-  const stripeSecretKey =
-    process.env.STRIPE_SECRET_KEY;
-
-  const webhookSecret =
-    process.env.STRIPE_WEBHOOK_SECRET;
-
-  const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  const supabaseServiceRoleKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!stripeSecretKey) {
-    console.error(
-      "STRIPE_SECRET_KEY is not configured."
-    );
-
-    return new Response(
-      "Webhook configuration error",
-      {
-        status: 500,
-      }
-    );
-  }
-
-  if (!webhookSecret) {
-    console.error(
-      "STRIPE_WEBHOOK_SECRET is not configured."
-    );
-
-    return new Response(
-      "Webhook configuration error",
-      {
-        status: 500,
-      }
-    );
-  }
-
-  if (!supabaseUrl) {
-    console.error(
-      "NEXT_PUBLIC_SUPABASE_URL is not configured."
-    );
-
-    return new Response(
-      "Webhook configuration error",
-      {
-        status: 500,
-      }
-    );
-  }
-
-  if (!supabaseServiceRoleKey) {
-    console.error(
-      "SUPABASE_SERVICE_ROLE_KEY is not configured."
-    );
-
-    return new Response(
-      "Webhook configuration error",
-      {
-        status: 500,
-      }
-    );
-  }
-
-  /*
-   * Create clients only after configuration
-   * has been validated at request time.
-   */
-
-  const stripe = getStripe();
-  const supabase = getSupabase();
-
-  /*
-   * IMPORTANT:
-   * Stripe signature verification requires
-   * the raw request body.
-   */
-
-  const body =
-    await request.text();
-
-  const headersList =
-    await headers();
-
-  const signature =
-    headersList.get(
-      "stripe-signature"
-    );
-
-  if (!signature) {
-    console.error(
-      "Missing stripe-signature header."
-    );
-
-    return new Response(
-      "Missing stripe-signature",
-      {
-        status: 400,
-      }
-    );
-  }
-
-  let event;
-
-  /*
-   * Verify Stripe signature.
-   */
-
   try {
-    event =
-      stripe.webhooks.constructEvent(
-        body,
-        signature,
-        webhookSecret
+    /*
+     * Validate required environment variables
+     * at request time.
+     */
+    if (
+      !process.env.STRIPE_SECRET_KEY
+    ) {
+      console.error(
+        "STRIPE_SECRET_KEY is missing."
       );
-  } catch (error) {
-    console.error(
-      "Stripe webhook signature verification failed:",
-      error?.message
-    );
-
-    return new Response(
-      `Webhook Error: ${
-        error?.message ||
-        "Invalid signature"
-      }`,
-      {
-        status: 400,
-      }
-    );
-  }
-
-  /*
-   * Process verified Stripe event.
-   */
-
-  try {
+      return new Response(
+        "Webhook configuration error",
+        { status: 500 }
+      );
+    }
+    if (
+      !process.env.STRIPE_WEBHOOK_SECRET
+    ) {
+      console.error(
+        "STRIPE_WEBHOOK_SECRET is missing."
+      );
+      return new Response(
+        "Webhook configuration error",
+        { status: 500 }
+      );
+    }
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL
+    ) {
+      console.error(
+        "NEXT_PUBLIC_SUPABASE_URL is missing."
+      );
+      return new Response(
+        "Webhook configuration error",
+        { status: 500 }
+      );
+    }
+    if (
+      !process.env.SUPABASE_SERVICE_ROLE_KEY
+    ) {
+      console.error(
+        "SUPABASE_SERVICE_ROLE_KEY is missing."
+      );
+      return new Response(
+        "Webhook configuration error",
+        { status: 500 }
+      );
+    }
+    const stripe = getStripe();
+    const supabase = getSupabase();
+    /*
+     * Stripe signature verification requires
+     * the raw request body.
+     */
+    const rawBody =
+      await request.text();
+    const headersList =
+      await headers();
+    const signature =
+      headersList.get(
+        "stripe-signature"
+      );
+    if (!signature) {
+      return new Response(
+        "Missing stripe-signature",
+        { status: 400 }
+      );
+    }
+    let event;
+    try {
+      event =
+        stripe.webhooks.constructEvent(
+          rawBody,
+          signature,
+          process.env.STRIPE_WEBHOOK_SECRET
+        );
+    } catch (error) {
+      console.error(
+        "Stripe signature verification failed:",
+        error?.message
+      );
+      return new Response(
+        "Invalid webhook signature",
+        { status: 400 }
+      );
+    }
     console.log(
-      "Stripe webhook received:",
-      {
-        id: event.id,
-        type: event.type,
-      }
+      "Stripe webhook:",
+      event.id,
+      event.type
     );
-
     /*
     |--------------------------------------------------------------------------
     | CHECKOUT COMPLETED
     |--------------------------------------------------------------------------
     */
-
     if (
       event.type ===
       "checkout.session.completed"
     ) {
       const session =
         event.data.object;
-
       const customerId =
         getCustomerId(
           session.customer
         );
-
       const subscriptionId =
         getCustomerId(
           session.subscription
         );
-
       const email =
         session.customer_details
           ?.email ||
         session.customer_email ||
         null;
-
       const plan =
         normalizePlan(
           session.metadata?.plan
         );
-
       const {
         source,
         campaign,
         sessionId,
       } =
-        getMarketingAttribution(
+        getMarketingMetadata(
           session.metadata
         );
-
       const name =
         session.customer_details
           ?.name || null;
-
-      console.log(
-        "Checkout completed:",
-        {
-          checkoutSessionId:
-            session.id,
-
-          customerId,
-
-          subscriptionId,
-
-          email,
-
-          plan,
-
-          source,
-
-          campaign,
-
-          marketingSessionId:
-            sessionId,
-        }
-      );
-
       if (!plan) {
-        console.warn(
-          "Invalid dealer plan:",
+        console.error(
+          "Checkout completed with invalid plan:",
           session.metadata?.plan
         );
-
         return Response.json({
           received: true,
           warning:
-            "Invalid or unsupported dealer plan.",
+            "Invalid dealer plan.",
         });
       }
-
-      const dealer =
-        await findOrCreateDealer({
-          supabase,
-          customerId,
+      await findOrCreateDealer(
+        supabase,
+        {
           email,
+          customerId,
           subscriptionId,
           plan,
           status: "active",
@@ -720,282 +575,229 @@ export async function POST(request) {
           campaign,
           sessionId,
           name,
-        });
-
+        }
+      );
       console.log(
-        "Dealer activated:",
+        "Dealer checkout completed:",
         {
-          dealerId:
-            dealer?.id,
-
+          sessionId: session.id,
+          customerId,
+          subscriptionId,
+          email,
           plan,
-
           planName:
             PLAN_NAMES[plan],
-
-          source,
-
-          campaign,
         }
       );
     }
-
     /*
     |--------------------------------------------------------------------------
     | SUBSCRIPTION CREATED
     |--------------------------------------------------------------------------
     */
-
     else if (
       event.type ===
       "customer.subscription.created"
     ) {
       const subscription =
         event.data.object;
-
       const customerId =
         getCustomerId(
           subscription.customer
         );
-
       const {
         plan,
         priceId,
       } =
-        getSubscriptionDetails(
+        getSubscriptionPlan(
           subscription
         );
-
       const {
         source,
         campaign,
         sessionId,
       } =
-        getMarketingAttribution(
+        getMarketingMetadata(
           subscription.metadata
         );
-
-      console.log(
-        "Subscription created:",
-        {
-          subscriptionId:
-            subscription.id,
-
-          customerId,
-
-          priceId,
-
-          plan,
-
-          status:
-            subscription.status,
-
-          source,
-
-          campaign,
-        }
-      );
-
       if (!plan) {
-        console.warn(
-          "Unsupported subscription plan:",
+        console.error(
+          "Unknown subscription price:",
           priceId
         );
-
         return Response.json({
           received: true,
           warning:
-            "Unsupported subscription plan.",
+            "Unknown subscription plan.",
         });
       }
-
-      const dealer =
-        await findOrCreateDealer({
-          supabase,
-
-          customerId,
-
+      await findOrCreateDealer(
+        supabase,
+        {
           email: null,
-
+          customerId,
           subscriptionId:
             subscription.id,
-
           plan,
-
           status:
             subscription.status,
-
           source,
-
           campaign,
-
           sessionId,
-
           name: null,
-        });
-
+        }
+      );
       console.log(
-        "Subscription connected to dealer:",
-        dealer?.id
+        "Subscription connected:",
+        {
+          subscriptionId:
+            subscription.id,
+          plan,
+          status:
+            subscription.status,
+        }
       );
     }
-
     /*
     |--------------------------------------------------------------------------
     | SUBSCRIPTION UPDATED
     |--------------------------------------------------------------------------
     */
-
     else if (
       event.type ===
       "customer.subscription.updated"
     ) {
       const subscription =
         event.data.object;
-
       const customerId =
         getCustomerId(
           subscription.customer
         );
-
       const {
         plan,
         priceId,
       } =
-        getSubscriptionDetails(
+        getSubscriptionPlan(
           subscription
         );
-
       const {
         source,
         campaign,
         sessionId,
       } =
-        getMarketingAttribution(
+        getMarketingMetadata(
           subscription.metadata
         );
-
-      console.log(
-        "Subscription updated:",
-        {
-          subscriptionId:
-            subscription.id,
-
-          customerId,
-
-          priceId,
-
-          plan,
-
-          status:
-            subscription.status,
-
-          source,
-
-          campaign,
-        }
-      );
-
       if (!plan) {
-        console.warn(
-          "Unsupported subscription plan:",
+        console.error(
+          "Unknown updated subscription price:",
           priceId
         );
-
         return Response.json({
           received: true,
           warning:
-            "Unsupported subscription plan.",
+            "Unknown subscription plan.",
         });
       }
-
       const dealer =
-        await findDealer({
+        await findDealer(
           supabase,
-          customerId,
-        });
-
-      if (!dealer) {
-        console.warn(
-          "No dealer found for updated subscription:",
           {
             customerId,
             subscriptionId:
               subscription.id,
           }
         );
+      if (!dealer) {
+        console.warn(
+          "No dealer found for subscription update:",
+          subscription.id
+        );
+        /*
+         * Create a dealer record if Stripe
+         * has a valid subscription but the
+         * earlier event was missed.
+         */
+        await findOrCreateDealer(
+          supabase,
+          {
+            email: null,
+            customerId,
+            subscriptionId:
+              subscription.id,
+            plan,
+            status:
+              subscription.status,
+            source,
+            campaign,
+            sessionId,
+            name: null,
+          }
+        );
       } else {
         const updates = {
           stripe_customer_id:
             customerId,
-
           stripe_subscription_id:
             subscription.id,
-
           subscription_plan:
             plan,
-
           subscription_status:
             subscription.status,
         };
-
         if (source) {
           updates.marketing_source =
             source;
         }
-
         if (campaign) {
           updates.marketing_campaign =
             campaign;
         }
-
         if (sessionId) {
           updates.marketing_session_id =
             sessionId;
         }
-
         await updateDealer(
           supabase,
           dealer.id,
           updates
         );
       }
+      console.log(
+        "Subscription updated:",
+        {
+          subscriptionId:
+            subscription.id,
+          plan,
+          status:
+            subscription.status,
+        }
+      );
     }
-
     /*
     |--------------------------------------------------------------------------
-    | SUBSCRIPTION CANCELLED
+    | SUBSCRIPTION DELETED
     |--------------------------------------------------------------------------
     */
-
     else if (
       event.type ===
       "customer.subscription.deleted"
     ) {
       const subscription =
         event.data.object;
-
       const customerId =
         getCustomerId(
           subscription.customer
         );
-
-      console.log(
-        "Subscription cancelled:",
-        {
-          subscriptionId:
-            subscription.id,
-
-          customerId,
-        }
-      );
-
       const dealer =
-        await findDealer({
+        await findDealer(
           supabase,
-          customerId,
-        });
-
+          {
+            customerId,
+            subscriptionId:
+              subscription.id,
+          }
+        );
       if (dealer) {
         await updateDealer(
           supabase,
@@ -1005,48 +807,34 @@ export async function POST(request) {
               "canceled",
           }
         );
-
         console.log(
-          "Dealer subscription marked canceled:",
+          "Dealer subscription canceled:",
           dealer.id
         );
       }
     }
-
     /*
     |--------------------------------------------------------------------------
     | INVOICE PAID
     |--------------------------------------------------------------------------
     */
-
     else if (
       event.type ===
       "invoice.paid"
     ) {
       const invoice =
         event.data.object;
-
       const customerId =
         getCustomerId(
           invoice.customer
         );
-
-      console.log(
-        "Invoice paid:",
-        {
-          invoiceId:
-            invoice.id,
-
-          customerId,
-        }
-      );
-
       const dealer =
-        await findDealer({
+        await findDealer(
           supabase,
-          customerId,
-        });
-
+          {
+            customerId,
+          }
+        );
       if (dealer) {
         await updateDealer(
           supabase,
@@ -1056,48 +844,34 @@ export async function POST(request) {
               "active",
           }
         );
-
         console.log(
-          "Dealer subscription marked active:",
+          "Dealer subscription active:",
           dealer.id
         );
       }
     }
-
     /*
     |--------------------------------------------------------------------------
-    | PAYMENT FAILED
+    | INVOICE PAYMENT FAILED
     |--------------------------------------------------------------------------
     */
-
     else if (
       event.type ===
       "invoice.payment_failed"
     ) {
       const invoice =
         event.data.object;
-
       const customerId =
         getCustomerId(
           invoice.customer
         );
-
-      console.log(
-        "Invoice payment failed:",
-        {
-          invoiceId:
-            invoice.id,
-
-          customerId,
-        }
-      );
-
       const dealer =
-        await findDealer({
+        await findDealer(
           supabase,
-          customerId,
-        });
-
+          {
+            customerId,
+          }
+        );
       if (dealer) {
         await updateDealer(
           supabase,
@@ -1107,46 +881,38 @@ export async function POST(request) {
               "past_due",
           }
         );
-
         console.log(
           "Dealer subscription marked past_due:",
           dealer.id
         );
       }
     }
-
     /*
     |--------------------------------------------------------------------------
-    | OTHER EVENTS
+    | UNHANDLED EVENT
     |--------------------------------------------------------------------------
     */
-
     else {
       console.log(
-        "Unhandled Stripe event:",
+        "Stripe event received but not handled:",
         event.type
       );
     }
-
     /*
-     * Always acknowledge successfully processed
-     * or intentionally ignored Stripe events.
+     * Stripe requires a successful response
+     * so it does not unnecessarily retry the event.
      */
-
     return Response.json({
       received: true,
     });
   } catch (error) {
     console.error(
-      "Stripe webhook processing error:",
+      "Stripe webhook processing failed:",
       error
     );
-
     return new Response(
       "Webhook processing failed",
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 }
