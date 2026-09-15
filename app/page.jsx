@@ -13,7 +13,7 @@ function Step({ number, title, text }) {
         {number}
       </div>
       <h3 className="mb-3 text-xl font-bold text-slate-900">{title}</h3>
-      <p className="text-slate-600 leading-relaxed">{text}</p>
+      <p className="leading-relaxed text-slate-600">{text}</p>
     </div>
   );
 }
@@ -23,7 +23,7 @@ function Benefit({ icon, title, text }) {
     <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm transition hover:shadow-md">
       <div className="mb-4 text-4xl">{icon}</div>
       <h3 className="mb-2 text-xl font-bold text-slate-900">{title}</h3>
-      <p className="text-slate-600 leading-relaxed">{text}</p>
+      <p className="leading-relaxed text-slate-600">{text}</p>
     </div>
   );
 }
@@ -48,8 +48,8 @@ export default function HomePage() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-300 sm:text-xl">
-            NorthSky Auto connects vehicle sellers with Canadian dealers
-            looking for quality inventory.
+            NorthSky Auto connects vehicle sellers with Canadian dealers looking
+            for quality inventory.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
@@ -83,8 +83,8 @@ export default function HomePage() {
             A simpler way to connect vehicles with dealers.
           </h2>
           <p className="mt-4 text-lg text-slate-600">
-            Submit your vehicle once and let NorthSky Auto help connect you
-            with participating dealers.
+            Submit your vehicle once and let NorthSky Auto help connect you with
+            participating dealers.
           </p>
         </div>
 
@@ -128,7 +128,10 @@ export default function HomePage() {
                 "Reach participating dealers",
                 "Get connected with interested buyers",
               ].map((item) => (
-                <li key={item} className="flex items-center gap-3 font-medium text-slate-700">
+                <li
+                  key={item}
+                  className="flex items-center gap-3 font-medium text-slate-700"
+                >
                   <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-600">
                     ✓
                   </span>
@@ -145,7 +148,6 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* Vehicle card preview */}
           <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50">
             <div className="mb-6 flex items-center justify-between">
               <span className="text-xs font-bold tracking-widest text-blue-600">
@@ -160,7 +162,7 @@ export default function HomePage() {
             <h3 className="text-2xl font-bold text-slate-900">
               Your Vehicle Could Be Here
             </h3>
-            <p className="mt-3 text-slate-600 leading-relaxed">
+            <p className="mt-3 leading-relaxed text-slate-600">
               Submit your vehicle details and make your opportunity visible to
               participating dealers.
             </p>
