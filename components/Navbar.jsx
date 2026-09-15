@@ -8,6 +8,8 @@ const navLinks = [
   { href: "/how-it-works", label: "How It Works" },
 ];
 
+const TELEGRAM_URL = "https://t.me/NorthSkyAutoCanada";
+
 export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
@@ -39,6 +41,16 @@ export default function Navbar() {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
+          <a
+            href={TELEGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden text-sm font-semibold text-[#229ED9] transition hover:text-[#168dcc] sm:inline-block"
+            aria-label="NorthSky Auto on Telegram"
+          >
+            Telegram
+          </a>
+
           <Link
             href="/login"
             className="hidden text-sm font-semibold text-slate-600 transition hover:text-blue-600 sm:inline-block"
