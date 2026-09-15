@@ -1,18 +1,17 @@
 import Link from "next/link";
-
 export const metadata = {
   title: "Dealer Pricing | NorthSky Auto",
   description:
     "Choose a NorthSky Auto dealer plan and access vehicle acquisition opportunities across Canada.",
 };
-
 const plans = [
   {
+    id: "starter",
     name: "Dealer Starter",
     price: "$599",
     period: "/month",
     description:
-      "For dealerships ready to access NorthSky Auto vehicle acquisition opportunities and manage their dealer pipeline.",
+      "For dealerships ready to access vehicle acquisition opportunities and manage their dealer pipeline.",
     features: [
       "Dealer account",
       "Vehicle opportunity access",
@@ -26,11 +25,12 @@ const plans = [
     popular: false,
   },
   {
+    id: "pro",
     name: "Dealer Pro",
     price: "$799",
     period: "/month",
     description:
-      "For active dealerships that want expanded opportunities, better pipeline management, and advanced dealer tools.",
+      "For active dealerships that want expanded opportunities, stronger pipeline management, and advanced dealer tools.",
     features: [
       "Everything in Dealer Starter",
       "Priority vehicle opportunities",
@@ -44,7 +44,6 @@ const plans = [
     popular: true,
   },
 ];
-
 const benefits = [
   {
     icon: "🚗",
@@ -65,12 +64,24 @@ const benefits = [
       "NorthSky Auto is designed around the vehicle acquisition workflow of modern automotive dealerships.",
   },
 ];
-
+const comparisonRows = [
+  ["Dealer Account", true, true],
+  ["Vehicle Opportunities", true, true],
+  ["Lead Management", true, true],
+  ["Saved Opportunities", true, true],
+  ["Dealer Dashboard", true, true],
+  ["Dealer Profile", true, true],
+  ["Priority Opportunities", false, true],
+  ["Advanced Lead Management", false, true],
+  ["Dealer Analytics", false, true],
+  ["Pipeline Tracking", false, true],
+  ["Priority Support", false, true],
+];
 const faqs = [
   {
     question: "What is included with Dealer Starter?",
     answer:
-      "Dealer Starter includes a dealer account, vehicle opportunity access, lead management, saved opportunities, your dealer dashboard, and email support.",
+      "Dealer Starter includes a dealer account, vehicle opportunity access, lead management, saved opportunities, your dealer dashboard, dealer profile tools, and email support.",
   },
   {
     question: "What is included with Dealer Pro?",
@@ -85,49 +96,32 @@ const faqs = [
   {
     question: "Is NorthSky Auto a vehicle dealership?",
     answer:
-      "No. NorthSky Auto operates as a marketplace and technology platform connecting vehicle sellers with participating automotive dealers. Dealers make their own acquisition decisions.",
+      "No. NorthSky Auto is a marketplace and technology platform connecting vehicle sellers with participating automotive dealers. Dealers make their own acquisition decisions.",
   },
   {
     question: "How do I get started?",
     answer:
-      "Choose a dealer plan, create your dealer account, and complete your dealership profile. You'll then be able to access the NorthSky Auto dealer platform.",
+      "Choose a dealer plan, create your dealer account, and complete your dealership profile. You can then access the NorthSky Auto dealer platform.",
   },
 ];
-
-const comparisonRows = [
-  ["Dealer Account", true, true],
-  ["Vehicle Opportunities", true, true],
-  ["Lead Management", true, true],
-  ["Saved Opportunities", true, true],
-  ["Dealer Dashboard", true, true],
-  ["Priority Opportunities", false, true],
-  ["Advanced Lead Management", false, true],
-  ["Dealer Analytics", false, true],
-  ["Pipeline Tracking", false, true],
-  ["Priority Support", false, true],
-];
-
 export default function PricingPage() {
   return (
-    <div className="bg-white text-slate-900">
-      {/* ================= HERO ================= */}
+    <main className="bg-white text-slate-900">
+      {/* HERO */}
       <section className="relative overflow-hidden bg-slate-950 text-white">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(37,99,235,0.28),transparent_45%)]" />
-
-        <div className="relative mx-auto max-w-3xl px-6 py-20 text-center sm:py-24 lg:py-28">
+        <div className="relative mx-auto max-w-4xl px-6 py-20 text-center sm:py-24 lg:py-28">
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-blue-400">
             Dealer Plans
           </p>
-
           <h1 className="mt-4 text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
             Built for automotive dealers.
           </h1>
-
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-300">
             Access vehicle acquisition opportunities, manage your dealer
-            pipeline, and grow your inventory sourcing with NorthSky Auto.
+            pipeline, and build a stronger inventory sourcing process with
+            NorthSky Auto.
           </p>
-
           <div className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-400">
             <span>✓ Canadian marketplace</span>
             <span>✓ Dealer dashboard</span>
@@ -135,13 +129,12 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
-
-      {/* ================= PRICING CARDS ================= */}
+      {/* PRICING */}
       <section className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
         <div className="grid gap-8 lg:grid-cols-2">
           {plans.map((plan) => (
             <article
-              key={plan.name}
+              key={plan.id}
               className={`relative flex flex-col rounded-3xl bg-white p-8 shadow-lg transition hover:-translate-y-1 ${
                 plan.popular
                   ? "ring-2 ring-blue-600 lg:scale-[1.02]"
@@ -149,11 +142,10 @@ export default function PricingPage() {
               }`}
             >
               {plan.popular && (
-                <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-600 px-5 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-md">
+                <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-blue-600 px-5 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-md">
                   Most Popular
                 </div>
               )}
-
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-sm font-bold uppercase tracking-wider text-blue-600">
@@ -167,7 +159,6 @@ export default function PricingPage() {
                   CAD
                 </span>
               </div>
-
               <div className="mt-6 flex items-end gap-1.5">
                 <span className="text-5xl font-extrabold tracking-tight">
                   {plan.price}
@@ -176,17 +167,13 @@ export default function PricingPage() {
                   {plan.period}
                 </span>
               </div>
-
               <p className="mt-4 min-h-[5rem] text-sm leading-relaxed text-slate-600">
                 {plan.description}
               </p>
-
               <div className="my-8 h-px bg-slate-200" />
-
               <p className="mb-4 text-sm font-bold text-slate-900">
                 What&apos;s included
               </p>
-
               <ul className="space-y-3">
                 {plan.features.map((feature) => (
                   <li
@@ -196,11 +183,10 @@ export default function PricingPage() {
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">
                       ✓
                     </span>
-                    {feature}
+                    <span>{feature}</span>
                   </li>
                 ))}
               </ul>
-
               <div className="mt-auto pt-10">
                 <Link
                   href={plan.href}
@@ -219,15 +205,13 @@ export default function PricingPage() {
             </article>
           ))}
         </div>
-
         <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center text-sm text-slate-500">
-          All prices are in <strong className="text-slate-900">CAD</strong> and
-          billed monthly. Subscription access is subject to NorthSky Auto&apos;s
-          dealer terms.
+          All prices are in{" "}
+          <strong className="text-slate-900">CAD</strong> and billed monthly.
+          Subscription access is subject to NorthSky Auto&apos;s dealer terms.
         </div>
       </section>
-
-      {/* ================= BENEFITS ================= */}
+      {/* BENEFITS */}
       <section className="border-y border-slate-100 bg-slate-50">
         <div className="mx-auto max-w-7xl px-6 py-20 sm:py-24">
           <div className="mx-auto max-w-2xl text-center">
@@ -242,12 +226,11 @@ export default function PricingPage() {
               together in one centralized platform.
             </p>
           </div>
-
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {benefits.map((benefit) => (
               <div
                 key={benefit.title}
-                className="rounded-2xl border border-slate-200 bg-white p-8 transition hover:shadow-md"
+                className="rounded-2xl border border-slate-200 bg-white p-8 transition hover:-translate-y-1 hover:shadow-md"
               >
                 <div className="text-4xl">{benefit.icon}</div>
                 <h3 className="mt-5 text-xl font-bold text-slate-900">
@@ -261,8 +244,7 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
-
-      {/* ================= COMPARISON ================= */}
+      {/* COMPARISON */}
       <section className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
         <div className="text-center">
           <p className="text-xs font-bold uppercase tracking-widest text-blue-600">
@@ -272,16 +254,16 @@ export default function PricingPage() {
             Choose the right level for your dealership
           </h2>
         </div>
-
         <div className="mt-12 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="grid grid-cols-3 border-b border-slate-200 bg-slate-50">
             <div className="p-5 text-sm font-bold">Feature</div>
-            <div className="p-5 text-center text-sm font-bold">Starter</div>
+            <div className="p-5 text-center text-sm font-bold">
+              Starter
+            </div>
             <div className="p-5 text-center text-sm font-bold text-blue-600">
               Pro
             </div>
           </div>
-
           {comparisonRows.map(([feature, starter, pro]) => (
             <div
               key={feature}
@@ -292,24 +274,37 @@ export default function PricingPage() {
               </div>
               <div className="p-5 text-center">
                 {starter ? (
-                  <span className="font-bold text-emerald-600">✓</span>
+                  <span
+                    className="font-bold text-emerald-600"
+                    aria-label="Included"
+                  >
+                    ✓
+                  </span>
                 ) : (
-                  <span className="text-slate-300">—</span>
+                  <span className="text-slate-300" aria-label="Not included">
+                    —
+                  </span>
                 )}
               </div>
               <div className="p-5 text-center">
                 {pro ? (
-                  <span className="font-bold text-emerald-600">✓</span>
+                  <span
+                    className="font-bold text-emerald-600"
+                    aria-label="Included"
+                  >
+                    ✓
+                  </span>
                 ) : (
-                  <span className="text-slate-300">—</span>
+                  <span className="text-slate-300" aria-label="Not included">
+                    —
+                  </span>
                 )}
               </div>
             </div>
           ))}
         </div>
       </section>
-
-      {/* ================= FAQ ================= */}
+      {/* FAQ */}
       <section className="border-t border-slate-100 bg-slate-50">
         <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
           <div className="text-center">
@@ -320,7 +315,6 @@ export default function PricingPage() {
               Common questions
             </h2>
           </div>
-
           <div className="mt-12 space-y-3">
             {faqs.map((faq) => (
               <details
@@ -341,23 +335,19 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
-
-      {/* ================= FINAL CTA ================= */}
+      {/* FINAL CTA */}
       <section className="bg-blue-600">
         <div className="mx-auto max-w-3xl px-6 py-20 text-center text-white sm:py-24">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-2xl shadow-lg">
             🚗
           </div>
-
           <h2 className="mt-6 text-3xl font-extrabold tracking-tight sm:text-4xl">
             Ready to build your vehicle pipeline?
           </h2>
-
           <p className="mx-auto mt-4 max-w-xl text-lg text-blue-100">
             Choose your dealer plan and start accessing NorthSky Auto&apos;s
             vehicle acquisition platform.
           </p>
-
           <div className="mt-10 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
               href="/dealer/register?plan=starter"
@@ -374,6 +364,6 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
-    </div>
+    </main>
   );
 }
