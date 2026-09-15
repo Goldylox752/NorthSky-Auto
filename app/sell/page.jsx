@@ -1,4 +1,5 @@
 import Link from "next/link";
+import VehicleSubmitForm from "@/components/VehicleSubmitForm";
 
 export const metadata = {
   title: "Sell Your Vehicle | NorthSky Auto",
@@ -40,7 +41,7 @@ const faqs = [
   {
     question: "How do I submit my vehicle?",
     answer:
-      "Click Submit Your Vehicle and provide the basic information about your vehicle, including its year, make, model, condition, and location.",
+      "Scroll to the submission form on this page and provide your vehicle details, including year, make, model, mileage, condition, and asking price.",
   },
   {
     question: "Does NorthSky Auto buy my vehicle?",
@@ -84,7 +85,7 @@ export default function SellPage() {
 
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  href="/sell"
+                  href="#submit"
                   className="rounded-xl bg-blue-600 px-7 py-4 text-center font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-500"
                 >
                   Submit Your Vehicle →
@@ -104,7 +105,6 @@ export default function SellPage() {
               </div>
             </div>
 
-            {/* Hero card */}
             <div className="relative hidden lg:block">
               <div className="absolute -inset-6 rounded-[2rem] bg-blue-500/10 blur-3xl" />
               <div className="relative rounded-3xl border border-white/10 bg-white/5 p-5 shadow-2xl backdrop-blur-xl">
@@ -212,6 +212,28 @@ export default function SellPage() {
         </div>
       </section>
 
+      {/* ================= SUBMISSION FORM ================= */}
+      <section id="submit" className="scroll-mt-24 border-y border-slate-100 bg-white">
+        <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
+          <div className="mb-10 text-center">
+            <p className="text-xs font-bold uppercase tracking-widest text-blue-600">
+              Submit your vehicle
+            </p>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
+              Tell us about your vehicle
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-slate-600">
+              Fill out the details below. Your submission is reviewed before it
+              becomes a dealer opportunity.
+            </p>
+          </div>
+
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8 shadow-xl shadow-slate-200/40 sm:p-10">
+            <VehicleSubmitForm />
+          </div>
+        </div>
+      </section>
+
       {/* ================= SELLER CTA ================= */}
       <section className="py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
@@ -231,7 +253,7 @@ export default function SellPage() {
                 </p>
               </div>
               <Link
-                href="/sell"
+                href="#submit"
                 className="rounded-xl bg-white px-7 py-4 text-center font-semibold text-blue-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-50"
               >
                 Start My Submission →
@@ -386,7 +408,7 @@ export default function SellPage() {
 
           <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
-              href="/sell"
+              href="#submit"
               className="rounded-xl bg-blue-600 px-7 py-4 font-semibold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-500"
             >
               Submit Your Vehicle
