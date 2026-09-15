@@ -4,45 +4,79 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-slate-900 text-gray-300">
-      <div className="mx-auto max-w-7xl px-6 py-16">
-
-        <div className="grid gap-10 md:grid-cols-4">
-
+    <footer className="mt-auto bg-slate-950 text-slate-300">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        {/* Main grid */}
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
-          <div>
-            <h2 className="text-2xl font-bold text-white">
-              NorthSky Auto
-            </h2>
-
-            <p className="mt-4 text-sm leading-7">
-              Canada's vehicle marketplace connecting private sellers
-              with trusted dealerships and qualified buyers.
+          <div className="sm:col-span-2 lg:col-span-1">
+            <Link
+              href="/"
+              className="text-2xl font-extrabold tracking-tight text-white"
+            >
+              NorthSky <span className="text-blue-400">Auto</span>{" "}
+              <span className="text-base">🇨🇦</span>
+            </Link>
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
+              Connecting Canadian vehicle sellers with automotive dealers
+              through a simpler vehicle marketplace.
             </p>
+            <Link
+              href="/sell"
+              className="mt-5 inline-block text-sm font-semibold text-blue-300 transition hover:text-white"
+            >
+              Sell Your Vehicle →
+            </Link>
           </div>
 
-          {/* Sell */}
+          {/* Marketplace */}
           <div>
-            <h3 className="mb-4 text-lg font-semibold text-white">
-              Sell
-            </h3>
-
-            <ul className="space-y-3">
+            <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-white">
+              Marketplace
+            </h4>
+            <ul className="space-y-3 text-sm">
               <li>
-                <Link href="/sell" className="hover:text-white">
-                  Sell My Vehicle
+                <Link href="/inventory" className="transition hover:text-white">
+                  Browse Vehicles
                 </Link>
               </li>
-
               <li>
-                <Link href="/pricing" className="hover:text-white">
+                <Link href="/sell" className="transition hover:text-white">
+                  Sell Your Vehicle
+                </Link>
+              </li>
+              <li>
+                <Link href="/how-it-works" className="transition hover:text-white">
+                  How It Works
+                </Link>
+              </li>
+              <li>
+                <Link href="/pricing" className="transition hover:text-white">
                   Pricing
                 </Link>
               </li>
+            </ul>
+          </div>
 
+          {/* Dealers */}
+          <div>
+            <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-white">
+              Dealers
+            </h4>
+            <ul className="space-y-3 text-sm">
               <li>
-                <Link href="/buyers" className="hover:text-white">
-                  Dealer Network
+                <Link href="/dealer" className="transition hover:text-white">
+                  Dealer Portal
+                </Link>
+              </li>
+              <li>
+                <Link href="/dealer/register" className="transition hover:text-white">
+                  Become a Dealer
+                </Link>
+              </li>
+              <li>
+                <Link href="/pricing" className="transition hover:text-white">
+                  Dealer Pricing
                 </Link>
               </li>
             </ul>
@@ -50,94 +84,39 @@ export default function Footer() {
 
           {/* Company */}
           <div>
-            <h3 className="mb-4 text-lg font-semibold text-white">
+            <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-white">
               Company
-            </h3>
-
-            <ul className="space-y-3">
+            </h4>
+            <ul className="space-y-3 text-sm">
               <li>
-                <Link href="/about" className="hover:text-white">
+                <Link href="/about" className="transition hover:text-white">
                   About
                 </Link>
               </li>
-
               <li>
-                <Link href="/contact" className="hover:text-white">
+                <Link href="/contact" className="transition hover:text-white">
                   Contact
                 </Link>
               </li>
-
               <li>
-                <Link href="/faq" className="hover:text-white">
-                  FAQ
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Legal */}
-          <div>
-            <h3 className="mb-4 text-lg font-semibold text-white">
-              Legal
-            </h3>
-
-            <ul className="space-y-3">
-              <li>
-                <Link href="/privacy" className="hover:text-white">
+                <Link href="/privacy" className="transition hover:text-white">
                   Privacy Policy
                 </Link>
               </li>
-
               <li>
-                <Link href="/terms" className="hover:text-white">
+                <Link href="/terms" className="transition hover:text-white">
                   Terms of Service
-                </Link>
-              </li>
-
-              <li>
-                <Link href="/cookies" className="hover:text-white">
-                  Cookie Policy
                 </Link>
               </li>
             </ul>
           </div>
-
         </div>
 
-        {/* CTA */}
-        <div className="mt-16 rounded-2xl bg-blue-600 p-8 text-center">
-
-          <h2 className="text-3xl font-bold text-white">
-            Ready to Sell Your Vehicle?
-          </h2>
-
-          <p className="mt-3 text-blue-100">
-            Submit your vehicle today and start receiving offers from
-            verified dealerships across Canada.
-          </p>
-
-          <Link
-            href="/sell"
-            className="mt-6 inline-block rounded-xl bg-white px-8 py-3 font-semibold text-blue-600 transition hover:bg-gray-100"
-          >
-            Sell My Vehicle
-          </Link>
-
+        {/* Bottom bar */}
+        <div className="mt-14 flex flex-col items-start justify-between gap-3 border-t border-slate-800 pt-6 text-sm text-slate-500 sm:flex-row sm:items-center">
+          <span>© {year} NorthSky Auto. All rights reserved.</span>
+          <span>🇨🇦 Built for Canada</span>
         </div>
-
-        {/* Bottom */}
-        <div className="mt-12 border-t border-slate-700 pt-8 text-center text-sm text-gray-400">
-
-          <p>
-            © {year} NorthSky Auto. All rights reserved.
-          </p>
-
-          <p className="mt-2">
-            Built for Canadian vehicle buyers, sellers, and dealerships.
-          </p>
-
-        </div>
-
       </div>
     </footer>
   );
