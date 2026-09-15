@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+const TELEGRAM_URL = "https://t.me/NorthSkyAutoCanada";
+
 export default function Footer() {
   const year = new Date().getFullYear();
 
@@ -75,6 +77,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/dealer-application" className="transition hover:text-white">
+                  Dealer Application
+                </Link>
+              </li>
+              <li>
                 <Link href="/pricing" className="transition hover:text-white">
                   Dealer Pricing
                 </Link>
@@ -99,6 +106,21 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/telegram" className="transition hover:text-white">
+                  Telegram
+                </Link>
+              </li>
+              <li>
+                <a
+                  href={TELEGRAM_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition hover:text-white"
+                >
+                  Join Channel ↗
+                </a>
+              </li>
+              <li>
                 <Link href="/privacy" className="transition hover:text-white">
                   Privacy Policy
                 </Link>
@@ -115,7 +137,17 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="mt-14 flex flex-col items-start justify-between gap-3 border-t border-slate-800 pt-6 text-sm text-slate-500 sm:flex-row sm:items-center">
           <span>© {year} NorthSky Auto. All rights reserved.</span>
-          <span>🇨🇦 Built for Canada</span>
+          <div className="flex items-center gap-4">
+            <a
+              href={TELEGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-[#229ED9] transition hover:text-[#4db8e8]"
+            >
+              Telegram
+            </a>
+            <span>🇨🇦 Built for Canada</span>
+          </div>
         </div>
       </div>
     </footer>
